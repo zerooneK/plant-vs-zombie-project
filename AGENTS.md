@@ -6,7 +6,7 @@ Always talk in **simple English**. Use normal, everyday words. Keep technical wo
 
 ## Version, changelog and git
 
-This project has a version number. It lives in the `VERSION` file at the repo root (currently `0.7.0`).
+This project has a version number. It lives in the `VERSION` file at the repo root. Do not repeat the number in prose anywhere — read it from that file, so it cannot go stale.
 
 - **Bump the version whenever anything changes in the project** — a fix, an edit to an existing file, or a new feature.
   - small fix or edit → **patch** (`0.1.0` → `0.1.1`)
@@ -50,6 +50,15 @@ There is exactly **one** way into the rules: a single function taking a game sta
 **One deliberate exception to "presentation is not tested":** the pure board geometry in `src/draw/layout.ts` **is** tested, in `tests/layout.test.ts`. It has no DOM and no canvas, and it answers one question the rules depend on — which Square a click at a given point means. Without it, the grid that is drawn and the grid that is clicked could disagree and nothing would notice. Everything else in `src/draw/` and `src/ui/` stays untested.
 
 `src/game/clock.ts` is where the fixed step rate lives, as pure arithmetic; `src/draw/frames.ts` owns the browser's frame callback and calls the rules. Keep it that way round.
+
+## The knowledge graph
+
+`graphify-out/` is a map of the whole project. **Use it whenever you need to understand how the code fits together, and rebuild it whenever the project changes.**
+
+- **To explore:** run `/graphify query "<question>"` instead of reading files one by one. It answers from the graph and cites where each fact came from, so a claim can be checked. Fall back to reading files only when the graph genuinely does not know.
+- **To update:** after changing the project, run `/graphify . --update` to re-extract what changed. Do it in the same commit as the change, so the graph never describes a repo that does not exist. If `graphify-out/` is missing entirely, run a full `/graphify .` instead.
+
+A stale graph is worse than no graph, because it will confidently answer questions about code that has moved. If you notice the graph contradicting the code, rebuild it rather than trusting it.
 
 ## Skills are also real content
 

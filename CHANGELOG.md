@@ -4,6 +4,17 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.7.2] - 2026-09-26
+
+### Added
+
+- `AGENTS.md` now has a knowledge-graph rule: use `/graphify query` to explore the project rather than reading files one by one, and run `/graphify . --update` in the same commit as any change, so the graph never describes a repo that does not exist.
+
+### Changed
+
+- The graph was brought fully up to date. It had been built before any game code existed, so it knew nothing about `src/`, `tests/`, the spec, or the engineering-skill config. It now covers **795 nodes and 1231 edges across 51 labelled communities** — up from 616 nodes and 926 edges — with 179 new nodes and 305 new edges. Health check: no dangling, missing or collapsed edges.
+- `AGENTS.md` no longer repeats the version number in prose. It pointed at `0.7.0` while the real number was `0.7.1`; reading it from the `VERSION` file removes that whole class of drift.
+
 ## [0.7.1] - 2026-09-26
 
 Fixes from a review of 0.7.0, which found two breaches of the repo's own standards and one real bug in the game clock.
