@@ -20,7 +20,7 @@ This project has a version number. It lives in the `VERSION` file at the repo ro
 
 ## What this repo currently is
 
-There is no application code here. No `package.json` / `pyproject.toml`, no `src/`, no `.github/`, no `CONTEXT.md` or `docs/adr/`. The content is 25 vendored agent skills, plus `skills-lock.json`, `VERSION`, and `CHANGELOG.md`. It is a git repository.
+There is no application code here. No `package.json` / `pyproject.toml`, no `src/`, no `.github/`, no `CONTEXT.md`. The content is 25 vendored agent skills, plus `skills-lock.json`, `VERSION`, `CHANGELOG.md`, and design decisions in `docs/adr/`. It is a git repository.
 
 The directory is named `plant-vs-zombie-prototype`, but nothing related to that exists yet.
 
