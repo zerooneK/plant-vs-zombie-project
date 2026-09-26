@@ -4,6 +4,12 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] - 2026-09-26
+
+### Added
+
+- `docs/adr/0004-node-builtin-test-runner.md` — test the game rules with `node:test`, adding no test-framework dependency.
+
 ## [0.2.0] - 2026-09-26
 
 ### Added
