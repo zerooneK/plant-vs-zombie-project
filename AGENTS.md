@@ -22,7 +22,7 @@ This project has a version number. It lives in the `VERSION` file at the repo ro
 
 There is no application code here. No `package.json` / `pyproject.toml`, no `src/`, no `.github/`. The content is 25 vendored agent skills, plus `skills-lock.json`, `VERSION`, `CHANGELOG.md`, `CONTEXT.md` (shared vocabulary), and design work in `docs/` — `docs/plan.md` is the build plan and `docs/adr/` holds decisions already made. It is a git repository.
 
-**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order.
+**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`; nothing is built yet.
 
 The directory is named `plant-vs-zombie-prototype`, but nothing related to that exists yet.
 
