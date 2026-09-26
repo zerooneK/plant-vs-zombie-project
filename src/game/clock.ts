@@ -42,3 +42,36 @@ export function advanceClock(clock: Clock, elapsed: number): Clock {
     steps: Math.floor((total * STEPS_PER_SECOND) / 1000),
   }
 }
+
+/** What one frame of the game loop worked out. */
+export interface Frame {
+  readonly clock: Clock
+  /** The frame time the next frame measures its elapsed time from. */
+  readonly previous: number
+  /** How many whole steps the rules should be advanced by. */
+  readonly steps: number
+}
+
+/**
+ * Works out what one frame of the game loop owes, and what the next frame
+ * should measure from.
+ *
+ * Elapsed time is measured from the *last frame*, never from the start of the
+ * game. Measuring from the start makes every frame offer the whole elapsed
+ * time all over again, so the game runs faster the longer it has been played:
+ * five times too fast at sixty frames a second, and nearly twelve times too
+ * fast on a high refresh screen, which is exactly the "a fast machine is not
+ * an easier machine" promise this clock exists to keep.
+ *
+ * Pure arithmetic. The browser's frame callback supplies the two times and
+ * does nothing else, which is what keeps it out of the rules.
+ */
+export function advanceFrames(clock: Clock, previous: number, now: number): Frame {
+  const advanced = advanceClock(clock, now - previous)
+
+  return {
+    clock: advanced,
+    previous: now,
+    steps: advanced.steps - clock.steps,
+  }
+}

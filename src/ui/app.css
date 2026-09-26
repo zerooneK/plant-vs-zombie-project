@@ -46,6 +46,10 @@ body {
   opacity: 0.9;
 }
 
+.app__footer p {
+  margin: 0.15rem 0 0;
+}
+
 .lawn {
   flex: 1 1 auto;
   display: block;

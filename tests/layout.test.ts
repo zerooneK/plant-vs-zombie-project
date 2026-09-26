@@ -3,13 +3,15 @@ import assert from 'node:assert/strict'
 import {
   BOARD_COLUMNS,
   BOARD_ROWS,
+  LOGICAL_HEIGHT,
+  LOGICAL_WIDTH,
   everySquare,
 } from '../src/game/board.ts'
 import {
-  LOGICAL_HEIGHT,
-  LOGICAL_WIDTH,
   centreOf,
   layout,
+  place,
+  pointOnBoard,
   squareAtPoint,
 } from '../src/draw/layout.ts'
 
@@ -94,4 +96,33 @@ test('either side of a boundary between two Columns reads as the Column clicked'
 
   assert.deepEqual(squareAtPoint({ x: boundary - 1, y }, board), { row: 3, column: 1 })
   assert.deepEqual(squareAtPoint({ x: boundary + 1, y }, board), { row: 3, column: 2 })
+})
+
+test('a place on the lawn is the same place whatever size the window is', () => {
+  const small = layout({ width: 800, height: 480 })
+  const large = layout({ width: 1600, height: 960 })
+  const onTheLawn = { x: 321, y: 210 }
+
+  const here = pointOnBoard(place(onTheLawn, small), small)
+  const there = pointOnBoard(place(onTheLawn, large), large)
+
+  assert.ok(Math.abs(here.x - there.x) < CLOSE_ENOUGH, 'across differs between window sizes')
+  assert.ok(Math.abs(here.y - there.y) < CLOSE_ENOUGH, 'down differs between window sizes')
+  assert.ok(Math.abs(here.x - onTheLawn.x) < CLOSE_ENOUGH, 'a click comes back where it went')
+  assert.ok(Math.abs(here.y - onTheLawn.y) < CLOSE_ENOUGH, 'a click comes back where it went')
+})
+
+test('a Sun token drawn at a place is read back at that same place', () => {
+  const board = layout(WIDE)
+
+  for (const onTheLawn of [
+    { x: 0, y: 0 },
+    { x: LOGICAL_WIDTH, y: LOGICAL_HEIGHT },
+    { x: LOGICAL_WIDTH / 2, y: LOGICAL_HEIGHT / 3 },
+  ]) {
+    const read = pointOnBoard(place(onTheLawn, board), board)
+
+    assert.ok(Math.abs(read.x - onTheLawn.x) < CLOSE_ENOUGH, `across for ${onTheLawn.x}`)
+    assert.ok(Math.abs(read.y - onTheLawn.y) < CLOSE_ENOUGH, `down for ${onTheLawn.y}`)
+  }
 })

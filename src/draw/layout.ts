@@ -1,12 +1,14 @@
-import { BOARD_COLUMNS, BOARD_ROWS, isOnBoard, type Square } from '../game/board.ts'
-
-/** The natural size of one Square, before any scaling. */
-export const SQUARE_WIDTH = 80
-export const SQUARE_HEIGHT = 96
-
-/** The natural size of the whole board, before any scaling. */
-export const LOGICAL_WIDTH = SQUARE_WIDTH * BOARD_COLUMNS
-export const LOGICAL_HEIGHT = SQUARE_HEIGHT * BOARD_ROWS
+import {
+  BOARD_COLUMNS,
+  BOARD_ROWS,
+  LOGICAL_HEIGHT,
+  LOGICAL_WIDTH,
+  SQUARE_HEIGHT,
+  SQUARE_WIDTH,
+  isOnBoard,
+  type Point,
+  type Square,
+} from '../game/board.ts'
 
 export interface Viewport {
   readonly width: number
@@ -46,9 +48,29 @@ export function layout(view: Viewport): BoardLayout {
   }
 }
 
-export interface Point {
-  readonly x: number
-  readonly y: number
+/**
+ * Where a click on the canvas lands, in the board's own units.
+ *
+ * The rules do their hit testing in board units - a Sun token has a place on
+ * the board, not a place on the screen - so a click has to be measured in the
+ * same units before it is handed to them.
+ */
+export function pointOnBoard(point: Point, board: BoardLayout): Point {
+  return {
+    x: (point.x - board.offsetX) / board.scale,
+    y: (point.y - board.offsetY) / board.scale,
+  }
+}
+
+/**
+ * Where a point in the board's own units sits on the canvas, which is how
+ * something the rules placed on the board reaches the screen.
+ */
+export function place(point: Point, board: BoardLayout): Point {
+  return {
+    x: board.offsetX + point.x * board.scale,
+    y: board.offsetY + point.y * board.scale,
+  }
 }
 
 /** The middle of a Square on screen, for drawing and for hit testing. */

@@ -4,6 +4,32 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] - 2026-09-26
+
+Build order step 2 of 13: Sun falls from the sky, is collected by clicking it, and is lost if it is not. A level begins holding 50 Sun, one piece of Sun is worth 25, and the counter in the footer is read straight from the rules.
+
+### Fixed
+
+- **The game ran far too fast, and faster the longer it played.** The frame loop measured elapsed time from the first frame instead of from the last one, so every frame re-offered all the time that had passed since the game started. The catch-up limit then capped each frame at 5 steps, giving 5× real speed at 60 frames a second and nearly 12× on a 144Hz screen — the exact opposite of the promise that a fast machine is not an easier machine. This shipped in ticket 01 and was invisible until Sun, the first thing denominated in seconds, came out at the wrong times. The arithmetic that decides what a frame owes now lives in `advanceFrames` in `src/game/clock.ts` where it can be checked; `frames.ts` is left with nothing but the browser's callback. Four new checks cover it, and all four fail if the old mistake is put back.
+- **Sun fell so fast it could not be clicked.** It crossed the lawn in about two seconds, moving further in a tenth of a second than its own radius, so a click aimed at Sun you could plainly see missed and marked the grass underneath instead. It now crosses in about five seconds, and the target given to a click is a little larger than the Sun drawn.
+- **Sun could appear without ever falling.** Its resting place could land barely below where it started, so on some seeds it simply appeared in place. It now always comes down at least one Row before settling.
+- A landing Sun no longer loses a step of its life on the step it lands, so the whole of its life is spent lying on the lawn.
+
+### Added
+
+- `src/game/sun.ts` — a piece of Sun: falling, resting, and waiting out its life; and which Sun a click lands on.
+- `src/game/balance.ts` — every number a designer would tune, in the one place the plan called for. Values held with confidence and values recalled from memory are marked as such, and a comment on the Sun's lifetime now says plainly that two pieces can be on the lawn at once rather than claiming otherwise.
+- `src/game/random.ts` — numbers fixed by a seed, so the rules stay pure and a level has one definite outcome for one definite list of commands. Variety between playthroughs comes from the seed, which the interface chooses.
+- `collect` as a command, alongside `advance` and `select`. Sun is taken before a Square is marked: a click aimed at Sun is a click on that Sun, not a misclick on the grass under it.
+- The Sun counter in the footer, told to React only when the Sun held or the selection really changes.
+- Sun drawn as a plain yellow disc with rays. Placeholder artwork, as agreed — real artwork is ticket 20.
+
+### Changed
+
+- The board's own units, and a point on the board, now live in `src/game/board.ts` rather than in `src/draw/layout.ts`. The rules do their own hit testing — a click has to be measured in the same units Sun is placed in — so those numbers have to be the rules' to read. The drawing reads them from there.
+- Each piece of Sun is given an id, so that "the same Sun" can be referred to and followed.
+- 35 checks, up from 22. The click path was checked by hand in a real browser again, as it was after ticket 01, using a driver installed outside the project.
+
 ## [0.7.2] - 2026-09-26
 
 ### Added

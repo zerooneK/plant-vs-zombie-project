@@ -47,9 +47,9 @@ Node 22 and npm. No linter is configured.
 
 There is exactly **one** way into the rules: a single function taking a game state plus one command, returning a new state. Nothing else may change game state. See `docs/adr/0001-react-for-game-ui.md` and the Testing Decisions in the spec.
 
-**One deliberate exception to "presentation is not tested":** the pure board geometry in `src/draw/layout.ts` **is** tested, in `tests/layout.test.ts`. It has no DOM and no canvas, and it answers one question the rules depend on — which Square a click at a given point means. Without it, the grid that is drawn and the grid that is clicked could disagree and nothing would notice. Everything else in `src/draw/` and `src/ui/` stays untested.
+**One deliberate exception to "presentation is not tested":** the pure board geometry in `src/draw/layout.ts` **is** tested, in `tests/layout.test.ts`. It has no DOM and no canvas, and it answers the two questions the rules depend on: which Square a click at a given point means, and where that click sits in the board's own units, which is the space Sun is collected in. Without it, what is drawn and what is clicked could disagree and nothing would notice. Everything else in `src/draw/` and `src/ui/` stays untested.
 
-`src/game/clock.ts` is where the fixed step rate lives, as pure arithmetic; `src/draw/frames.ts` owns the browser's frame callback and calls the rules. Keep it that way round.
+`src/game/clock.ts` is where the fixed step rate lives, as pure arithmetic; `src/draw/frames.ts` owns the browser's frame callback and calls the rules. The arithmetic for working out what one frame owes — including which frame to measure from — stays in `clock.ts` rather than in the loop. That split is not tidiness: the loop got the "measure from the last frame" detail wrong and ran the game five times too fast, and because the loop cannot be checked, nothing noticed until Sun started appearing at the wrong times. Keep anything that can be got wrong out of `frames.ts` and in `clock.ts`.
 
 ## The knowledge graph
 

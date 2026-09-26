@@ -1,4 +1,4 @@
-import { advanceClock, startClock } from '../game/clock.ts'
+import { advanceFrames, startClock } from '../game/clock.ts'
 import type { Clock } from '../game/clock.ts'
 
 /**
@@ -6,19 +6,22 @@ import type { Clock } from '../game/clock.ts'
  * number of steps happen on a fast machine as on a slow one.
  *
  * This is the only part that knows about the browser's clock and frame
- * callback, which is why it lives outside `src/game/`. See the rule boundary
- * in AGENTS.md.
+ * callback, which is why it lives outside `src/game/`. All it does is hand two
+ * frame times to `advanceFrames` and run however many steps come back, so the
+ * part that could get the arithmetic wrong is in the rules and is checked.
+ * See the rule boundary in AGENTS.md.
  */
 export function startFrames(onStep: () => void, onFrame: () => void): () => void {
   let frameId = 0
-  let previous = performance.now()
   let clock: Clock = startClock()
+  let previous = performance.now()
 
   const frame = (now: number) => {
-    const alreadyTaken = clock.steps
-    clock = advanceClock(clock, now - previous)
+    const advanced = advanceFrames(clock, previous, now)
+    clock = advanced.clock
+    previous = advanced.previous
 
-    for (let step = alreadyTaken; step < clock.steps; step++) {
+    for (let step = 0; step < advanced.steps; step++) {
       onStep()
     }
 
