@@ -6,7 +6,7 @@ Always talk in **simple English**. Use normal, everyday words. Keep technical wo
 
 ## Version, changelog and git
 
-This project has a version number. It lives in the `VERSION` file at the repo root (currently `0.1.0`).
+This project has a version number. It lives in the `VERSION` file at the repo root (currently `0.6.0`).
 
 - **Bump the version whenever anything changes in the project** — a fix, an edit to an existing file, or a new feature.
   - small fix or edit → **patch** (`0.1.0` → `0.1.1`)
@@ -20,7 +20,7 @@ This project has a version number. It lives in the `VERSION` file at the repo ro
 
 ## What this repo currently is
 
-There is no application code here. No `package.json` / `pyproject.toml`, no `src/`, no `.github/`. The content is 25 vendored agent skills, plus `skills-lock.json`, `VERSION`, `CHANGELOG.md`, `CONTEXT.md` (shared vocabulary), and design work in `docs/` — `docs/plan.md` is the build plan and `docs/adr/` holds decisions already made. It is a git repository.
+There is no application code here. No `package.json` / `pyproject.toml`, no `src/`, no `.github/`. The content is 25 vendored agent skills, plus `skills-lock.json`, `VERSION`, `CHANGELOG.md`, `CONTEXT.md` (shared vocabulary), and design work in `docs/` — `docs/plan.md` is the build plan, `docs/specs/` holds specs, `docs/adr/` holds decisions already made, and `docs/agents/` holds the engineering-skill configuration. `.scratch/` is the issue tracker and is git-ignored. It is a git repository.
 
 **Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`; nothing is built yet.
 
@@ -42,11 +42,23 @@ The directory is named `plant-vs-zombie-prototype`, but nothing related to that 
 
 `ask-matt` is the router over all 25 skills. Read `.agents/skills/ask-matt/SKILL.md` (the main flow) and `PHASE-BOUNDARIES.md` (the context-management decision tree) before picking a workflow. It is user-invoked, so it will never fire on its own — a human has to ask for it.
 
-## Not yet configured
+## Agent skills
 
-`setup-matt-pocock-skills` has not been run. There is no `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, or `docs/agents/triage-labels.md`, no `## Agent skills` block, and no `.scratch/`. **The issue tracker is undecided**, so `to-tickets`, `triage`, and `to-spec` have nowhere to write — flag this before using them. The setup skill edits an existing `AGENTS.md` or `CLAUDE.md` in place; never create both.
+### Issue tracker
 
-Several skills assume git and a GitHub remote: `implement` ("commit work to the current branch"), `resolving-merge-conflicts`, `code-review` ("pin the fixed point"), `handoff` ("match existing repo note conventions"). Git is now set up, but there is still **no remote** — the parts that talk to GitHub Issues or PRs will stall until you add one.
+Issues are markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default role names, written as a `Status:` line in each issue file. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` at the root, `docs/adr/` at the root. See `docs/agents/domain.md`.
+
+### No remote yet
+
+The repository has **no Git remote**, so the parts of `implement`, `code-review`, `resolving-merge-conflicts` and `handoff` that talk to GitHub Issues or PRs will stall until you add one. Everything else works offline.
 
 ## Generated output
 

@@ -4,6 +4,20 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] - 2026-09-26
+
+### Added
+
+- `docs/agents/issue-tracker.md` — issues live as markdown files under `.scratch/<feature>/`. Notes that the agreed spec stays in `docs/specs/` and is not duplicated.
+- `docs/agents/triage-labels.md` — the five default triage roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`), kept as-is.
+- `docs/agents/domain.md` — domain doc consumer rules; records that this repo is single-context.
+- `## Agent skills` block in `AGENTS.md`, replacing the "Not yet configured" section.
+- `.scratch/` git-ignored as working material.
+
+### Fixed
+
+- `AGENTS.md` claimed the current version was `0.1.0`. It was `0.5.0`, and is now `0.6.0`.
+
 ## [0.5.0] - 2026-09-26
 
 ### Added
