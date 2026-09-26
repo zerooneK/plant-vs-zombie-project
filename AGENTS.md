@@ -43,9 +43,13 @@ Node 22 and npm. No linter is configured.
 
 ## The rule boundary — protect this
 
-`src/game/` holds the rules. It draws nothing, imports nothing from React, and touches no DOM. Everything above it — `src/draw/` (canvas) and `src/ui/` (React) — is presentation, and is not tested.
+`src/game/` holds the rules. It draws nothing, imports nothing from React, and touches no DOM — not even `performance` or `requestAnimationFrame`. Everything above it — `src/draw/` (canvas) and `src/ui/` (React) — is presentation.
 
-There is exactly **one** way into the rules: a single function taking a game state plus one command, returning a new state. Nothing else may change game state. `tests/` exercises the rules through that one entry point and nothing else. See `docs/adr/0001-react-for-game-ui.md` and the Testing Decisions in the spec.
+There is exactly **one** way into the rules: a single function taking a game state plus one command, returning a new state. Nothing else may change game state. See `docs/adr/0001-react-for-game-ui.md` and the Testing Decisions in the spec.
+
+**One deliberate exception to "presentation is not tested":** the pure board geometry in `src/draw/layout.ts` **is** tested, in `tests/layout.test.ts`. It has no DOM and no canvas, and it answers one question the rules depend on — which Square a click at a given point means. Without it, the grid that is drawn and the grid that is clicked could disagree and nothing would notice. Everything else in `src/draw/` and `src/ui/` stays untested.
+
+`src/game/clock.ts` is where the fixed step rate lives, as pure arithmetic; `src/draw/frames.ts` owns the browser's frame callback and calls the rules. Keep it that way round.
 
 ## Skills are also real content
 

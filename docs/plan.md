@@ -51,17 +51,20 @@ src/
   game/               the rules — no drawing, no React, no DOM
     board.ts          Rows, Columns, Squares
     sim.ts            the one entry point: state + command -> state
-    loop.ts           the fixed 60-step clock
+    clock.ts          the fixed 60-step rate, as pure arithmetic
     balance.ts        every number, in one place      (ticket 03)
     plants.ts         plant definitions               (ticket 09 onwards)
     zombies.ts        zombie definitions              (ticket 15 onwards)
     levels.ts         level definitions               (ticket 17 onwards)
   draw/               the canvas, the layout maths, the artwork
+    layout.ts         board geometry - pure, and tested (see AGENTS.md)
+    board.ts          painting the lawn
+    frames.ts         the browser's frame callback, the only DOM user
   ui/                 React components
 tests/                rule checks, run by node:test
 ```
 
-`game/` holds the rules with no drawing and no React in it. That is what makes it testable in a terminal, and it is the main thing to protect as the code grows. Only `board.ts` and `sim.ts` exist so far; the rest arrive with the tickets that need them.
+`game/` holds the rules with no drawing and no React in it. That is what makes it testable in a terminal, and it is the main thing to protect as the code grows. Only `board.ts`, `sim.ts` and `clock.ts` exist so far; the rest arrive with the tickets that need them.
 
 ## Build order
 

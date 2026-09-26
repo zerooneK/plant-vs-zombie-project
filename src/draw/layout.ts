@@ -20,8 +20,8 @@ export interface BoardLayout {
   readonly offsetY: number
   readonly width: number
   readonly height: number
-  readonly cellWidth: number
-  readonly cellHeight: number
+  readonly squareWidth: number
+  readonly squareHeight: number
 }
 
 export function layout(view: Viewport): BoardLayout {
@@ -30,17 +30,17 @@ export function layout(view: Viewport): BoardLayout {
   // The Square size is the source of truth, and the board is measured from
   // it, so the drawn grid and the hit test are always working from the same
   // numbers and cannot drift apart by even a fraction of a pixel.
-  const cellWidth = SQUARE_WIDTH * scale
-  const cellHeight = SQUARE_HEIGHT * scale
-  const width = cellWidth * BOARD_COLUMNS
-  const height = cellHeight * BOARD_ROWS
+  const squareWidth = SQUARE_WIDTH * scale
+  const squareHeight = SQUARE_HEIGHT * scale
+  const width = squareWidth * BOARD_COLUMNS
+  const height = squareHeight * BOARD_ROWS
 
   return {
     scale,
     width,
     height,
-    cellWidth,
-    cellHeight,
+    squareWidth,
+    squareHeight,
     offsetX: (view.width - width) / 2,
     offsetY: (view.height - height) / 2,
   }
@@ -54,8 +54,8 @@ export interface Point {
 /** The middle of a Square on screen, for drawing and for hit testing. */
 export function centreOf(square: Square, board: BoardLayout): Point {
   return {
-    x: board.offsetX + (square.column + 0.5) * board.cellWidth,
-    y: board.offsetY + (square.row + 0.5) * board.cellHeight,
+    x: board.offsetX + (square.column + 0.5) * board.squareWidth,
+    y: board.offsetY + (square.row + 0.5) * board.squareHeight,
   }
 }
 
@@ -66,8 +66,8 @@ export function centreOf(square: Square, board: BoardLayout): Point {
  */
 export function squareAtPoint(point: Point, board: BoardLayout): Square | null {
   const square = {
-    row: Math.floor((point.y - board.offsetY) / board.cellHeight),
-    column: Math.floor((point.x - board.offsetX) / board.cellWidth),
+    row: Math.floor((point.y - board.offsetY) / board.squareHeight),
+    column: Math.floor((point.x - board.offsetX) / board.squareWidth),
   }
 
   return isOnBoard(square) ? square : null

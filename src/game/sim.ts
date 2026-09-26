@@ -1,7 +1,5 @@
 import type { Square } from './board.ts'
 
-export const STEPS_PER_SECOND = 60
-
 export interface GameState {
   readonly tick: number
   readonly selected: Square | null

@@ -3,7 +3,7 @@ import type { MouseEvent } from 'react'
 import { drawBoard } from '../draw/board.ts'
 import { layout, squareAtPoint } from '../draw/layout.ts'
 import type { BoardLayout, Viewport } from '../draw/layout.ts'
-import { startLoop } from '../game/loop.ts'
+import { startFrames } from '../draw/frames.ts'
 import { apply, initialGameState } from '../game/sim.ts'
 import type { GameState } from '../game/sim.ts'
 import type { Square } from '../game/board.ts'
@@ -23,10 +23,16 @@ function isSameSquare(a: Square | null, b: Square | null): boolean {
  * actually changes, so it re-renders when the player acts rather than sixty
  * times a second. See docs/adr/0001-react-for-game-ui.md.
  */
+/** The canvas size the player sees, and the board drawn to fit it. */
+interface Geometry {
+  readonly view: Viewport
+  readonly board: BoardLayout
+}
+
 export function Lawn({ onSelected }: { onSelected: (square: Square | null) => void }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const stateRef = useRef<GameState>(initialGameState())
-  const geometryRef = useRef<{ view: Viewport; board: BoardLayout } | null>(null)
+  const geometryRef = useRef<Geometry | null>(null)
   const toldRef = useRef<Square | null>(null)
 
   useEffect(() => {
@@ -45,17 +51,16 @@ export function Lawn({ onSelected }: { onSelected: (square: Square | null) => vo
       canvas.width = Math.round(rect.width * ratio)
       canvas.height = Math.round(rect.height * ratio)
       context.setTransform(ratio, 0, 0, ratio, 0, 0)
-      geometryRef.current = {
-        view: { width: rect.width, height: rect.height },
-        board: layout({ width: rect.width, height: rect.height }),
-      }
+
+      const view = { width: rect.width, height: rect.height }
+      geometryRef.current = { view, board: layout(view) }
     }
 
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(canvas)
 
-    const stop = startLoop(
+    const stop = startFrames(
       () => {
         stateRef.current = apply(stateRef.current, { kind: 'advance' })
       },

@@ -4,6 +4,28 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.7.1] - 2026-09-26
+
+Fixes from a review of 0.7.0, which found two breaches of the repo's own standards and one real bug in the game clock.
+
+### Fixed
+
+- **The game ran at 59 steps a second, not 60.** A 60th of a second is not an exact number in floating point, so counting steps from a carried-over remainder always held one step back. Every second of play was 1.7% slow, forever. Steps are now counted from the total elapsed time, so a second of play is sixty steps at any frame rate — checked in `tests/clock.test.ts`.
+- `src/game/loop.ts` used `performance.now` and `requestAnimationFrame`, so the rules directory touched the DOM, breaking the rule boundary in `AGENTS.md`. Split into `src/game/clock.ts` (pure arithmetic, the rule) and `src/draw/frames.ts` (the only part that knows about the browser's frame callback).
+- The board geometry used `cellWidth` and `cellHeight` in 19 places, but `CONTEXT.md` lists "cell" as a word to avoid for a Square. Renamed to `squareWidth` and `squareHeight`.
+- `src/ui/Lawn.tsx` built the same `{ width, height }` pair twice in one place, and typed its `{ view, board }` pair inline in two places. Both now built once, with a named type.
+- The 0.7.0 changelog entry called all 14 checks "rule checks". Eight of them check board geometry, not the rules.
+
+### Added
+
+- 5 more checks, 19 in total: the step rate, uneven frame gaps, leftover time, the catch-up limit after a long pause, and that the pace recovers afterwards.
+
+### Changed
+
+- `AGENTS.md` — the rule boundary now records the one deliberate exception: the pure board geometry in `src/draw/layout.ts` is tested, because the rules depend on it and a mismatch between the drawn grid and the clicked grid would otherwise be invisible. Everything else in `src/draw/` and `src/ui/` stays untested.
+- `docs/specs/001-lawn-defence-mvp.md` — the same exception, with the reason, plus pacing added to the list of what is covered.
+- `docs/plan.md` — the code layout now matches the files that exist.
+
 ## [0.7.0] - 2026-09-26
 
 Build order step 1 of 13 (ticket 01): the board draws and a Square can be clicked.

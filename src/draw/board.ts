@@ -26,10 +26,10 @@ export function drawBoard(
   for (const square of everySquare()) {
     context.fillStyle = (square.row + square.column) % 2 === 0 ? LAWN_EVEN : LAWN_ODD
     context.fillRect(
-      board.offsetX + square.column * board.cellWidth,
-      board.offsetY + square.row * board.cellHeight,
-      board.cellWidth,
-      board.cellHeight,
+      board.offsetX + square.column * board.squareWidth,
+      board.offsetY + square.row * board.squareHeight,
+      board.squareWidth,
+      board.squareHeight,
     )
   }
 
@@ -38,13 +38,13 @@ export function drawBoard(
   }
 
   const centre = centreOf(selected, board)
-  const left = centre.x - board.cellWidth / 2
-  const top = centre.y - board.cellHeight / 2
+  const left = centre.x - board.squareWidth / 2
+  const top = centre.y - board.squareHeight / 2
 
   context.fillStyle = SELECTED_FILL
-  context.fillRect(left, top, board.cellWidth, board.cellHeight)
+  context.fillRect(left, top, board.squareWidth, board.squareHeight)
 
   context.strokeStyle = SELECTED_EDGE
   context.lineWidth = Math.max(2, 3 * board.scale)
-  context.strokeRect(left, top, board.cellWidth, board.cellHeight)
+  context.strokeRect(left, top, board.squareWidth, board.squareHeight)
 }

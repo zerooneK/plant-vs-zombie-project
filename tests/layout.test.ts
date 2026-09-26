@@ -59,8 +59,8 @@ test('the board sits centred in the window', () => {
 test('the board is exactly as wide and tall as its Squares need', () => {
   const board = layout({ width: 1000, height: 1000 })
 
-  assert.equal(board.cellWidth * BOARD_COLUMNS, board.width)
-  assert.equal(board.cellHeight * BOARD_ROWS, board.height)
+  assert.equal(board.squareWidth * BOARD_COLUMNS, board.width)
+  assert.equal(board.squareHeight * BOARD_ROWS, board.height)
 })
 
 test('every Square maps back to itself from the middle of what is drawn', () => {
@@ -89,8 +89,8 @@ test('a click on the empty space beside the board selects nothing', () => {
 
 test('either side of a boundary between two Columns reads as the Column clicked', () => {
   const board = layout(WIDE)
-  const boundary = board.offsetX + board.cellWidth * 2
-  const y = board.offsetY + board.cellHeight * 3 + 1
+  const boundary = board.offsetX + board.squareWidth * 2
+  const y = board.offsetY + board.squareHeight * 3 + 1
 
   assert.deepEqual(squareAtPoint({ x: boundary - 1, y }, board), { row: 3, column: 1 })
   assert.deepEqual(squareAtPoint({ x: boundary + 1, y }, board), { row: 3, column: 2 })
