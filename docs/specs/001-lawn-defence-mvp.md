@@ -135,7 +135,9 @@ The rules live in one part of the program that knows nothing about drawing or ab
 
 **One rulebook, no drawing, no user interface.** The rules exist in a single part of the program that renders nothing and holds no interface state. Everything the game decides — Sun, planting, movement, eating, damage, Waves, winning, Game Over — happens there. This is the seam everything else is built around, and it exists so the rules can be exercised without a browser.
 
-**A single entry point into the rules.** The rules are advanced only by one operation that takes a game state plus one command and returns a new game state. The commands are: advance one fixed step, collect Sun at a position, place a plant in a Square, and clear a Square with the Shovel. Nothing else may change game state. A level therefore has a definite outcome for a given list of commands, which is what makes an automated check possible.
+**A single entry point into the rules.** The rules are advanced only by one operation that takes a game state plus one command and returns a new game state. Nothing else may change game state. A level therefore has a definite outcome for a given list of commands, which is what makes an automated check possible.
+
+The commands are: advance one fixed step, select a Square, collect Sun at a position, place a plant in a Square, and clear a Square with the Shovel. (Selecting a Square was added by ticket 01: the first playable step showed that which Square the player has clicked is game state, not view state, because it decides where the next command lands.)
 
 **Fixed step timing, separate from drawing.** The game advances sixty steps a second on a counter, independent of the display. Drawing may skip or repeat frames without changing anything about play. This keeps a fast machine from being an easier machine, and it keeps a check repeatable.
 
@@ -151,6 +153,8 @@ The rules live in one part of the program that knows nothing about drawing or ab
 
 **No backend, ever, in this version.** No server, no accounts, no authentication, no network calls while playing. Progress is kept in the browser's own storage. The build produces static files that are opened directly.
 
+**The build has to produce a classic script, not an ES module.** A browser refuses to load an ES module over the `file://` protocol, and a stylesheet marked `crossorigin` is refused there too, so a normal module build renders a blank page when the game is opened by double-clicking. This is easy to get wrong because the same build works perfectly over HTTP, and the failure is a silent white screen. The bundling configuration exists to work around it; a rewrite of that configuration would quietly break "open the file and play".
+
 **Dependencies are React, the bundler and the language tooling.** All are MIT-licensed and pinned exactly. The bundler is a development-only tool; the finished game ships without any of them. Nothing is added for the sake of convenience.
 
 **Artwork is ours, and is separable from the rules.** All artwork is original and simple, held apart from the rules so it can be replaced wholesale. The original game's artwork, character names and audio are not used.
@@ -165,7 +169,9 @@ The rules live in one part of the program that knows nothing about drawing or ab
 
 **Tested: the whole rulebook.** Sun economy — Sun falls, uncollected Sun is lost, collecting adds it, a purchase is refused and takes nothing when Sun is short. Planting — a plant is placed and charged, a Square already holding a plant refuses without charging, a Square holding a Lawn Mower refuses, and a used Seed Packet is unavailable until it has Recharged. Plant behaviour — each of the ten plants does what its own rule says, including the one-shot nature of the Potato Mine and the Cherry Bomb, the chew lockout of the Chomper, and the two-projectile fire of the Repeater. Zombie behaviour — movement is steady, eating stops and resumes, Armour is taken before health, a Pole Vaulting Zombie vaults once, and an exhausted Zombie is removed. Lawn Mowers — a spent mower saves its Row exactly once, and a second breach of that Row ends the level in Game Over. Waves and completion — Waves arrive on their schedule, the Flag Wave is last and tougher, a Level ends in a win once the last Wave is gone, and winning unlocks the next. Data — the ten Levels and both rosters are well-formed, and every Level can start and finish.
 
-**Not tested, and why.** The canvas, the drawing, the artwork, the React components, and the wiring from a click to a command. There is no browser-driving layer and no component-testing dependency. The reason is that each of these would add a second seam and a package, and the project's rule is that neither is added for the first version. **The known gap:** if a click never reaches the rules, no check will catch it. This is mitigated by keeping that wiring thin and by the player playtesting, and it is the first thing to revisit if the interface misbehaves.
+**Not tested, and why.** The canvas, the drawing, the artwork, the React components, and the wiring from a click to a command. There is no browser-driving layer and no component-testing dependency. The reason is that each of these would add a second seam and a package, and the project's rule is that neither is added for the first version. **The known gap:** if a click never reaches the rules, no committed check will catch it.
+
+The click path was nevertheless verified by hand after ticket 01, using a browser driver installed outside the project so that the project's own dependency list was untouched. A real click was driven at known Squares, either side of a boundary between Columns, in the empty space around the board, and again after the window was resized. All reached the rules as expected. That is a one-off check, not a committed one: the gap described above still stands, and closing it properly is a later decision.
 
 **Runner:** Node's built-in test runner with its built-in assertions. No test framework is added. The checks run in a terminal, in seconds, with no browser.
 

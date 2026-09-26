@@ -6,7 +6,7 @@ Always talk in **simple English**. Use normal, everyday words. Keep technical wo
 
 ## Version, changelog and git
 
-This project has a version number. It lives in the `VERSION` file at the repo root (currently `0.6.0`).
+This project has a version number. It lives in the `VERSION` file at the repo root (currently `0.7.0`).
 
 - **Bump the version whenever anything changes in the project** — a fix, an edit to an existing file, or a new feature.
   - small fix or edit → **patch** (`0.1.0` → `0.1.1`)
@@ -20,15 +20,34 @@ This project has a version number. It lives in the `VERSION` file at the repo ro
 
 ## What this repo currently is
 
-There is no application code here. No `package.json` / `pyproject.toml`, no `src/`, no `.github/`. The content is 25 vendored agent skills, plus `skills-lock.json`, `VERSION`, `CHANGELOG.md`, `CONTEXT.md` (shared vocabulary), and design work in `docs/` — `docs/plan.md` is the build plan, `docs/specs/` holds specs, `docs/adr/` holds decisions already made, and `docs/agents/` holds the engineering-skill configuration. `.scratch/` is the issue tracker and is git-ignored. It is a git repository.
+A Plants vs. Zombies prototype (React + TypeScript, built with Vite) **plus** 25 vendored agent skills and the design documents for the game.
 
-**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`; nothing is built yet.
+Game code is in `src/` and `tests/`. The design work is in `docs/`: `docs/plan.md` is the build plan, `docs/specs/` holds specs, `docs/adr/` holds decisions already made, and `docs/agents/` holds the engineering-skill configuration. `CONTEXT.md` is the shared vocabulary. `VERSION` and `CHANGELOG.md` track the version. `.scratch/` is the issue tracker and is git-ignored.
 
-The directory is named `plant-vs-zombie-prototype`, but nothing related to that exists yet.
+**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`. The build order is tracked as one ticket per step under `.scratch/lawn-defence-mvp/issues/` — step 1 of 13 is done.
 
-**There are therefore no build, test, lint, typecheck, or run commands in this repo.** Do not invent `npm test` or similar. No stack is chosen. When one is, add its exact commands to this file.
+## Commands
 
-## Skills are the only real content
+Node 22 and npm. No linter is configured.
+
+| Command | What it does |
+|---|---|
+| `npm ci` | Install the exact pinned dependencies |
+| `npm run dev` | Work on the game at `localhost:5173` |
+| `npm run build` | Typecheck, then build the playable game into `dist/` |
+| `npm run preview` | Serve `dist/` over HTTP, to check the built game |
+| `npm test` | Run the rule checks (`node:test`, no test framework) |
+| `npm run typecheck` | Typecheck only |
+
+**To play the built game, open `dist/index.html` by double-clicking it.** It works from `file://` with no server and no internet. Do not "fix" this by going back to an ES-module build: browsers refuse to load modules over `file://`, and the stylesheet must not carry a `crossorigin` attribute. `vite.config.ts` works around both.
+
+## The rule boundary — protect this
+
+`src/game/` holds the rules. It draws nothing, imports nothing from React, and touches no DOM. Everything above it — `src/draw/` (canvas) and `src/ui/` (React) — is presentation, and is not tested.
+
+There is exactly **one** way into the rules: a single function taking a game state plus one command, returning a new state. Nothing else may change game state. `tests/` exercises the rules through that one entry point and nothing else. See `docs/adr/0001-react-for-game-ui.md` and the Testing Decisions in the spec.
+
+## Skills are also real content
 
 25 skills from `github.com/mattpocock/skills`, vendored under `.agents/skills/`.
 

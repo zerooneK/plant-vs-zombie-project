@@ -44,23 +44,24 @@ React, Vite and TypeScript are the only dependencies, all MIT-licensed and pinne
 At the repo root, next to `.agents/` and `docs/`:
 
 ```
-package.json          vite.config.ts
-index.html
+package.json          vite.config.ts   tsconfig.json   index.html
 src/
-  main.tsx            boots React, mounts the game
-  App.tsx             menus, seed bank, HUD
-  game/
-    sim.ts            the rules — no drawing, no React
-    balance.ts        every number, in one place
-    plants.ts         plant definitions
-    zombies.ts        zombie definitions
-    levels.ts         level definitions
+  main.tsx            boots React
+  App.tsx             menus, the Seed Bank, the HUD
+  game/               the rules — no drawing, no React, no DOM
+    board.ts          Rows, Columns, Squares
+    sim.ts            the one entry point: state + command -> state
     loop.ts           the fixed 60-step clock
-  draw/               canvas drawing and the SVG art
+    balance.ts        every number, in one place      (ticket 03)
+    plants.ts         plant definitions               (ticket 09 onwards)
+    zombies.ts        zombie definitions              (ticket 15 onwards)
+    levels.ts         level definitions               (ticket 17 onwards)
+  draw/               the canvas, the layout maths, the artwork
+  ui/                 React components
 tests/                rule checks, run by node:test
 ```
 
-`game/` holds the rules with no drawing and no React in it. That is what makes it testable in a terminal, and it is the main thing to protect as the code grows.
+`game/` holds the rules with no drawing and no React in it. That is what makes it testable in a terminal, and it is the main thing to protect as the code grows. Only `board.ts` and `sim.ts` exist so far; the rest arrive with the tickets that need them.
 
 ## Build order
 
@@ -68,7 +69,7 @@ Each step is something you can actually play or click before the next one starts
 
 | # | Step | Done when |
 |---|---|---|
-| 1 | Board | An empty 5×9 lawn draws and resizes with the window |
+| 1 | Board | An empty 5×9 lawn draws and resizes with the window — **done** |
 | 2 | Sun | A sun counter; sun falls on a timer; clicking collects it |
 | 3 | Planting | One seed packet; click it, click a square, plant appears, sun is spent |
 | 4 | Shooting | That plant fires, hits a zombie, and it dies |
@@ -93,4 +94,4 @@ Steps 1-9 use plain coloured shapes. That is not laziness — it means the rules
 
 ## Once the plan is agreed
 
-`AGENTS.md` currently says this repo has no application code and no build commands. That becomes wrong the moment step 1 lands, and it gets corrected in the same commit as the code that makes it wrong.
+`AGENTS.md` used to say this repo had no application code and no build commands. Both were true when the plan was written and stopped being true at step 1, so `AGENTS.md` was corrected in the same commit as the code that made it wrong.
