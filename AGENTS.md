@@ -24,7 +24,7 @@ A Plants vs. Zombies prototype (React + TypeScript, built with Vite) **plus** 25
 
 Game code is in `src/` and `tests/`. The design work is in `docs/`: `docs/plan.md` is the build plan, `docs/specs/` holds specs, `docs/adr/` holds decisions already made, and `docs/agents/` holds the engineering-skill configuration. `CONTEXT.md` is the shared vocabulary. `VERSION` and `CHANGELOG.md` track the version. `.scratch/` is the issue tracker and is git-ignored.
 
-**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`. The build order is tracked as one ticket per step under `.scratch/lawn-defence-mvp/issues/` — step 1 of 13 is done.
+**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`. The build order is tracked as one ticket per step under `.scratch/lawn-defence-mvp/issues/` — steps 1 and 2 of 13 are done.
 
 ## Commands
 
@@ -50,6 +50,26 @@ There is exactly **one** way into the rules: a single function taking a game sta
 **One deliberate exception to "presentation is not tested":** the pure board geometry in `src/draw/layout.ts` **is** tested, in `tests/layout.test.ts`. It has no DOM and no canvas, and it answers the two questions the rules depend on: which Square a click at a given point means, and where that click sits in the board's own units, which is the space Sun is collected in. Without it, what is drawn and what is clicked could disagree and nothing would notice. Everything else in `src/draw/` and `src/ui/` stays untested.
 
 `src/game/clock.ts` is where the fixed step rate lives, as pure arithmetic; `src/draw/frames.ts` owns the browser's frame callback and calls the rules. The arithmetic for working out what one frame owes — including which frame to measure from — stays in `clock.ts` rather than in the loop. That split is not tidiness: the loop got the "measure from the last frame" detail wrong and ran the game five times too fast, and because the loop cannot be checked, nothing noticed until Sun started appearing at the wrong times. Keep anything that can be got wrong out of `frames.ts` and in `clock.ts`.
+
+## Write the check first — protect this too
+
+**Write the failing check before the code that satisfies it. Never write a function or a feature before its check exists.**
+
+The order is not a preference:
+
+1. Write one check, in `tests/`, naming something a player would recognise as true.
+2. Run it. **Watch it fail.** A check that has never failed proves nothing, because you have not seen it catch anything.
+3. Write the smallest amount of code that makes it pass. Nothing more.
+4. Run it again, and the whole suite.
+5. Then do the next one.
+
+**One slice at a time.** Not all the checks first and then all the code — that way you commit to a shape you have not yet understood, and the checks end up describing imagined behaviour instead of real behaviour.
+
+**Every check goes through the one entry point**, as a sequence of commands with an assertion on the state that comes back. No second seam.
+
+**If you find code written before its check, throw the check away and write it first.** A check written after the code confirms the code; it cannot catch the code being wrong, which is the only reason it exists. This is not hypothetical: the `collect` command in step 2 was written in the same pass as the Sun timer, before any check for it, and its checks were written afterwards to match what the code already did.
+
+**This rule does not extend the testing boundary.** The canvas, the painting, the React, and the wiring from a click to a command stay untested, by the agreement recorded in the spec's Testing Decisions. Do not add checks for them to satisfy this rule, and do not use this rule as a reason to move a rule into a place it can be checked. If a piece of logic is worth checking and is currently unreachable, move it down to `src/game/` rather than opening a new seam.
 
 ## The knowledge graph
 

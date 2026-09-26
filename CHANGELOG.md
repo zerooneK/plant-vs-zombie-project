@@ -4,6 +4,19 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.8.1] - 2026-09-26
+
+### Added
+
+- **`AGENTS.md` now requires the check to be written before the code.** Write a failing check naming something a player would recognise as true, watch it fail, write the smallest amount of code that makes it pass, then move to the next one — one slice at a time, not all the checks and then all the code. Every check goes through the one entry point into the rules, and there is still no second seam.
+- The same section records what the rule does **not** cover, so it cannot be obeyed by breaking the testing boundary: the canvas, the painting, the React, and the wiring from a click to a command stay untested by the agreement in the spec's Testing Decisions. The rule adds no checks there, and it is not a reason to move logic somewhere it can be checked. Logic worth checking but currently unreachable is moved down into `src/game/` instead.
+
+The rule exists because the `collect` command in 0.8.0 was written in the same pass as the Sun timer, before any check for it existed, and the checks came afterwards. They passed, and passing proved nothing: a check written after the code can only confirm the code. It happened to be right, which is not a defence — the same habit would have shipped the next one wrong.
+
+### Changed
+
+- `AGENTS.md` no longer says step 1 of 13 is the last one done. Steps 1 and 2 are.
+
 ## [0.8.0] - 2026-09-26
 
 Build order step 2 of 13: Sun falls from the sky, is collected by clicking it, and is lost if it is not. A level begins holding 50 Sun, one piece of Sun is worth 25, and the counter in the footer is read straight from the rules.
