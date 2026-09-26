@@ -20,7 +20,9 @@ This project has a version number. It lives in the `VERSION` file at the repo ro
 
 ## What this repo currently is
 
-There is no application code here. No `package.json` / `pyproject.toml`, no `src/`, no `.github/`, no `CONTEXT.md`. The content is 25 vendored agent skills, plus `skills-lock.json`, `VERSION`, `CHANGELOG.md`, and design decisions in `docs/adr/`. It is a git repository.
+There is no application code here. No `package.json` / `pyproject.toml`, no `src/`, no `.github/`. The content is 25 vendored agent skills, plus `skills-lock.json`, `VERSION`, `CHANGELOG.md`, `CONTEXT.md` (shared vocabulary), and design work in `docs/` — `docs/plan.md` is the build plan and `docs/adr/` holds decisions already made. It is a git repository.
+
+**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order.
 
 The directory is named `plant-vs-zombie-prototype`, but nothing related to that exists yet.
 

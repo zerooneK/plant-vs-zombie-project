@@ -4,6 +4,17 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] - 2026-09-26
+
+### Added
+
+- `docs/plan.md` — what we are building, what is out of scope, the code layout, and a 13-step build order where every step is playable before the next begins.
+- `CONTEXT.md` — the shared vocabulary of the game (Square, Row, Sun, Seed Packet, Recharge, Zombie, Armour, Wave, Flag Wave, Game Over).
+
+### Changed
+
+- `AGENTS.md` — points at `docs/plan.md` as the starting point for unfinished work.
+
 ## [0.3.0] - 2026-09-26
 
 ### Added
