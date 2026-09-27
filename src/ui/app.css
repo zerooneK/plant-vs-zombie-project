@@ -50,6 +50,73 @@ body {
   margin: 0.15rem 0 0;
 }
 
+.seed-bank {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0 1rem 0.75rem;
+}
+
+.packet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 5.5rem;
+  padding: 0.4rem 0.5rem;
+  border: 2px solid #7cb342;
+  border-radius: 0.35rem;
+  background: #33691e;
+  color: #f1f8e9;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.packet:hover:not(:disabled) {
+  background: #388e3c;
+}
+
+.packet--chosen {
+  border-color: #fdd835;
+  background: #827717;
+}
+
+/* Recharging and unaffordable are different problems, so they read differently:
+   a packet on cooldown is spent time, one you cannot pay for is spent Sun. */
+.packet--recharging {
+  border-color: #78909c;
+  background: #37474f;
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+.packet--unaffordable {
+  border-color: #8d6e63;
+  background: #4e342e;
+}
+
+.packet--shovel {
+  border-color: #90a4ae;
+  background: #37474f;
+}
+
+.packet__name {
+  font-weight: 600;
+}
+
+.packet__cost {
+  font-size: 0.95rem;
+  color: #fff9c4;
+}
+
+.packet__note {
+  font-size: 0.65rem;
+  opacity: 0.8;
+}
+
 .lawn {
   flex: 1 1 auto;
   display: block;

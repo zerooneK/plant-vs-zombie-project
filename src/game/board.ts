@@ -1,3 +1,5 @@
+import type { PlantName } from './plants.ts'
+
 export const BOARD_ROWS = 5
 export const BOARD_COLUMNS = 9
 
@@ -49,4 +51,69 @@ export function everySquare(): Square[] {
     }
   }
   return squares
+}
+
+/**
+ * The Column a Row's Lawn Mower stands in.
+ *
+ * In the original the mower sits on its own strip to the left of the lawn,
+ * which is not one of the nine plantable Columns. This board has no such strip,
+ * so the mower stands in the first Column instead. That is a deliberate
+ * difference from the original, and it is a visible one: the first Column of
+ * every Row cannot be planted, so the lawn is eight Columns wide to plant.
+ */
+export const MOWER_COLUMN = 0
+
+/**
+ * Anything standing in a Square.
+ *
+ * A Square holds one thing, whatever that thing is. Asking what occupies a
+ * Square is therefore one question with one answer, whether the answer is a
+ * plant, a Lawn Mower or nothing - and it is the question the rules ask before
+ * they charge anyone for a plant.
+ */
+export type Occupant = Planted | LawnMower
+
+/** A Lawn Mower standing at the left of one Row. */
+export interface LawnMower {
+  readonly kind: 'lawnMower'
+  readonly square: Square
+}
+
+/**
+ * A plant standing in one Square.
+ */
+export interface Planted {
+  readonly kind: 'plant'
+  readonly square: Square
+  readonly name: PlantName
+}
+
+/** The lawn as it stands: a mower for every Row, and nothing planted yet. */
+export function startingOccupants(): readonly Occupant[] {
+  const occupants: Occupant[] = []
+  for (let row = 0; row < BOARD_ROWS; row++) {
+    occupants.push({ kind: 'lawnMower', square: { row, column: MOWER_COLUMN } })
+  }
+  return occupants
+}
+
+/** Whatever is in a Square, or null when it is bare lawn. */
+export function occupantAt(occupants: readonly Occupant[], square: Square): Occupant | null {
+  const found = occupants.find(
+    (occupant) => occupant.square.row === square.row && occupant.square.column === square.column,
+  )
+  return found ?? null
+}
+
+/** The plant in a Square, or undefined when there is none. */
+export function plantIn(occupants: readonly Occupant[], square: Square): Planted | undefined {
+  const occupant = occupantAt(occupants, square)
+  return occupant !== null && occupant.kind === 'plant' ? occupant : undefined
+}
+
+/** Is a Lawn Mower standing in this Square? */
+export function hasLawnMower(occupants: readonly Occupant[], square: Square): boolean {
+  const occupant = occupantAt(occupants, square)
+  return occupant !== null && occupant.kind === 'lawnMower'
 }

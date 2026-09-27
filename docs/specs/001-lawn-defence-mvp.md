@@ -137,11 +137,11 @@ The rules live in one part of the program that knows nothing about drawing or ab
 
 **A single entry point into the rules.** The rules are advanced only by one operation that takes a game state plus one command and returns a new game state. Nothing else may change game state. A level therefore has a definite outcome for a given list of commands, which is what makes an automated check possible.
 
-The commands are: advance one fixed step, select a Square, collect Sun at a position, place a plant in a Square, and clear a Square with the Shovel. (Selecting a Square was added by ticket 01: the first playable step showed that which Square the player has clicked is game state, not view state, because it decides where the next command lands.)
+The commands are: advance one fixed step, select a Square, collect Sun at a position, choose a Seed Packet or the Shovel, place a plant in a Square, and clear a Square with the Shovel. (Selecting a Square was added by ticket 01: the first playable step showed that which Square the player has clicked is game state, not view state, because it decides where the next command lands. Choosing a Seed Packet was added by ticket 03 for the same reason - the chosen packet decides what the next command does, and whether it can be chosen at all is a rule about Recharge rather than about how the Seed Bank looks.)
 
 **Fixed step timing, separate from drawing.** The game advances sixty steps a second on a counter, independent of the display. Drawing may skip or repeat frames without changing anything about play. This keeps a fast machine from being an easier machine, and it keeps a check repeatable.
 
-**The board is fixed and unrotated.** Five Rows, nine Columns, Lawn Mower at the left of each Row, Zombies entering at the right. No alternate boards, no tilted layouts, no Rows beyond five.
+**The board is fixed and unrotated.** Five Rows, nine Columns, Lawn Mower at the left of each Row, Zombies entering at the right. No alternate boards, no tilted layouts, no Rows beyond five. (One deliberate difference, settled at ticket 03: in the original the mower stands on its own strip to the left of the lawn, which is not one of the nine plantable Columns, and this board has no such strip. Here the mower stands in the first Column, so that Column refuses a plant and the lawn is eight Columns wide to plant rather than nine. The rules come out the same - you cannot plant where the mower stands, and you cannot shovel a mower away - but the space it costs is the first Column instead of none.)
 
 **Data, not code, for anything a designer would tune.** Plants, Zombies and Levels are tables of values. Levels in particular are pure data so that adding one is an edit.
 

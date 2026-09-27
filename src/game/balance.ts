@@ -57,3 +57,17 @@ export const SUN_RADIUS = 18
  * the target given is slightly kinder than the target shown.
  */
 export const SUN_HIT_RADIUS = SUN_RADIUS * 1.4
+
+/** What a Peashooter costs to plant. Believed to be the original's 100. */
+export const PEASHOOTER_SUN_COST = 100
+
+/**
+ * How long the Peashooter's Seed Packet takes to Recharge before it can be
+ * chosen again. Believed to be the original's seven and a half seconds, which
+ * is what makes it the plant to ration: a cheap plant is also a plant you have
+ * to wait for.
+ *
+ * Half a second is a whole number of steps at sixty a second, so the Recharge
+ * ends on a step rather than somewhere between two of them.
+ */
+export const PEASHOOTER_RECHARGE = 7.5 * STEPS_PER_SECOND

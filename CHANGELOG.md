@@ -4,6 +4,44 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] - 2026-09-27
+
+Build order step 3 of 13: plant a Peashooter. Choose a Seed Packet, click a Square, the plant appears and its Sun is spent. The Shovel clears a plant and gives no Sun back.
+
+Every rule in this ticket went in behind a failing check first, one slice at a time, in `tests/planting.test.ts` — ten checks, each of which was run and watched to fail before the code that satisfied it.
+
+### Added
+
+- **The Seed Bank.** React shows the plants the level allows, each with its Sun cost, plus the Shovel. A packet you cannot use is greyed out and says why, in two different words: *Recharging* is spent time, *Not enough Sun* is spent money.
+- **Planting.** `choose` takes a Seed Packet or the Shovel; `place` puts the chosen plant into a Square, spends exactly its cost, starts its Recharge and puts the packet down.
+- **The Shovel.** `shovel` clears the plant out of a Square for no Sun back, and will not clear a Lawn Mower.
+- **Recharge.** A packet you have just used cannot be chosen again for 7.5 seconds, and the countdown lives in the rules so the Seed Bank and the rules cannot disagree about whether it is ready.
+- **Lawn Mowers on the board.** Every Row now starts with one, and the Square it stands in refuses a plant. They are drawn but do not do anything yet; running and being spent is ticket 06.
+- `src/game/plants.ts`, the plant roster as data — cost and Recharge per plant, keyed by name, so the next nine plants are entries rather than branches.
+- `PEASHOOTER_SUN_COST` and `PEASHOOTER_RECHARGE` in `balance.ts`, marked as the original's where they are believed to be.
+
+### Changed
+
+- **A Square holds one thing, whatever it is.** The rules now ask what occupies a Square rather than whether a plant does, because the first thing that shares a Square with a plant is a Lawn Mower and the next will be a Zombie walking over one. `occupantAt` is that one question.
+- **A refused plant costs nothing at all** — no Sun, and the packet stays chosen so the next click can be somewhere else. The ticket did not say what happens to the choice; keeping it is what makes a misclick free.
+- **The chosen packet is game state**, for the same reason the selected Square is: it decides what the next command does, and whether it can be chosen at all is a rule about Recharge, not about how the Seed Bank looks. Three commands were added to the seam, and the spec's list of them now says so.
+- `drawBoard` takes the game state rather than a list of the things it draws today. Every remaining ticket puts something new on the lawn, and a growing parameter list would have meant changing that signature and its caller ten times over for nothing.
+- The rules moved up into `App`, so the Seed Bank and the lawn share one state. The holder is built once and kept, because the canvas restarts its frame loop when its props change.
+
+### Fixed
+
+- **The Lawn Mower stands in the first Column.** In the original it has its own strip to the left of the lawn, which is not one of the nine plantable Columns; this board has no such strip. The mower therefore occupies Column 1, which cannot be planted, so the lawn is eight Columns wide to plant rather than nine. Recorded in the spec as a deliberate difference. It is the price of making "a Square holding a Lawn Mower refuses a plant" something a player can meet, rather than a rule that only exists in a check.
+
+### Not done
+
+- The chosen packet does not follow the pointer (user story 15). It needs hover tracking on the canvas, and it is a nicety rather than a rule, so it waits.
+- The Peashooter does not shoot. That is ticket 04.
+
+### Checked
+
+- 45 checks pass, up from 35. Typecheck clean, production build clean.
+- Played in a real browser: 21 checks over real mouse clicks at real pixel coordinates — refusing a plant on a mower, gathering Sun until a Peashooter is affordable, planting for exactly 100, watching the packet grey out and say *Recharging*, then clearing the plant with the Shovel and confirming no Sun came back. Two of those checks failed first for the wrong reason, on colours in the test harness rather than in the game, which is why they are worth having.
+
 ## [0.8.1] - 2026-09-26
 
 ### Added
