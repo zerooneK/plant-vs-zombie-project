@@ -83,6 +83,7 @@ export function App() {
       <header className="app__header">
         <h1>Lawn Defence</h1>
         <p>Click a Sun to collect it. Choose a Seed Packet, then click a Square to plant it.</p>
+        <p>Zombies walk in from the right. A Peashooter shoots the nearest one in its own Row.</p>
       </header>
 
       <SeedBank

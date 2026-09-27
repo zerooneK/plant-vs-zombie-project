@@ -87,6 +87,23 @@ export interface Planted {
   readonly kind: 'plant'
   readonly square: Square
   readonly name: PlantName
+  /**
+   * Steps until this plant is ready to shoot again. Zero means it is ready now
+   * and shoots on the next step, if it has something to shoot.
+   *
+   * A countdown held in the state rather than a firing time worked out from a
+   * clock, for the same reason the Seed Bank's Recharge is one: the lawn, the
+   * Seed Bank and the rules then all read the same number, and cannot disagree
+   * about whether a plant is ready.
+   *
+   * Zero for a plant that never shoots, which is harmless - nothing reads it.
+   */
+  readonly stepsUntilShot: number
+}
+
+/** The middle of a Square, in the board's own units rather than on the screen. */
+export function centreX(square: Square): number {
+  return (square.column + 0.5) * SQUARE_WIDTH
 }
 
 /** The lawn as it stands: a mower for every Row, and nothing planted yet. */

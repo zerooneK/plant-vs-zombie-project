@@ -71,3 +71,38 @@ export const PEASHOOTER_SUN_COST = 100
  * ends on a step rather than somewhere between two of them.
  */
 export const PEASHOOTER_RECHARGE = 7.5 * STEPS_PER_SECOND
+
+/**
+ * Steps a Zombie takes to walk across one Column. From memory, about 4.7
+ * seconds, which is most of the time a player has to notice one coming and do
+ * something about it.
+ *
+ * Rounded to a whole step, because 4.7 seconds is not one at sixty a second. A
+ * Zombie a fraction of a step out of place is nothing anyone could see, whereas
+ * a Recharge or a Wave that ends between two steps is.
+ */
+export const ZOMBIE_STEPS_PER_COLUMN = Math.round(4.7 * STEPS_PER_SECOND)
+
+/**
+ * Steps between one pea leaving a Peashooter and the next. From memory, about
+ * 1.4 seconds, which is slow enough that one Peashooter is worth planting and
+ * fast enough that a Row held by one is not simply overrun.
+ */
+export const PEASHOOTER_FIRE_INTERVAL = Math.round(1.4 * STEPS_PER_SECOND)
+
+/**
+ * Steps a pea takes to cross one Column. From memory, about a third of a second,
+ * so a pea is a thing you watch rather than a thing you miss.
+ */
+export const SHOT_STEPS_PER_COLUMN = Math.round(0.3 * STEPS_PER_SECOND)
+
+/** What one pea does to a Zombie. From memory, 20. */
+export const PEA_DAMAGE = 20
+
+/**
+ * How much health a Basic Zombie has. From memory, 270, which is the number
+ * that makes a lone Peashooter a real answer rather than a fast one: thirteen
+ * peas to fell one, and thirteen peas is about twenty seconds of standing and
+ * firing while the Zombie spends thirty-five of them walking.
+ */
+export const BASIC_ZOMBIE_HEALTH = 270

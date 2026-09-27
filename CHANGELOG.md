@@ -4,6 +4,48 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.10.0] - 2026-09-27
+
+Build order step 4 of 13: a Zombie walks in and a Peashooter kills it. The plan had walking as step 5 and shooting as step 4, but one Zombie that walks is of no use without a Zombie that dies, so ticket 04 does both and step 5 is now part of it.
+
+Everything went in behind a failing check first, one slice at a time, in `tests/zombies.test.ts` — ten checks. Three of them caught something: a Zombie that appeared and immediately took a step, so it was never at the right edge it appears at; a Peashooter that shot at a Zombie on the very step that Zombie arrived; and an off-by-one in when a Zombie's walking starts.
+
+### Added
+
+- **Zombies.** A Zombie walks in at the right of a Row and crosses the lawn at a fixed rate — about 4.7 seconds per Column, from memory, and marked as such. It has health, it takes damage, and at nothing left of it it is taken off the lawn.
+- **A Peashooter that shoots.** It fires at the nearest Zombie in its own Row, one pea every 1.4 seconds, and a pea takes 20 off a Zombie's 270 health. Fourteen peas fell one, which is about twenty seconds of standing and firing while the Zombie spends thirty-five walking — which is the balance the original is believed to have, and the reason one Peashooter is a real answer rather than a fast one.
+- **Peas in flight.** A pea is a point in a Row crossing Columns, aimed at a particular Zombie, and it lands by arriving at that Zombie's place rather than by touching whatever is under it.
+- `src/game/zombies.ts` and `src/game/shots.ts`, as two modules rather than one: a Zombie is a thing that walks and a pea is a thing that flies, and neither has to know the other's business beyond aiming.
+- `src/game/levels.ts`, with the first Level: one plant, and one Zombie at a time, on a hand-written schedule that is a stand-in rather than the original's.
+
+### Changed
+
+- **A Zombie is not in a Square.** It walks between Squares, across all nine Columns, so what it has is a Row and how far along that Row it is. Asking a Square what occupies it and asking a Row what is walking along it are now two different questions, which they had to become: the next thing to share a Square with a plant is a Zombie standing on one.
+- **A Zombie's place is a count of steps walked**, with the place worked out from it, rather than a position moved a fraction at a time. A drifting position sounds harmless and is not: after one Column it is very nearly in the right place rather than exactly, so "the same time to cross every Column" cannot be written as an exact check. The check proved it — the drifting version failed it.
+- **A Level is what a game starts from.** It says which plants the Seed Bank offers and what Waves it sends, so the plant list moved out of the game and into the Level, where it always belonged. A check can ask for a Level of its own, which is the only way to get one Zombie in one Row rather than whatever the level in hand would send next.
+- **A Wave is a time and a group of Zombies**, not a single Zombie, so that a Flag Wave has somewhere to live when it arrives.
+- **Nothing acts on the step it appears.** A Zombie spends the step it walks in standing at the right edge of the board; a pea spends the step it is fired still at the plant. Both one step behind, so that "at the right edge" and "leaves the Peashooter" are places a thing is actually seen rather than places it has already left.
+- The rules' step is now a named list — Sun, Waves, Zombies walk, peas land, a Zombie with nothing left leaves, plants fire — and the Sun part became a function of its own, so the step could grow without every branch of it being written twice.
+
+### Fixed
+
+- **A Peashooter shoots forwards only.** A Zombie that has walked past a plant is behind it and is not shot at. Not asked for by the ticket, and left undecided it would have meant either shooting backwards or leaving Zombies unanswerable.
+- **A pea that hits nothing now leaves the lawn** instead of sitting on it for the rest of the level. It happens when a pea is in flight and its Zombie is killed by something else.
+- **The pea was invisible.** Its own green was within a shade of both lawn stripes and of a plant, so on screen it was a ring on grass — a thing a player had to be told about rather than a thing they could see. It is now much lighter than the lawn and outlined heavily.
+
+### Not done
+
+- A Zombie does not stop at a plant; it walks straight through. That is ticket 05, and until then a plant is not an obstacle to anything.
+- A Zombie that gets past the left of the board simply leaves the lawn. In the original the Lawn Mower goes off instead, and a Row whose mower is already spent ends the level. That is tickets 06 and 07.
+- A Zombie shows no sign of being hurt, so nothing on screen yet says that a pea landed.
+- The other four Zombies, the Flag Wave, winning and losing: all ticket 08 onwards.
+
+### Checked
+
+- 55 checks pass, up from 45. Typecheck clean, production build clean.
+- Played in a real browser over about two minutes of real time: 21 checks on the pixels the canvas actually painted. A Zombie drawn in Row 2 at the right of the lawn, walking left at 22 pixels a second and holding that speed over six seconds, a pea drawn in the same Row and to the right of the Peashooter and travelling right, and then the Zombie gone with the Peashooter still standing and no peas left on the grass.
+- Two of those checks failed first for the wrong reason, both in the harness rather than the game: a colour search loose enough to count a Zombie also counted 61 antialiased pixels on a Lawn Mower's handle and reported a Zombie standing in Row 1 for the whole level, and a wait written "poll until found" was used to wait for a Zombie to be *gone*, so it returned at once and said the Zombie was still there.
+
 ## [0.9.0] - 2026-09-27
 
 Build order step 3 of 13: plant a Peashooter. Choose a Seed Packet, click a Square, the plant appears and its Sun is spent. The Shovel clears a plant and gives no Sun back.

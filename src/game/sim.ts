@@ -3,7 +3,10 @@ import { fallSun, isResting, isSpent, spendLife, spawnSun, sunUnderPoint } from 
 import type { SunToken } from './sun.ts'
 import { seededRandom, type Random } from './random.ts'
 import { FIRST_SUN_DELAY, STARTING_SUN, SUN_INTERVAL } from './balance.ts'
-import { LEVEL_PLANTS, PLANTS, type PlantName } from './plants.ts'
+import { PLANTS, type PlantName } from './plants.ts'
+import { LEVEL_1_1, type Level, type Wave } from './levels.ts'
+import { removeExhausted, walkLeft, zombieAtEdge, type Zombie } from './zombies.ts'
+import { fireFromPlants, flyRight, type Shot } from './shots.ts'
 
 /**
  * The seed used when nobody chooses one. Fixed, so that a check written
@@ -60,6 +63,16 @@ export interface GameState {
   readonly occupants: readonly Occupant[]
   /** The Seed Packet or Shovel chosen and waiting for a Square. */
   readonly chosen: Choice | null
+  /** Every Zombie on the lawn, walking leftwards along their own Rows. */
+  readonly zombies: readonly Zombie[]
+  /** The Zombies this level has left to send in, nearest time first. */
+  readonly pendingWaves: readonly Wave[]
+  /** The name the next Zombie to walk in will be given. */
+  readonly nextZombieId: number
+  /** Every pea in flight, heading for the Zombie each one was aimed at. */
+  readonly shots: readonly Shot[]
+  /** The name the next pea to be fired will be given. */
+  readonly nextShotId: number
 }
 
 export type Command =
@@ -87,7 +100,18 @@ export type Command =
       readonly kind: 'advance'
     }
 
-export function initialGameState(seed: number = DEFAULT_SEED): GameState {
+/**
+ * A game ready to play, on the given Level.
+ *
+ * The Level is a parameter because which plants are on offer and what walks in
+ * are part of that Level's design, not of the game: `LEVEL_1_1` is the default
+ * because it is the only Level there is, and a check asks for its own so that
+ * it gets the Zombies it needs and no others.
+ */
+export function initialGameState(
+  seed: number = DEFAULT_SEED,
+  level: Level = LEVEL_1_1,
+): GameState {
   return {
     tick: 0,
     selected: null,
@@ -96,13 +120,18 @@ export function initialGameState(seed: number = DEFAULT_SEED): GameState {
     random: seededRandom(seed),
     stepsUntilSun: FIRST_SUN_DELAY,
     nextSunId: 1,
-    seedBank: LEVEL_PLANTS.map((name) => ({
+    seedBank: level.plants.map((name) => ({
       name,
       cost: PLANTS[name].sunCost,
       stepsUntilReady: 0,
     })),
     occupants: startingOccupants(),
     chosen: null,
+    zombies: [],
+    pendingWaves: level.waves,
+    nextZombieId: 1,
+    shots: [],
+    nextShotId: 1,
   }
 }
 
@@ -198,7 +227,10 @@ function place(state: GameState, square: Square): GameState {
     ...state,
     sun: state.sun - packet.cost,
     chosen: null,
-    occupants: [...state.occupants, { kind: 'plant', square, name }],
+    // A plant that shoots is ready the moment it is planted, so it fires on its
+    // next step if there is something to shoot, rather than sitting out a whole
+    // firing interval first.
+    occupants: [...state.occupants, { kind: 'plant', square, name, stepsUntilShot: 0 }],
     seedBank: startRecharge(state.seedBank, name),
   }
 }
@@ -234,9 +266,7 @@ function collect(state: GameState, point: Point): GameState {
  * until the next one, so the whole of its life is spent on the lawn.
  */
 function advance(state: GameState): GameState {
-  const living = state.tokens
-    .map((token) => (isResting(token) ? spendLife(token) : fallSun(token)))
-    .filter((token) => !isSpent(token))
+  const tick = state.tick + 1
 
   // Recharge is spent in the same step as everything else, so a packet is ready
   // on the step its Recharge runs out and not a step later.
@@ -245,25 +275,98 @@ function advance(state: GameState): GameState {
     stepsUntilReady: Math.max(0, packet.stepsUntilReady - 1),
   }))
 
+  // A Wave whose step has come walks its Zombies in at the right of the board,
+  // and is then spent: what is left in pendingWaves is what is still to come.
+  const sent = sendDueWaves(state.pendingWaves, tick, state.nextZombieId)
+
+  // A Zombie walks on the step after it arrives, so it spends one step standing
+  // at the right edge of the board. Which is the place Zombies come in, so a
+  // Zombie is briefly seen arriving rather than always already having taken a
+  // step.
+  //
+  // Peas travel, and only then do plants fire. Both are one step behind their
+  // own arrival for the same reason: a pea leaves a plant and starts moving on
+  // the step after that, and a Peashooter shoots at the Zombies already walking
+  // rather than at one still standing at the edge of the board.
+  const walking = walkLeft(state.zombies)
+  const landing = flyRight(state.shots, walking)
+  // A Zombie with nothing left of it leaves before anything can shoot at it, so
+  // that a Peashooter never fires at a corpse standing on the lawn.
+  const standing = removeExhausted(landing.zombies)
+  const fired = fireFromPlants(state.occupants, standing, landing.shots, state.nextShotId)
+
+  return {
+    ...state,
+    tick,
+    ...stepSun(state),
+    seedBank,
+    pendingWaves: sent.pendingWaves,
+    zombies: [...standing, ...sent.zombies],
+    nextZombieId: sent.nextZombieId,
+    shots: fired.shots,
+    nextShotId: fired.nextShotId,
+    occupants: fired.occupants,
+  }
+}
+
+/** What one step of play does to the Sun on the lawn. */
+interface SunStep {
+  readonly random: Random
+  readonly tokens: readonly SunToken[]
+  readonly stepsUntilSun: number
+  readonly nextSunId: number
+}
+
+/** One step of Sun: what is still on the lawn, and when the next piece falls. */
+function stepSun(state: GameState): SunStep {
+  const living = state.tokens
+    .map((token) => (isResting(token) ? spendLife(token) : fallSun(token)))
+    .filter((token) => !isSpent(token))
+
   if (state.stepsUntilSun > 1) {
     return {
-      ...state,
-      tick: state.tick + 1,
+      random: state.random,
       tokens: living,
       stepsUntilSun: state.stepsUntilSun - 1,
-      seedBank,
+      nextSunId: state.nextSunId,
     }
   }
 
   const spawn = spawnSun(state.nextSunId, state.random)
 
   return {
-    ...state,
-    tick: state.tick + 1,
     random: spawn.random,
     tokens: [...living, spawn.token],
     stepsUntilSun: SUN_INTERVAL,
     nextSunId: state.nextSunId + 1,
-    seedBank,
   }
+}
+
+/**
+ * The Zombies a level's schedule walks in on this step, and the Waves still to
+ * come.
+ *
+ * A Wave is spent as it is sent, so the Waves left waiting are the answer to
+ * "is there anything still to come?" - which is the beginning of how a Level
+ * will be won, and is not decided here.
+ */
+function sendDueWaves(
+  pending: readonly Wave[],
+  tick: number,
+  firstId: number,
+): { pendingWaves: readonly Wave[]; zombies: readonly Zombie[]; nextZombieId: number } {
+  const zombies: Zombie[] = []
+  let nextId = firstId
+
+  for (const wave of pending) {
+    if (wave.atStep > tick) {
+      continue
+    }
+    for (const entry of wave.zombies) {
+      zombies.push(zombieAtEdge(nextId, entry.name, entry.row))
+      nextId += 1
+    }
+  }
+
+  return { pendingWaves: pending.filter((wave) => wave.atStep > tick), zombies, nextZombieId: nextId }
 }

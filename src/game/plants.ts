@@ -1,4 +1,9 @@
-import { PEASHOOTER_RECHARGE, PEASHOOTER_SUN_COST } from './balance.ts'
+import {
+  PEA_DAMAGE,
+  PEASHOOTER_FIRE_INTERVAL,
+  PEASHOOTER_RECHARGE,
+  PEASHOOTER_SUN_COST,
+} from './balance.ts'
 
 /**
  * The name a plant is known by in the rules and on its Seed Packet.
@@ -15,12 +20,26 @@ export interface Plant {
   readonly sunCost: number
   /** Steps before its Seed Packet can be chosen again. */
   readonly recharge: number
+  /** How this plant shoots, or null for a plant that never shoots. */
+  readonly shooting: Shooting | null
+}
+
+/**
+ * What a plant that shoots does, kept together so that adding a plant that
+ * shoots differently is an edit to this and not a new place in the rules.
+ */
+export interface Shooting {
+  /** Steps between one pea leaving and the next. */
+  readonly fireInterval: number
+  /** What one of its peas does to a Zombie's health. */
+  readonly damage: number
 }
 
 export const PEASHOOTER: Plant = {
   name: 'peashooter',
   sunCost: PEASHOOTER_SUN_COST,
   recharge: PEASHOOTER_RECHARGE,
+  shooting: { fireInterval: PEASHOOTER_FIRE_INTERVAL, damage: PEA_DAMAGE },
 }
 
 /**
@@ -33,13 +52,3 @@ export const PEASHOOTER: Plant = {
 export const PLANTS: Readonly<Record<PlantName, Plant>> = {
   peashooter: PEASHOOTER,
 }
-
-/**
- * The plants the level being played allows, in the order the Seed Bank shows
- * them.
- *
- * Which plants a level allows is part of that level's design, so this list
- * belongs to the Level rather than to the game. There is one level so far and
- * it allows one plant; `levels.ts` takes this over when the levels arrive.
- */
-export const LEVEL_PLANTS: readonly PlantName[] = ['peashooter']

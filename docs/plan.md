@@ -54,8 +54,9 @@ src/
     clock.ts          the fixed 60-step rate, as pure arithmetic
     balance.ts        every number, in one place      (ticket 03)
     plants.ts         plant definitions               (ticket 03 onwards)
-    zombies.ts        zombie definitions              (ticket 15 onwards)
-    levels.ts         level definitions               (ticket 17 onwards)
+    zombies.ts        zombie definitions              (ticket 04 onwards)
+    shots.ts          peas in flight, and who fires them (ticket 04 onwards)
+    levels.ts         level definitions               (ticket 04 onwards)
   draw/               the canvas, the layout maths, the artwork
     layout.ts         board geometry - pure, and tested (see AGENTS.md)
     board.ts          painting the lawn
@@ -64,7 +65,7 @@ src/
 tests/                rule checks, run by node:test
 ```
 
-`game/` holds the rules with no drawing and no React in it. That is what makes it testable in a terminal, and it is the main thing to protect as the code grows. `board.ts`, `clock.ts`, `sim.ts`, `sun.ts`, `random.ts`, `balance.ts` and `plants.ts` exist so far; the rest arrive with the tickets that need them.
+`game/` holds the rules with no drawing and no React in it. That is what makes it testable in a terminal, and it is the main thing to protect as the code grows. `board.ts`, `clock.ts`, `sim.ts`, `sun.ts`, `random.ts`, `balance.ts`, `plants.ts`, `zombies.ts`, `shots.ts` and `levels.ts` exist so far; the rest arrive with the tickets that need them.
 
 ## Build order
 
@@ -75,8 +76,8 @@ Each step is something you can actually play or click before the next one starts
 | 1 | Board | An empty 5×9 lawn draws and resizes with the window — **done** |
 | 2 | Sun | A sun counter; sun falls on a timer; clicking collects it — **done** |
 | 3 | Planting | One seed packet; click it, click a square, plant appears, sun is spent — **done** |
-| 4 | Shooting | That plant fires, hits a zombie, and it dies |
-| 5 | Walking | A zombie enters at the right of a row and moves left at a fixed speed |
+| 4 | Shooting | That plant fires, hits a zombie, and it dies — **done** |
+| 5 | Walking | A zombie enters at the right of a row and moves left at a fixed speed — **done at ticket 04** |
 | 6 | Eating | It stops at a plant, eats it, then carries on |
 | 7 | Lawn mowers | A zombie at the left edge spends the row's mower and clears the row |
 | 8 | Win and lose | Waves end, then either a win or game over |

@@ -1,6 +1,8 @@
-import { everySquare } from '../game/board.ts'
+import { everySquare, SQUARE_HEIGHT } from '../game/board.ts'
 import type { Square } from '../game/board.ts'
 import type { SunToken } from '../game/sun.ts'
+import type { Shot } from '../game/shots.ts'
+import { zombieX, type Zombie } from '../game/zombies.ts'
 import { SUN_RADIUS } from '../game/balance.ts'
 import type { GameState } from '../game/sim.ts'
 import { centreOf, place } from './layout.ts'
@@ -21,6 +23,14 @@ const PLANT_FACE = '#66bb6a'
 const MOWER_BODY = '#b0bec5'
 const MOWER_EDGE = '#546e7a'
 const MOWER_HANDLE = '#ef5350'
+const PEA = '#b7e04b'
+const PEA_EDGE = '#33691e'
+const ZOMBIE_SKIN = '#9e9e9e'
+const ZOMBIE_SKIN_EDGE = '#616161'
+const ZOMBIE_SHIRT = '#5d4037'
+const ZOMBIE_LEG = '#37474f'
+const ZOMBIE_WIDTH = 0.62
+const PEA_RADIUS = 8
 
 /**
  * A plant as a plain green head with a stalk, so that what is standing on the
@@ -73,6 +83,77 @@ function drawLawnMower(
   context.strokeStyle = MOWER_EDGE
   context.lineWidth = Math.max(1, 2 * board.scale)
   context.strokeRect(centre.x - width / 2, centre.y - height / 2, width, height)
+}
+
+/**
+ * A Zombie: a grey head and shoulders with a brown shirt, drawn walking along its
+ * own Row.
+ *
+ * It has to be tellable from a plant at a glance and from the Lawn Mower next
+ * door, because telling them apart is the whole of reading the board. The
+ * figures are upright where a plant is a round head on a stalk, and a Zombie is
+ * the only thing on the lawn drawn taller than its Row is wide.
+ *
+ * Drawn from the place the rules put it - `zombieX` rather than a Column -
+ * because a Zombie is between Squares on its way across them, and rounding it to
+ * a Square would make it stutter instead of walk.
+ */
+function drawZombie(
+  context: CanvasRenderingContext2D,
+  zombie: Zombie,
+  board: BoardLayout,
+): void {
+  const centre = place({ x: zombieX(zombie), y: middleOfRow(zombie.row) }, board)
+  const width = board.squareWidth * ZOMBIE_WIDTH
+  const head = width * 0.34
+  const headY = centre.y - board.squareHeight * 0.18
+
+  context.fillStyle = ZOMBIE_LEG
+  context.fillRect(centre.x - width * 0.26, centre.y + head * 0.4, width * 0.2, head * 0.9)
+  context.fillRect(centre.x + width * 0.06, centre.y + head * 0.4, width * 0.2, head * 0.9)
+
+  context.fillStyle = ZOMBIE_SHIRT
+  context.fillRect(centre.x - width * 0.34, centre.y - head * 0.5, width * 0.68, head * 1.1)
+
+  context.fillStyle = ZOMBIE_SKIN
+  context.beginPath()
+  context.arc(centre.x, headY, head, 0, Math.PI * 2)
+  context.fill()
+
+  context.strokeStyle = ZOMBIE_SKIN_EDGE
+  context.lineWidth = Math.max(1, 2 * board.scale)
+  context.stroke()
+}
+
+/**
+ * One pea: a small green disc on its way to a Zombie.
+ *
+ * Drawn as a dot rather than anything more particular, because its speed is the
+ * thing a player reads: a pea that crosses a Column in a third of a second is a
+ * flick of green, and anything that trailed behind it would lie about that.
+ *
+ * Much lighter than the lawn it crosses, and outlined heavily, because a pea's
+ * natural green is within a shade or two of both lawn stripes and of a plant -
+ * drawn in its own colour it was a ring on grass, which is a thing a player has
+ * to be told about rather than a thing they can see.
+ */
+function drawShot(context: CanvasRenderingContext2D, shot: Shot, board: BoardLayout): void {
+  const centre = place({ x: shot.x, y: middleOfRow(shot.row) }, board)
+  const radius = PEA_RADIUS * board.scale
+
+  context.fillStyle = PEA
+  context.beginPath()
+  context.arc(centre.x, centre.y, radius, 0, Math.PI * 2)
+  context.fill()
+
+  context.strokeStyle = PEA_EDGE
+  context.lineWidth = Math.max(1, 1.5 * board.scale)
+  context.stroke()
+}
+
+/** How far down its Row something is, in the board's own units. */
+function middleOfRow(row: number): number {
+  return (row + 0.5) * SQUARE_HEIGHT
 }
 
 /**
@@ -151,6 +232,17 @@ export function drawBoard(
     } else {
       drawLawnMower(context, occupant.square, board)
     }
+  }
+
+  for (const shot of state.shots) {
+    drawShot(context, shot, board)
+  }
+
+  // Zombies are drawn last, over the plants and the peas, because a Zombie is
+  // what is on top of the lawn from a player's point of view: it is the thing
+  // that has to be dealt with.
+  for (const zombie of state.zombies) {
+    drawZombie(context, zombie, board)
   }
 
   for (const token of state.tokens) {
