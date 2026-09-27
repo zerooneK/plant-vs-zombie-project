@@ -5,7 +5,7 @@ import { seededRandom, type Random } from './random.ts'
 import { FIRST_SUN_DELAY, STARTING_SUN, SUN_INTERVAL } from './balance.ts'
 import { PLANTS, type PlantName } from './plants.ts'
 import { LEVEL_1_1, type Level, type Wave } from './levels.ts'
-import { removeExhausted, walkLeft, zombieAtEdge, type Zombie } from './zombies.ts'
+import { removeExhausted, walkAndEat, zombieAtEdge, type Zombie } from './zombies.ts'
 import { fireFromPlants, flyRight, type Shot } from './shots.ts'
 
 /**
@@ -227,10 +227,20 @@ function place(state: GameState, square: Square): GameState {
     ...state,
     sun: state.sun - packet.cost,
     chosen: null,
-    // A plant that shoots is ready the moment it is planted, so it fires on its
+    // A plant is planted whole, so it starts with all the health it has - and a
+    // plant that shoots is ready the moment it is planted, so it fires on its
     // next step if there is something to shoot, rather than sitting out a whole
     // firing interval first.
-    occupants: [...state.occupants, { kind: 'plant', square, name, stepsUntilShot: 0 }],
+    occupants: [
+      ...state.occupants,
+      {
+        kind: 'plant',
+        square,
+        name,
+        health: PLANTS[name].health,
+        stepsUntilShot: 0,
+      },
+    ],
     seedBank: startRecharge(state.seedBank, name),
   }
 }
@@ -284,16 +294,24 @@ function advance(state: GameState): GameState {
   // Zombie is briefly seen arriving rather than always already having taken a
   // step.
   //
-  // Peas travel, and only then do plants fire. Both are one step behind their
-  // own arrival for the same reason: a pea leaves a plant and starts moving on
-  // the step after that, and a Peashooter shoots at the Zombies already walking
-  // rather than at one still standing at the edge of the board.
-  const walking = walkLeft(state.zombies)
-  const landing = flyRight(state.shots, walking)
+  // A Zombie with a plant in the Square it is standing in stops there and eats,
+  // which is why this is the one Zombie's step that hands the lawn back as well:
+  // a plant it ate this step is not standing there any more, and the plants that
+  // fire below have to be the ones that are still there.
+  //
+  // Peas travel, and only then do plants fire. Both are one step behind their own
+  // arrival for the same reason: a pea leaves a plant and starts moving on the
+  // step after that, and a Peashooter shoots at the Zombies already walking rather
+  // than at one still standing at the edge of the board.
+  const eating = walkAndEat(state.zombies, state.occupants)
+  const landing = flyRight(state.shots, eating.zombies)
   // A Zombie with nothing left of it leaves before anything can shoot at it, so
-  // that a Peashooter never fires at a corpse standing on the lawn.
+  // that a Peashooter never fires at a corpse standing on the lawn. It leaves
+  // after eating rather than before, so a Zombie killed by a pea on the same step
+  // it bit still got that bite in - everything a Zombie does on a step happens,
+  // and then the dead are cleared.
   const standing = removeExhausted(landing.zombies)
-  const fired = fireFromPlants(state.occupants, standing, landing.shots, state.nextShotId)
+  const fired = fireFromPlants(eating.occupants, standing, landing.shots, state.nextShotId)
 
   return {
     ...state,

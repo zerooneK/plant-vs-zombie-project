@@ -106,3 +106,33 @@ export const PEA_DAMAGE = 20
  * firing while the Zombie spends thirty-five of them walking.
  */
 export const BASIC_ZOMBIE_HEALTH = 270
+
+/**
+ * How much health a Peashooter is planted with. From memory, 300, which is three
+ * bites.
+ *
+ * A plant is food rather than scenery, and this is the number that says how
+ * long it is food for. Three bites is the reason a Peashooter is not also a
+ * wall: standing in front of a Zombie is not a plan, and the original's answer is
+ * that you shoot from behind something that buys time.
+ */
+export const PEASHOOTER_HEALTH = 300
+
+/**
+ * What one bite takes off a plant. From memory, 100.
+ *
+ * The same bite on every plant, so that health is comparable across the roster:
+ * the Wall-nut's much larger number is what makes it worth its cost, and it is
+ * a bigger number rather than a slower Zombie.
+ */
+export const ZOMBIE_BITE_DAMAGE = 100
+
+/**
+ * Steps between one bite and the next. From memory, about a second.
+ *
+ * Exactly one second, which is a whole number of steps at sixty a second, so a
+ * plant's health falls on steps and not somewhere between two of them. The bite
+ * lands on the step a Zombie reaches the plant, so the cadence is the same
+ * throughout: a bite, a second of chewing, a bite.
+ */
+export const ZOMBIE_BITE_INTERVAL = STEPS_PER_SECOND

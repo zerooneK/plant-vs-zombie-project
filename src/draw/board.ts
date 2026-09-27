@@ -1,8 +1,9 @@
 import { everySquare, SQUARE_HEIGHT } from '../game/board.ts'
-import type { Square } from '../game/board.ts'
+import type { Planted, Square } from '../game/board.ts'
 import type { SunToken } from '../game/sun.ts'
 import type { Shot } from '../game/shots.ts'
-import { zombieX, type Zombie } from '../game/zombies.ts'
+import { plantBeingEaten, zombieX, type Zombie } from '../game/zombies.ts'
+import { PLANTS } from '../game/plants.ts'
 import { SUN_RADIUS } from '../game/balance.ts'
 import type { GameState } from '../game/sim.ts'
 import { centreOf, place } from './layout.ts'
@@ -33,17 +34,39 @@ const ZOMBIE_WIDTH = 0.62
 const PEA_RADIUS = 8
 
 /**
+ * The colour of one Square's grass, which alternates in stripes across the lawn.
+ *
+ * Asked of the Square rather than worked out here, so that a bite taken out of a
+ * plant can be filled in with the grass the plant was standing on - and cannot be
+ * filled in with the wrong stripe if the stripes ever change.
+ */
+function lawnColour(square: Square): string {
+  return (square.row + square.column) % 2 === 0 ? LAWN_EVEN : LAWN_ODD
+}
+
+/**
  * A plant as a plain green head with a stalk, so that what is standing on the
  * lawn can be told apart from bare grass at a glance. The real artwork is
  * ticket 20; this is a shape, not a picture.
+ *
+ * A plant being eaten has a bite taken out of it, on the side the Zombie is
+ * standing, and the bite grows as the plant's health goes down - so a player can
+ * see how much of their plant is left without reading a number. The original
+ * shows it by redrawing the plant as it is chewed; there is no such artwork here
+ * yet, so the bite is cut out of the shape and filled in with the grass behind,
+ * which says the same thing in a placeholder's way. The health it is drawn from
+ * is the rules', so the plant on the screen is exactly as eaten as the plant in
+ * the state.
  */
 function drawPlant(
   context: CanvasRenderingContext2D,
-  square: Square,
+  plant: Planted,
   board: BoardLayout,
 ): void {
+  const square = plant.square
   const centre = centreOf(square, board)
   const head = board.squareWidth * 0.26
+  const left = healthFraction(plant)
 
   context.fillStyle = PLANT_LEAF_EDGE
   context.fillRect(centre.x - head * 0.15, centre.y, head * 0.3, head * 2.1)
@@ -57,6 +80,21 @@ function drawPlant(
   context.beginPath()
   context.arc(centre.x, centre.y, head * 0.55, 0, Math.PI * 2)
   context.fill()
+
+  // Nothing is cut out of a plant that is untouched, so the shape a healthy plant
+  // is drawn as is the shape it always was.
+  const bite = head * 0.9 * (1 - left)
+  if (bite > 0) {
+    context.fillStyle = lawnColour(square)
+    context.beginPath()
+    context.arc(centre.x + head * 0.5, centre.y - head * 0.1, bite, 0, Math.PI * 2)
+    context.fill()
+  }
+}
+
+/** How much of a plant is left of it, from none to all, as a number between 0 and 1. */
+function healthFraction(plant: Planted): number {
+  return Math.max(0, Math.min(1, plant.health / PLANTS[plant.name].health))
 }
 
 /**
@@ -97,16 +135,34 @@ function drawLawnMower(
  * Drawn from the place the rules put it - `zombieX` rather than a Column -
  * because a Zombie is between Squares on its way across them, and rounding it to
  * a Square would make it stutter instead of walk.
+ *
+ * A Zombie that is eating reaches out for the plant it is standing at, which is
+ * how a player tells a Zombie eating from one merely walking past: the reaching is
+ * drawn only when the rules say there is a plant under this Zombie, asked of the
+ * same question the rules ask, so the picture cannot show eating where the rules
+ * are walking on.
  */
 function drawZombie(
   context: CanvasRenderingContext2D,
   zombie: Zombie,
+  eating: boolean,
   board: BoardLayout,
 ): void {
   const centre = place({ x: zombieX(zombie), y: middleOfRow(zombie.row) }, board)
   const width = board.squareWidth * ZOMBIE_WIDTH
   const head = width * 0.34
   const headY = centre.y - board.squareHeight * 0.18
+
+  if (eating) {
+    // Two arms out to the left, which is the way the Zombie came and the side the
+    // plant is on. The lower one is at the height of the middle of the Square,
+    // because that is where a plant's head is drawn and an arm that reached for a
+    // plant at head height would be reaching over it. Drawn in the skin colour and
+    // in front of the body, so they read as arms rather than as part of it.
+    context.fillStyle = ZOMBIE_SKIN
+    context.fillRect(centre.x - width, headY - head * 0.18, width * 0.72, head * 0.42)
+    context.fillRect(centre.x - width, centre.y - head * 0.28, width * 0.72, head * 0.42)
+  }
 
   context.fillStyle = ZOMBIE_LEG
   context.fillRect(centre.x - width * 0.26, centre.y + head * 0.4, width * 0.2, head * 0.9)
@@ -204,7 +260,7 @@ export function drawBoard(
   context.fillRect(0, 0, view.width, view.height)
 
   for (const square of everySquare()) {
-    context.fillStyle = (square.row + square.column) % 2 === 0 ? LAWN_EVEN : LAWN_ODD
+    context.fillStyle = lawnColour(square)
     context.fillRect(
       board.offsetX + square.column * board.squareWidth,
       board.offsetY + square.row * board.squareHeight,
@@ -228,7 +284,7 @@ export function drawBoard(
 
   for (const occupant of state.occupants) {
     if (occupant.kind === 'plant') {
-      drawPlant(context, occupant.square, board)
+      drawPlant(context, occupant, board)
     } else {
       drawLawnMower(context, occupant.square, board)
     }
@@ -240,9 +296,12 @@ export function drawBoard(
 
   // Zombies are drawn last, over the plants and the peas, because a Zombie is
   // what is on top of the lawn from a player's point of view: it is the thing
-  // that has to be dealt with.
+  // that has to be dealt with. Which also means a Zombie eating a plant is drawn
+  // over that plant, arms and all, so the two of them are read as one thing
+  // rather than as a Zombie standing near a plant.
   for (const zombie of state.zombies) {
-    drawZombie(context, zombie, board)
+    const eating = plantBeingEaten(zombie, state.occupants) !== undefined
+    drawZombie(context, zombie, eating, board)
   }
 
   for (const token of state.tokens) {

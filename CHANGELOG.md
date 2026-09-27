@@ -4,6 +4,54 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.11.0] - 2026-09-27
+
+Build order step 6 of 13: a Zombie eats a plant. Plants are food now, which is the first thing that makes this game a defence rather than a shooting range.
+
+Five checks in `tests/zombies.test.ts`, one of them a rewrite of a ticket 04 check. Three of the five passed the moment they were written, because the rule they were written for had no state in it and the first check had already brought it in. They were not left at that: each was made to fail by breaking a rule on purpose, and the ticket says which rule each one caught.
+
+### Added
+
+- **A plant has health.** 300 for a Peashooter, from memory, and it is in the roster next to cost and Recharge rather than written down per plant — so a plant is planted whole, and the number the drawing fades it by is the number the rules use.
+- **A Zombie stops and eats.** It stops the step it reaches the Square a plant is in, stands there, and takes 100 off a second, which is a Peashooter in three bites and two seconds.
+- **A plant with nothing left of it is removed**, leaving its Square bare, on the same rule a Zombie with nothing left of it is removed by.
+- **A Zombie that has eaten carries on walking**, so it eats its way along a Row rather than standing over the hole it made.
+
+### The rule, and why it holds nothing
+
+Whether a Zombie is eating is worked out every step by asking the lawn which Square it is standing in, and remembered nowhere. That is the whole design, and the payoff is the Shovel: a Zombie caught mid-meal by a player who digs the plant up walks on, because there is no plant there now — and the Zombie that finished the plant itself gets the same answer from the same question. There is no latch, so there is nothing to forget and nothing to clear.
+
+The cost, and it is a real one: a Zombie can never be *about* to eat something that has just gone. The one step of delay from ticket 04 — where a Zombie arriving at the edge of the board is briefly seen arriving rather than already having walked — does not apply here, and the reason is that keeping it would have needed a remembered state to tell "only just arrived" from "finished chewing". That remembered state is the exact bug this design exists to prevent, so a Zombie bites on the step it reaches the plant instead. It is the same shape as a Peashooter, whose countdown sits at zero until there is something in front of it to shoot at.
+
+### Things found along the way
+
+- **A Peashooter in the first four Columns can never be eaten.** It kills a Basic Zombie in about nineteen seconds of shooting, and a Zombie needs nearly five to cross each Column, so everything that walks at one dies on the way in. Eating is only reachable from the fifth Column rightwards, where the Zombie arrives hurt enough to be a threat and healthy enough to eat. This is true of the original's numbers as well, and it is the reason the eating checks stand their plant in the last Column: so that they are about eating and nothing else. It is also a thing a player has to learn, and the level's hand-written schedule — one Zombie every twenty-five seconds, exactly one Peashooter's worth of killing — was hiding it until a plant became food.
+- **The mower's Column is not food.** A Zombie walks through the Square a Lawn Mower stands in. It had to be settled here, because eating put Zombies on the length of every Row, and one of those Rows has a mower in it.
+- **A Zombie killed by a pea on the same step it bit still got that bite in.** Everything a Zombie does on a step happens, and then the dead are cleared.
+
+### Fixed
+
+- **A Zombie standing at a plant now has its arms out**, at the height of the middle of the Square rather than its own shoulders. An arm reaching over a plant is an arm reaching at nothing, and the plant's head is drawn at the middle.
+- **A plant being eaten is drawn as a plant being eaten**: a bite is cut out of the side the Zombie is on and filled in with the grass behind it, growing as its health goes. The original shows it by redrawing the plant as it is chewed; there is no such artwork yet, so the bite is cut out of the shape. It also makes the plant's remaining health visible without a number, which is the thing a player actually needs to know mid-meal.
+- `zombieX` claimed in its comment to round its answer. It does not, and it now matters that it does not: the rules ask which Square a Zombie is standing in, and rounding there would put Zombies in the wrong Square near a boundary, so a Zombie would stop at the wrong plant. Comment corrected, no behaviour changed.
+
+### Changed
+
+- **The check "a Peashooter shoots forwards, at a Zombie that has not yet walked past it" asks its question differently.** It used to stand a Peashooter in the last Column and let a Zombie walk past it, which is now impossible: a Zombie can only get past a plant by eating it, and then there is no plant. So the check plants a Peashooter into a Square the Zombie has already walked through — the one way a living plant can end up behind a Zombie, and a player's own mistake — and asks that it fires nothing for thirty seconds. The question is the same and the answer is the same, and the rewrite was checked against the rule it exists for: with forward-only shooting removed it fails, and nothing else does.
+- One line in the checks: a wait that plays the game on until something happens now says what it was waiting for when it gives up, because "four thousand steps were not enough" is true of every rule in the game and says nothing about which one was broken.
+
+### Not done
+
+- A Zombie at the left of a Row still just walks off the board. In the original the Lawn Mower goes off instead, and a Row whose mower is spent ends the level: tickets 06 and 07.
+- There is no Wall-nut, so nothing is worth being eaten *for*. The whole reason to plant something a Zombie will stop at arrives in ticket 09.
+- A Zombie shows no sign of being hurt when a pea lands, so a Zombie being shot at and a Zombie eating a plant look alike from the other Rows.
+
+### Checked
+
+- 60 checks pass, up from 55. Typecheck clean, production build clean.
+- Played in a real browser over two minutes of real time, on the pixels the canvas actually painted: a Peashooter planted in the seventh Column, a Zombie walking in at the right of its Row at 22 pixels a second, being shot at on the way, and then coming to a stop at the plant — measured as not moving one pixel for as long as the plant was standing — with its arms out and a bite growing out of the plant's right side. The plant was then gone, the Zombie walking on over the bare Square, and off the left of the board.
+- Two of the harness's own bugs showed up first, and both were the same mistake as last time in a new place: a wait for a Zombie to stop moving compared each sample against the one 0.3 seconds before it, so its two-second window could never elapse; and when that was fixed the window was the same length as the thing it was watching for, because a Peashooter is two seconds of eating. A comparison across a second is enough — a walking Zombie covers 22 pixels in one — and that is what it uses now. A third reading was dropped rather than kept: a check that the Zombie stopped in the right Column depended on the placeholder artwork's Zombie being a particular width, which is not a thing worth a check.
+
 ## [0.10.0] - 2026-09-27
 
 Build order step 4 of 13: a Zombie walks in and a Peashooter kills it. The plan had walking as step 5 and shooting as step 4, but one Zombie that walks is of no use without a Zombie that dies, so ticket 04 does both and step 5 is now part of it.

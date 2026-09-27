@@ -1,5 +1,19 @@
-import { LOGICAL_WIDTH, SQUARE_WIDTH, type Row } from './board.ts'
-import { BASIC_ZOMBIE_HEALTH, ZOMBIE_STEPS_PER_COLUMN } from './balance.ts'
+import {
+  LOGICAL_WIDTH,
+  SQUARE_WIDTH,
+  plantIn,
+  squareAtX,
+  takeBite,
+  type Occupant,
+  type Planted,
+  type Row,
+} from './board.ts'
+import {
+  BASIC_ZOMBIE_HEALTH,
+  ZOMBIE_BITE_DAMAGE,
+  ZOMBIE_BITE_INTERVAL,
+  ZOMBIE_STEPS_PER_COLUMN,
+} from './balance.ts'
 
 /**
  * The name a Zombie is known by in the rules.
@@ -55,11 +69,23 @@ export interface Zombie {
   readonly walked: number
   /** What is left of it. At zero it is taken off the lawn. */
   readonly health: number
+  /**
+   * Steps until this Zombie bites again. Zero means it will bite on the next
+   * step it has something to bite.
+   *
+   * A countdown rather than a bite time worked out from a clock, for the same
+   * reason a Peashooter's firing countdown is one: the lawn and the rules then
+   * read the same number, and a Zombie's chewing cannot be a step out of step
+   * with what it is chewing. It sits at zero while a Zombie is walking, so a
+   * Zombie bites the moment it reaches food rather than waiting out a chewing
+   * cycle it was never eating through.
+   */
+  readonly stepsUntilBite: number
 }
 
 /** A Zombie standing at the right edge of a Row, which is where Zombies come in. */
 export function zombieAtEdge(id: number, name: ZombieName, row: Row): Zombie {
-  return { id, name, row, walked: 0, health: ZOMBIES[name].health }
+  return { id, name, row, walked: 0, health: ZOMBIES[name].health, stepsUntilBite: 0 }
 }
 
 /** A Zombie with that much damage taken off it. */
@@ -88,15 +114,70 @@ export const ZOMBIE_MOVE_PER_STEP = SQUARE_WIDTH / ZOMBIE_STEPS_PER_COLUMN
  * The steps walked are multiplied by the width of a Column before they are
  * divided by the steps in a Column, so a Zombie that has walked a whole number
  * of Columns is exactly that many Columns across rather than nearly. In between
- * the answer is rounded, which is the most anyone could tell.
+ * it is not a whole number of Columns and is left as it is, which is what lets
+ * the rules ask which Square a Zombie is standing in and get the same answer as
+ * the drawing: rounding it here would put Zombies in the wrong Square near a
+ * boundary, and a Zombie that stopped at the wrong plant would be a bug nobody
+ * would think to look for.
  */
 export function zombieX(zombie: Zombie): number {
   return LOGICAL_WIDTH - (zombie.walked * SQUARE_WIDTH) / ZOMBIE_STEPS_PER_COLUMN
 }
 
 /**
- * One step of every Zombie on the board: each walks on to the left, and one that
- * has walked past the left edge leaves the board.
+ * The plant a Zombie is eating right now, or undefined when there is none.
+ *
+ * A question asked of the lawn rather than remembered by the Zombie, and it is
+ * the same question the Zombie's own step asks - so a Zombie the rules say is
+ * eating and a Zombie the drawing says is eating cannot come to different
+ * answers. The drawing asks it so that a Zombie can be shown reaching for the
+ * plant it is standing at, without the drawing working out the rule for itself.
+ */
+export function plantBeingEaten(
+  zombie: Zombie,
+  occupants: readonly Occupant[],
+): Planted | undefined {
+  const square = squareAtX(zombie.row, zombieX(zombie))
+
+  return square === null ? undefined : plantIn(occupants, square)
+}
+
+/**
+ * What one step of every Zombie on the board did.
+ *
+ * A Zombie's step changes two things at once, and has to report both: it moves,
+ * and what it eats is a plant that is no longer standing there. Returning the
+ * lawn as well as the Zombies is what lets a Zombie's step be one step rather
+ * than two that have to be kept in step with each other.
+ */
+export interface ZombieStep {
+  readonly zombies: readonly Zombie[]
+  readonly occupants: readonly Occupant[]
+}
+
+/**
+ * One step of every Zombie on the board: each walks on to the left and eats what
+ * it walks into, and one that has walked past the left edge leaves the board.
+ *
+ * Whether a Zombie is eating is not held in the state but worked out, every
+ * step, from the Square it is standing in. That is the whole of the rule, and
+ * it is why there is no such thing as a Zombie part way through eating that
+ * cannot see: ask a Zombie what it is doing and it looks at the lawn. A plant
+ * dug up with the Shovel, or a plant another Zombie has just finished, is simply
+ * not there any more, and the Zombie walking on is the same answer either way -
+ * so there is no latch to clear and nothing to forget.
+ *
+ * It is also why the first bite lands on the step the Zombie reaches the plant
+ * rather than the step after. Deciding what a Zombie is doing from the lawn, in
+ * the step it gets there, needs nothing remembered, and so needs no step of
+ * grace to let the arrival happen first. A Peashooter's countdown is the same
+ * shape: it sits at zero while there is nothing to shoot, and fires the moment
+ * there is something - so a Zombie's chewing clock is already at zero when it
+ * arrives, and it bites.
+ *
+ * Two Zombies at one plant both bite it, because both are eating it. Nothing
+ * reserves a plant for one Zombie: the rule is the same for every Zombie, and
+ * the plant's health runs out sooner, not later.
  *
  * Leaving the board is not what happens in the original. There, a Zombie reaching
  * the left of a Row sets off that Row's Lawn Mower, and a Row whose mower has
@@ -106,12 +187,60 @@ export function zombieX(zombie: Zombie): number {
  * grows all level.
  *
  * A Zombie at the very left edge has not left yet: it is still on the board, at
- * the place the Lawn Mower rule will want to find it.
+ * the place the Lawn Mower rule will want to find it. And a Lawn Mower is not
+ * food - a Zombie walks through the Square a mower stands in, because a mower is
+ * not a plant and there is nothing there to eat.
  */
-export function walkLeft(zombies: readonly Zombie[]): readonly Zombie[] {
-  return zombies
-    .map((zombie) => ({ ...zombie, walked: zombie.walked + 1 }))
-    .filter((zombie) => zombieX(zombie) >= 0)
+export function walkAndEat(
+  zombies: readonly Zombie[],
+  occupants: readonly Occupant[],
+): ZombieStep {
+  // Bites are collected first and dealt out afterwards, because two Zombies can
+  // be at one plant in the same step and the plant has one amount of health left
+  // between them. Taking each bite off the lawn as it happened would find the
+  // plant already gone for the second Zombie, which would quietly make the
+  // second bite a walk instead.
+  const bites = new Map<Planted, number>()
+
+  const after = zombies.map((zombie) => {
+    const walked = { ...zombie, walked: zombie.walked + 1 }
+
+    if (zombieX(walked) < 0) {
+      return null
+    }
+
+    // The plant in the Square it has just walked into, asked the same way the
+    // drawing asks it.
+    const food = plantBeingEaten(walked, occupants)
+    if (food === undefined) {
+      return { ...walked, stepsUntilBite: 0 }
+    }
+
+    // It has reached the plant, so it stops where it is rather than taking
+    // another step: the plant is in the Square it is standing in, and walking on
+    // would be walking into it.
+    const readyIn = Math.max(0, zombie.stepsUntilBite - 1)
+    if (readyIn > 0) {
+      return { ...zombie, stepsUntilBite: readyIn }
+    }
+
+    bites.set(food, (bites.get(food) ?? 0) + ZOMBIE_BITE_DAMAGE)
+
+    return { ...zombie, stepsUntilBite: ZOMBIE_BITE_INTERVAL }
+  })
+
+  const bitten = occupants
+    .map((occupant) => {
+      if (occupant.kind !== 'plant') {
+        return occupant
+      }
+      const damage = bites.get(occupant)
+
+      return damage === undefined ? occupant : takeBite(occupant, damage)
+    })
+    .filter((occupant) => occupant.kind !== 'plant' || occupant.health > 0)
+
+  return { zombies: after.filter((zombie) => zombie !== null), occupants: bitten }
 }
 
 /**

@@ -78,7 +78,7 @@ Each step is something you can actually play or click before the next one starts
 | 3 | Planting | One seed packet; click it, click a square, plant appears, sun is spent — **done** |
 | 4 | Shooting | That plant fires, hits a zombie, and it dies — **done** |
 | 5 | Walking | A zombie enters at the right of a row and moves left at a fixed speed — **done at ticket 04** |
-| 6 | Eating | It stops at a plant, eats it, then carries on |
+| 6 | Eating | It stops at a plant, eats it, then carries on — **done** |
 | 7 | Lawn mowers | A zombie at the left edge spends the row's mower and clears the row |
 | 8 | Win and lose | Waves end, then either a win or game over |
 | 9 | **Level 1-1** | A whole level, start to finish, playable |

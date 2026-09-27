@@ -5,12 +5,13 @@ import {
   LOGICAL_WIDTH,
   SQUARE_WIDTH,
   centreX,
+  occupantAt,
   plantIn,
   type Square,
 } from '../src/game/board.ts'
 import { STEPS_PER_SECOND, advanceFrames, startClock } from '../src/game/clock.ts'
 import { LEVEL_1_1, type Level, type Wave } from '../src/game/levels.ts'
-import { DEFAULT_SEED, apply, initialGameState, type GameState } from '../src/game/sim.ts'
+import { DEFAULT_SEED, SHOVEL, apply, initialGameState, type GameState } from '../src/game/sim.ts'
 import { zombieX, type Zombie } from '../src/game/zombies.ts'
 import type { Shot } from '../src/game/shots.ts'
 import { withSunToPlant } from './helpers.ts'
@@ -27,8 +28,29 @@ const PEA_DAMAGE = 20
 /** The health a Basic Zombie walks in with, likewise written out. */
 const BASIC_HEALTH = 270
 
+/** The health a Peashooter is planted with. */
+const FULL_HEALTH = 300
+
+/** What one bite takes off a plant. */
+const BITE_DAMAGE = 100
+
 /** Where the checks below stand their Peashooter: a long clear run at the left. */
 const PEA_SQUARE: Square = { row: 2, column: 1 }
+
+/**
+ * Where the eating checks stand their Peashooter: the last Column, the one
+ * closest to where the Zombies come in.
+ *
+ * Not a detail. A Peashooter kills a Basic Zombie in about nineteen seconds of
+ * shooting, and a Zombie takes nearly five to cross each Column, so a Peashooter
+ * planted in the first four Columns kills everything that walks at it long
+ * before it can arrive - the plant is never reached, and so is never eaten. From
+ * the fifth Column rightwards the Zombie gets there, hurt, and eats. Putting
+ * these checks at the far right is what lets them be about eating and nothing
+ * else, and that a Peashooter in the first Columns is a thing that cannot be
+ * eaten is a true and useful thing about the game.
+ */
+const FOOD_SQUARE: Square = { row: 2, column: BOARD_COLUMNS - 1 }
 
 /** A level that sends one Zombie into a Row, at the step the checks below want. */
 function oneZombieIn(row: number, atStep: number = ZOMBIE_STEP): Level {
@@ -72,8 +94,18 @@ function levelWith(...waves: Wave[]): Level {
   return { ...LEVEL_1_1, waves }
 }
 
-/** Plays the rules on until the game looks like this, or gives up. */
-function until(state: GameState, satisfied: (state: GameState) => boolean): GameState {
+/**
+ * Plays the rules on until the game looks like this, or gives up.
+ *
+ * What it was waiting for is named, because a check that fails inside here
+ * otherwise reports only that four thousand steps were not enough - which is
+ * true and says nothing about which of the game's promises was not kept.
+ */
+function until(
+  state: GameState,
+  satisfied: (state: GameState) => boolean,
+  whatItIsWaitingFor = 'the game got there',
+): GameState {
   let current = state
   for (let step = 0; step < 4000; step++) {
     if (satisfied(current)) {
@@ -81,7 +113,7 @@ function until(state: GameState, satisfied: (state: GameState) => boolean): Game
     }
     current = apply(current, { kind: 'advance' })
   }
-  assert.fail('the game never got there in four thousand steps')
+  assert.fail(`the game never got there in four thousand steps: ${whatItIsWaitingFor}`)
 }
 
 /** Plays the rules on until the game has reached that step of play. */
@@ -307,25 +339,49 @@ test('a pea passes harmlessly through every other Row', () => {
 })
 
 test('a Peashooter shoots forwards, at a Zombie that has not yet walked past it', () => {
-  const atTheRightEnd: Square = { row: 2, column: BOARD_COLUMNS - 1 }
-  const planted = withAPeashooterIn(atTheRightEnd, oneZombieIn(2))
-  const arrived = untilTick(planted, ZOMBIE_STEP)
-  assert.ok(
-    zombieX(zombieIn(arrived, 2)) > centreX(atTheRightEnd),
-    'the Zombie walks in to the right of the Peashooter',
+  // How a plant ends up behind a Zombie is now a narrower question than it was.
+  // A Zombie can only get past a plant by eating it, and then there is no plant,
+  // so the one way a living plant is behind a walking Zombie is being planted
+  // into a Square that Zombie has already walked through - a player's mistake, and
+  // the reason for the rule. A Peashooter so placed must never fire at all.
+  const behind: Square = { row: 2, column: 5 }
+  const level = oneZombieIn(2)
+
+  // The Zombie walks in and leaves the Square the plant is about to go into, so
+  // that the plant goes in behind it rather than on top of it. The test is the
+  // Square's left edge, not its middle: a Zombie standing in the middle of that
+  // Square is still in it, and a plant planted there is a plant it eats.
+  const crossed = until(
+    withSunToPlant(initialGameState(DEFAULT_SEED, level)),
+    (state) => state.zombies.length > 0 && zombieX(zombieIn(state, 2)) < behind.column * SQUARE_WIDTH,
+    'the Zombie left the Square the plant will go in',
   )
 
-  const shot = until(arrived, (state) => state.shots.length > 0)
-  assert.ok(shot.shots.length > 0, 'and is shot at while it is in front of the plant')
+  const chosen = apply(crossed, { kind: 'choose', choice: 'peashooter' })
+  assert.equal(chosen.chosen, 'peashooter', 'the Peashooter can be planted there')
+  const planted = apply(chosen, { kind: 'place', square: behind })
 
-  const gonePast = untilTick(arrived, arrived.tick + 200)
   assert.ok(
-    zombieX(zombieIn(gonePast, 2)) < centreX(atTheRightEnd),
-    'the Zombie walks on and passes the Peashooter',
+    zombieX(zombieIn(planted, 2)) < behind.column * SQUARE_WIDTH,
+    'so the Zombie is standing to the left of that Square, which is behind it',
   )
 
-  const after = untilTick(gonePast, gonePast.tick + 300)
-  assert.equal(after.shots.length, 0, 'and the Peashooter shoots nothing at all once it has')
+  let current = planted
+  for (let step = 0; step < 30 * STEPS_PER_SECOND; step++) {
+    current = apply(current, { kind: 'advance' })
+    assert.equal(
+      current.shots.length,
+      0,
+      `the Peashooter behind the Zombie fired a pea on step ${current.tick}`,
+    )
+  }
+
+  assert.equal(
+    plantIn(current.occupants, behind)?.name,
+    'peashooter',
+    'and the Peashooter is still standing, shooting nothing at the Zombie leaving',
+  )
+  assert.equal(current.zombies.length, 0, 'which walked on and off the board unhurt')
 })
 
 test('a Zombie is removed from the lawn once a pea has taken all of its health', () => {
@@ -353,6 +409,167 @@ test('a Zombie is removed from the lawn once a pea has taken all of its health',
     cleared.shots.length,
     0,
     'leaving the lawn clear of peas, because a Peashooter with nothing to shoot at shoots nothing',
+  )
+})
+
+test('a Zombie that reaches a plant stops there and bites it', () => {
+  const planted = withAPeashooterIn(FOOD_SQUARE, oneZombieIn(2))
+  const arrived = untilTick(planted, ZOMBIE_STEP)
+
+  const eating = until(
+    arrived,
+    (state) => (plantIn(state.occupants, FOOD_SQUARE)?.health ?? FULL_HEALTH) < FULL_HEALTH,
+    'a Zombie began eating the Peashooter',
+  )
+
+  const plant = plantIn(eating.occupants, FOOD_SQUARE)
+  assert.ok(plant !== undefined, 'the Peashooter is still there, being eaten')
+  assert.equal(
+    plant.health,
+    FULL_HEALTH - BITE_DAMAGE,
+    'and the first bite has taken 100 off its 300 health',
+  )
+
+  const stopped = zombieIn(eating, 2)
+  assert.equal(
+    zombieX(stopped),
+    zombieX(zombieIn(arrived, 2)),
+    'the Zombie has stopped walking, rather than walking through the plant as it did before',
+  )
+
+  // A Zombie that has merely slowed down, or stopped for a step, is not eating.
+  const aSecondOn = untilTick(eating, eating.tick + STEPS_PER_SECOND)
+  assert.equal(
+    zombieX(zombieIn(aSecondOn, 2)),
+    zombieX(stopped),
+    'and it is still standing in the same place a second later',
+  )
+  assert.equal(
+    plantIn(aSecondOn.occupants, FOOD_SQUARE)?.health,
+    FULL_HEALTH - 2 * BITE_DAMAGE,
+    'having bitten again, once a second',
+  )
+})
+
+test('a Zombie eats a plant right through, and leaves the Square bare', () => {
+  const planted = withAPeashooterIn(FOOD_SQUARE, oneZombieIn(2))
+  const arrived = untilTick(planted, ZOMBIE_STEP)
+
+  // The Zombie walks into the Peashooter's Square on the first step it walks at
+  // all, and a Peashooter is 300 health against bites of 100, so it takes exactly
+  // three bites - a second apart, so two seconds from the step it arrived.
+  const gone = until(
+    arrived,
+    (state) => plantIn(state.occupants, FOOD_SQUARE) === undefined,
+    'the Peashooter was eaten',
+  )
+
+  assert.equal(
+    gone.tick,
+    ZOMBIE_STEP + 1 + 2 * STEPS_PER_SECOND,
+    'three bites, a second apart, is how long a Peashooter is food for',
+  )
+  assert.equal(
+    occupantAt(gone.occupants, FOOD_SQUARE),
+    null,
+    'and the Square it was in is bare lawn again, not holding something else',
+  )
+  assert.equal(gone.zombies.length, 1, 'the Zombie that ate it is still on the lawn')
+  assert.equal(
+    zombieX(zombieIn(gone, 2)),
+    zombieX(zombieIn(untilTick(arrived, arrived.tick + 1), 2)),
+    'and has not gone anywhere, so it is standing where the plant was',
+  )
+})
+
+test('a Zombie carries on walking once the plant is gone', () => {
+  const planted = withAPeashooterIn(FOOD_SQUARE, oneZombieIn(2))
+  const arrived = untilTick(planted, ZOMBIE_STEP)
+  const atThePlant = zombieX(zombieIn(untilTick(arrived, arrived.tick + 1), 2))
+
+  const eaten = until(
+    arrived,
+    (state) => plantIn(state.occupants, FOOD_SQUARE) === undefined,
+    'the Peashooter was eaten',
+  )
+  assert.equal(
+    zombieX(zombieIn(eaten, 2)),
+    atThePlant,
+    'the Zombie is still standing where the plant was, on the step it finished it',
+  )
+
+  const walking = apply(eaten, { kind: 'advance' })
+  assert.ok(
+    zombieX(zombieIn(walking, 2)) < atThePlant,
+    'and on the very next step it is walking left again, rather than lingering',
+  )
+
+  const gone = until(
+    walking,
+    (state) => state.zombies.length === 0,
+    'the Zombie walked off the left of the board',
+  )
+  assert.equal(
+    gone.zombies.length,
+    0,
+    'so it eats its way through a Row and carries on, rather than standing there for ever',
+  )
+})
+
+test('a Zombie stops eating the moment its food is dug up, and walks on', () => {
+  const planted = withAPeashooterIn(FOOD_SQUARE, oneZombieIn(2))
+  const arrived = untilTick(planted, ZOMBIE_STEP)
+
+  const eating = until(
+    arrived,
+    (state) => (plantIn(state.occupants, FOOD_SQUARE)?.health ?? FULL_HEALTH) < FULL_HEALTH,
+    'a Zombie began eating the Peashooter',
+  )
+  const atThePlant = zombieX(zombieIn(eating, 2))
+
+  // Part way through eating, and with the plant only partly gone, the player
+  // digs it up. The Zombie is left standing at a plant that is no longer there.
+  const dugUp = apply(
+    apply(eating, { kind: 'choose', choice: SHOVEL }),
+    { kind: 'shovel', square: FOOD_SQUARE },
+  )
+  assert.equal(plantIn(dugUp.occupants, FOOD_SQUARE), undefined, 'the Peashooter is dug up')
+
+  const walking = apply(dugUp, { kind: 'advance' })
+  assert.ok(
+    zombieX(zombieIn(walking, 2)) < atThePlant,
+    'and the Zombie walks on, rather than standing over an empty Square for the rest of the level',
+  )
+})
+
+test('a Zombie walks past a plant in another Row without touching it', () => {
+  // The plant is a Row above the one the Zombie walks, in the same Column the
+  // eating checks use, so the two are side by side on the lawn and the only
+  // thing separating them is the Row.
+  const otherRow: Square = { row: FOOD_SQUARE.row - 1, column: FOOD_SQUARE.column }
+  const planted = withAPeashooterIn(otherRow, oneZombieIn(FOOD_SQUARE.row))
+  const arrived = untilTick(planted, ZOMBIE_STEP)
+
+  assert.equal(
+    plantIn(arrived.occupants, otherRow)?.health,
+    FULL_HEALTH,
+    'the Peashooter is standing a Row above the one the Zombie walks in',
+  )
+
+  // The Zombie walks the whole of its own Row and off the board, which carries it
+  // the length of the lawn underneath that plant. About forty seconds of walking,
+  // so this check is about one thing only: whether a plant in another Row is food.
+  const gone = until(
+    arrived,
+    (state) => state.zombies.length === 0,
+    'the Zombie walked off the board without eating anything',
+  )
+
+  assert.equal(gone.zombies.length, 0, 'the Zombie has crossed the whole Row and left the lawn')
+  assert.equal(
+    plantIn(gone.occupants, otherRow)?.health,
+    FULL_HEALTH,
+    'and the plant in the Row above is untouched, still 300 health',
   )
 })
 

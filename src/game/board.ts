@@ -88,6 +88,15 @@ export interface Planted {
   readonly square: Square
   readonly name: PlantName
   /**
+   * How much of the plant is left of it. At zero it is taken off the lawn.
+   *
+   * A plant is planted whole, so this starts at the plant's own number and is
+   * only ever taken off it by a bite. A plant with nothing left of it is gone
+   * the same way a Zombie with nothing left of it is gone, which is why both are
+   * written the same way round.
+   */
+  readonly health: number
+  /**
    * Steps until this plant is ready to shoot again. Zero means it is ready now
    * and shoots on the next step, if it has something to shoot.
    *
@@ -104,6 +113,27 @@ export interface Planted {
 /** The middle of a Square, in the board's own units rather than on the screen. */
 export function centreX(square: Square): number {
   return (square.column + 0.5) * SQUARE_WIDTH
+}
+
+/**
+ * The Square a place along a Row falls in, or null when it is off the board.
+ *
+ * The question the rules ask of a Zombie's place, and it is asked of the place
+ * rather than of a Column, because a Zombie is between Squares: a Zombie at the
+ * very right of the board is in no Square at all, and one a step further left is
+ * in the first Column of its Row. Dividing by the width of a Square is the same
+ * arithmetic the canvas click uses, so what the rules think a place is and what
+ * a click there would select cannot come apart.
+ */
+export function squareAtX(row: Row, x: number): Square | null {
+  const square = { row, column: Math.floor(x / SQUARE_WIDTH) }
+
+  return isOnBoard(square) ? square : null
+}
+
+/** A plant with that much damage taken off it. */
+export function takeBite(plant: Planted, damage: number): Planted {
+  return { ...plant, health: plant.health - damage }
 }
 
 /** The lawn as it stands: a mower for every Row, and nothing planted yet. */

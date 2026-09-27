@@ -1,6 +1,7 @@
 import {
   PEA_DAMAGE,
   PEASHOOTER_FIRE_INTERVAL,
+  PEASHOOTER_HEALTH,
   PEASHOOTER_RECHARGE,
   PEASHOOTER_SUN_COST,
 } from './balance.ts'
@@ -20,6 +21,15 @@ export interface Plant {
   readonly sunCost: number
   /** Steps before its Seed Packet can be chosen again. */
   readonly recharge: number
+  /**
+   * How much health this plant is planted with, and what a bite comes off.
+   *
+   * The health a plant is planted with, rather than a separate number per plant
+   * to remember: a plant is planted whole, and how long it lasts is a property
+   * of what it is. It is also the number the drawing fades a plant by, so the
+   * picture and the rules cannot disagree about how much of it is left.
+   */
+  readonly health: number
   /** How this plant shoots, or null for a plant that never shoots. */
   readonly shooting: Shooting | null
 }
@@ -39,6 +49,7 @@ export const PEASHOOTER: Plant = {
   name: 'peashooter',
   sunCost: PEASHOOTER_SUN_COST,
   recharge: PEASHOOTER_RECHARGE,
+  health: PEASHOOTER_HEALTH,
   shooting: { fireInterval: PEASHOOTER_FIRE_INTERVAL, damage: PEA_DAMAGE },
 }
 
