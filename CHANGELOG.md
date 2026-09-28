@@ -4,6 +4,102 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.14.0] - 2026-09-29
+
+### The Flag Wave, and winning a Level
+
+Ticket 08. A Level is won when its last Wave has come and no Zombies remain, and a
+won Level stops as a lost one does. The Flag Wave is announced ten seconds before
+it arrives, is tougher than the other Waves, and carries a Flag Zombie. Level 1-1
+now ends both ways: lost at about 142 seconds by a player who plants nothing, won
+at about 173 by a player who puts a Peashooter in every Row.
+
+- `GameState.gameOver` is replaced by `outcome: 'playing' | 'won' | 'lost'`, which
+  is what ticket 07 left a note asking for. Not tidiness: a Zombie that walks off
+  the left edge is gone from the lawn on the step it does it, and a lawn with no
+  Zombies and no Waves left to come is the definition of a win — so one step can
+  satisfy both endings, and two booleans would hold a level that is won and lost at
+  once. It is the loss, and one field with three values has nowhere to put the
+  contradiction. A check watches exactly that step.
+- The win is read off the same step that caused it, from the same two questions
+  `advance` already asks: what is on the lawn, and what is still to come. The lawn
+  is built once and used for both the state and the ending, so the ending cannot be
+  worked out from a different list of Zombies than the player is looking at — and
+  the Wave that walked in this step is on that list, which is what stops a Level
+  being won the step its last Wave arrives.
+- A Wave carries `flagWave: true` or carries nothing. There is no `false` to get
+  wrong, and the Flag Wave is a mark rather than a position, so putting a new Wave
+  on the end of a schedule cannot quietly change what "last" means.
+- `waveZombies()` in `levels.ts`: a Wave knows what it sends, and a Flag Wave's
+  Zombies walk in with more health than the same Zombies in any other Wave. The
+  Flag Zombie is in the roster as a name with no health of its own — an ordinary
+  Zombie carrying a flag, which is what it is in the original. The Wave is what
+  makes the Wave hard.
+- `GameState.flagWaveWarning`, worked out in `advance` from the Waves still to come
+  and ten seconds ahead, marked in `balance.ts` as not the original's number. The
+  announcement and the ending are both laid over the help text rather than taking
+  its place, so neither moves the board; the board not jumping when a level ends
+  was ticket 07's finding and it applies just as much to a banner that arrives
+  mid-level.
+- The Flag Zombie is drawn with a flag on a pole, over its own body rather than
+  behind it. Drawn behind, the pole was hidden by the Zombie standing in front of it
+  and the flag floated over the lawn like a decoration.
+
+### Found while playing it
+
+**Level 1-1 could not be lost, and could not be won.** Ticket 07 recorded this: the
+schedule sent two Zombies into one Row 25 seconds apart, the mower ran on the first
+and cleared *both* — a mower clears its whole Row — and nothing was ever sent to
+that Row again, so no Row was ever breached twice and a player who planted nothing
+played for ever. Adding the Flag Wave fixed it as a side effect, because it arrives
+in three Rows whose mowers have already gone. The schedule was rewritten anyway, so
+that the loss comes from a deliberate second Wave into a spent Row rather than as a
+by-product.
+
+**The Flag Wave was half again too tough, and only playing it said so.** One and a
+half health leaves a lone Peashooter three and a half seconds of margin against a
+Flag Wave Zombie: a Peashooter in the first Column there is to plant in is reached
+in about thirty-three seconds, and twenty-nine seconds of shooting. The mistake was
+comparing thirty-three against the forty-two a Zombie spends crossing the *whole*
+lawn, which is the distance to a Peashooter in the last Column and not the one in
+the first. A browser playthrough of the level lost on it — Row 4's mower went, and
+the level with it. It is one and a quarter now: seventeen peas against thirty-three
+seconds, nine seconds to spare. The check states the number, so the next person to
+move it has to move the check too.
+
+### Checks
+
+Nine checks in `tests/waves.test.ts`, one slice at a time and each made to fail
+against code broken on purpose: a Wave sending only its first Zombie, a schedule
+sent all at once, the announcement arriving with the Wave rather than before it,
+arriving far too early, never stopping, a Flag Wave no tougher than any other, a
+Flag Zombie made a tougher Zombie in the roster, a schedule with two Flag Waves or
+with its last one unflagged, the win decided before the loss on the step they meet,
+a guard that stopped only a loss, and a Flag Wave landing only in Rows that still
+had a mower.
+
+Six existing checks changed rather than broke. They were written when a level could
+not end, so a fixture of one Wave went on for ever; now a one-Wave fixture is a
+level that *finishes*, and the mower that saved a Row would win it. Each was given
+something still to come, which is what "the level goes on" now means.
+
+### Not built, and why
+
+Two of the ticket's boxes are unticked and recorded rather than quietly dropped:
+winning does not unlock the next Level, and there is no menu. `docs/plan.md` puts
+unlocking at step 12 and a menu at step 9, with level select and saved progress as
+ticket 19. With one Level there is no next Level to unlock in any case, and a check
+for it could not fail.
+
+### Checked
+
+77 rule checks pass, typecheck and production build clean. The level was played
+through in a real browser with real mouse events — clicking Sun, choosing the Seed
+Packet, clicking Squares — for fifteen checks over three runs: the announcement
+arriving and stopping, the board not moving for either banner, a flag appearing on
+the lawn that was not there before, the lawn cleared, the win said out loud, the
+Seed Bank dead, and not one pixel of the page moving in the six seconds after.
+
 ## [0.13.0] - 2026-09-28
 
 ### Game Over on a spent Row

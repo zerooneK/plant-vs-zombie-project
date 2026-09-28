@@ -265,7 +265,16 @@ test('a Peashooter fires at the nearest Zombie in its Row', () => {
 
 
 test('a Peashooter does nothing at all when its Row holds no Zombie', () => {
-  const planted = withAPeashooterIn(PEA_SQUARE, levelWith())
+  // A level with a Wave far in the future, and so nothing on the lawn. The Wave is
+  // there so the level is still being played while this check plays it - a level
+  // with no Waves at all is won on its first step, and then its Sun stops falling
+  // and there is nothing left to watch. What this check is about is a Row holding
+  // no Zombie, and a Wave that has not arrived is the honest way to say that
+  // without ending the level.
+  const planted = withAPeashooterIn(
+    PEA_SQUARE,
+    levelWith({ atStep: 5 * 60 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 1 }] }),
+  )
   assert.equal(planted.zombies.length, 0, 'there is nothing on the lawn at all')
 
   const fiveSecondsOn = untilTick(planted, planted.tick + 5 * STEPS_PER_SECOND)
@@ -385,7 +394,16 @@ test('a Peashooter shoots forwards, at a Zombie that has not yet walked past it'
 })
 
 test('a Zombie is removed from the lawn once a pea has taken all of its health', () => {
-  const planted = withAPeashooterIn(PEA_SQUARE, oneZombieIn(2))
+  // With a second Wave a long way off, for the same reason as the check above: a
+  // level of one Wave is won the moment its Zombie is killed, and this check wants
+  // to go on watching the lawn afterwards.
+  const planted = withAPeashooterIn(
+    PEA_SQUARE,
+    levelWith(
+      { atStep: ZOMBIE_STEP, zombies: [{ name: 'basic', row: 2 }] },
+      { atStep: 5 * 60 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 1 }] },
+    ),
+  )
   const arrived = untilTick(planted, ZOMBIE_STEP)
   assert.equal(zombieIn(arrived, 2).health, BASIC_HEALTH, 'a Basic Zombie walks in with 270 health')
 
@@ -574,7 +592,20 @@ test('a Zombie walks past a plant in another Row without touching it', () => {
 })
 
 test('a Zombie that walks past the left of the board leaves the lawn', () => {
-  const arrived = untilTick(initialGameState(DEFAULT_SEED, oneZombieIn(2, 1)), 1)
+  // The second Wave's step is worked out first, rather than from the state after
+  // the first Zombie has been mown. When this check was written a level could not
+  // end at all, so a level of one Wave was simply a level that went on for ever;
+  // now that a level is won once its last Wave has come and the lawn is clear, a
+  // one-Wave fixture is a level that finishes - and the mower saving the first
+  // Zombie would win it, forty seconds before the second Zombie was due.
+  const SAVED_AT = 1 + 40 * STEPS_PER_SECOND
+  const SECOND_WAVE = SAVED_AT + 1
+  const oneThenAnother = levelWith(
+    { atStep: 1, zombies: [{ name: 'basic', row: 2 }] },
+    { atStep: SECOND_WAVE, zombies: [{ name: 'basic', row: 2 }] },
+  )
+
+  const arrived = untilTick(initialGameState(DEFAULT_SEED, oneThenAnother), 1)
   assert.equal(arrived.zombies.length, 1, 'a Zombie walks in with nothing on the lawn to stop it')
 
   // This used to be a Zombie walking off the board, which is what a Row with a
@@ -582,14 +613,10 @@ test('a Zombie that walks past the left of the board leaves the lawn', () => {
   // A Zombie only gets past the left of the board in a Row that has already spent
   // its mower, so that is the situation this check now sets up - a broken Row, and
   // a second Zombie sent into it afterwards.
-  const saved = untilTick(arrived, arrived.tick + 40 * STEPS_PER_SECOND)
+  const saved = untilTick(arrived, SAVED_AT)
   assert.equal(saved.zombies.length, 0, 'and the first one is taken off the lawn by the mower it reached')
 
-  const second = levelWith(
-    { atStep: 1, zombies: [{ name: 'basic', row: 2 }] },
-    { atStep: saved.tick + 1, zombies: [{ name: 'basic', row: 2 }] },
-  )
-  const arrivedAgain = untilTick(initialGameState(DEFAULT_SEED, second), saved.tick + 1)
+  const arrivedAgain = untilTick(initialGameState(DEFAULT_SEED, oneThenAnother), SECOND_WAVE)
   assert.equal(arrivedAgain.zombies.length, 1, 'a second Zombie walks in behind it, into a Row with no mower left')
 
   // About forty seconds of walking to cross nine Columns, and nothing in the way

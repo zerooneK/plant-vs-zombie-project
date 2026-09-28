@@ -78,7 +78,7 @@ test('a Zombie reaching the left edge of a Row with no Lawn Mower left ends the 
     SECOND_WALK_IN,
     'the second Zombie walked in behind it, into a Row with no mower left',
   )
-  assert.equal(second.gameOver, false, 'and the level is still being played')
+  assert.equal(second.outcome, 'playing', 'and the level is still being played')
 
   // The step before the breach is asked about as carefully as the breach itself.
   // A Zombie standing on the last Column of a spent Row is still on the lawn, and a
@@ -91,8 +91,8 @@ test('a Zombie reaching the left edge of a Row with no Lawn Mower left ends the 
   )
 
   assert.equal(
-    onTheLine.gameOver,
-    false,
+    onTheLine.outcome,
+    'playing',
     'the level is still being played while the Zombie is still standing on the lawn',
   )
   assert.equal(
@@ -104,8 +104,8 @@ test('a Zombie reaching the left edge of a Row with no Lawn Mower left ends the 
   const breached = apply(onTheLine, { kind: 'advance' })
 
   assert.equal(
-    breached.gameOver,
-    true,
+    breached.outcome,
+    'lost',
     'and the one step that carries it past the left edge of the board ends the level',
   )
   assert.equal(breached.zombies.length, 0, 'with the Zombie that got in gone from the lawn')
@@ -151,7 +151,7 @@ test('Game Over stops the level: the Zombies stop walking and planting stops', (
 
   const lost = apply(onTheLine, { kind: 'advance' })
 
-  assert.equal(lost.gameOver, true, 'the level has ended')
+  assert.equal(lost.outcome, 'lost', 'the level has ended')
   assert.equal(
     lost.sun,
     onTheLine.sun,
@@ -185,15 +185,27 @@ test("spending a Row's Lawn Mower saves the Row without ending the level", () =>
   // losing would still pass, because a Zombie getting in always follows a mower
   // having gone. What a player actually sees when a mower runs is their Row saved
   // and the level going on, and that is what this checks.
+  //
+  // The second Wave is why "going on" can be asserted at all. When this was
+  // written a level could not end, so a level of one Wave went on for ever; now a
+  // level is won once its last Wave has come and the lawn is clear, so a one-Wave
+  // fixture is a level that has just been *finished* - the mower would win it, and
+  // the assertion below would be about a completed level rather than a save.
   const mown = untilTick(
-    initialGameState(DEFAULT_SEED, levelWith(oneZombieIn(ROW, FIRST_WALK_IN))),
+    initialGameState(
+      DEFAULT_SEED,
+      levelWith(
+        oneZombieIn(ROW, FIRST_WALK_IN),
+        oneZombieIn(ROW, stepAZombieReachesItsMower(FIRST_WALK_IN) + 60 * STEPS_PER_SECOND),
+      ),
+    ),
     stepAZombieReachesItsMower(FIRST_WALK_IN),
     'the Zombie reached its mower and the mower ran',
   )
 
   assert.equal(hasLawnMower(mown.occupants, MOWER_SQUARE), false, 'Row 2 has spent its mower')
   assert.equal(mown.zombies.length, 0, 'and the Zombie that set it off is gone from the lawn')
-  assert.equal(mown.gameOver, false, 'but the level is not lost, because a save is not a loss')
+  assert.equal(mown.outcome, 'playing', 'but the level is not lost, because a save is not a loss')
 
   const later = untilTick(
     mown,
@@ -202,7 +214,7 @@ test("spending a Row's Lawn Mower saves the Row without ending the level", () =>
   )
 
   assert.equal(later.tick, mown.tick + 10 * STEPS_PER_SECOND, 'the clock kept moving')
-  assert.equal(later.gameOver, false, 'and the level is still being played ten seconds later')
+  assert.equal(later.outcome, 'playing', 'and the level is still being played ten seconds later')
 })
 
 test("another Row's mower still saves that Row after one has been spent", () => {
@@ -212,15 +224,22 @@ test("another Row's mower still saves that Row after one has been spent", () => 
   // mower run would be right to think the game was over. The answer is that each
   // Row has its own, so Row 3 walks the whole length of the lawn, reaches its
   // mower, and is mown in turn - and the level is still being played afterwards.
+  // A third Wave a long way off, for the reason given in check 3: without something
+  // still to come, saving two Rows in a two-Wave level finishes the level rather
+  // than leaving it being played, and this check is about the second save.
   const secondWalksIn = stepAZombieReachesItsMower(FIRST_WALK_IN) + 10 * STEPS_PER_SECOND
-  const level = levelWith(oneZombieIn(ROW, FIRST_WALK_IN), oneZombieIn(ROW + 1, secondWalksIn))
+  const level = levelWith(
+    oneZombieIn(ROW, FIRST_WALK_IN),
+    oneZombieIn(ROW + 1, secondWalksIn),
+    oneZombieIn(ROW, secondWalksIn + 60 * STEPS_PER_SECOND),
+  )
 
   const firstSaved = untilTick(
     initialGameState(DEFAULT_SEED, level),
     stepAZombieReachesItsMower(FIRST_WALK_IN),
     'the Zombie in Row 2 reached its mower and was mown',
   )
-  assert.equal(firstSaved.gameOver, false, 'Row 2 was saved, and the level went on')
+  assert.equal(firstSaved.outcome, 'playing', 'Row 2 was saved, and the level went on')
   assert.equal(
     hasLawnMower(firstSaved.occupants, { row: ROW + 1, column: MOWER_COLUMN }),
     true,
@@ -244,8 +263,8 @@ test("another Row's mower still saves that Row after one has been spent", () => 
     'and Row 3 has now spent its own mower',
   )
   assert.equal(
-    secondSaved.gameOver,
-    false,
+    secondSaved.outcome,
+    'playing',
     'but losing a Row is not losing the level, and the level is still being played',
   )
 })

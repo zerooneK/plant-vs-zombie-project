@@ -31,6 +31,9 @@ const ZOMBIE_SKIN = '#9e9e9e'
 const ZOMBIE_SKIN_EDGE = '#616161'
 const ZOMBIE_SHIRT = '#5d4037'
 const ZOMBIE_LEG = '#37474f'
+const FLAG_CLOTH = '#e53935'
+const FLAG_EDGE = '#b71c1c'
+const FLAG_POLE = '#a1887f'
 const ZOMBIE_WIDTH = 0.62
 const PEA_RADIUS = 8
 
@@ -215,6 +218,58 @@ function drawZombie(
 
   context.strokeStyle = ZOMBIE_SKIN_EDGE
   context.lineWidth = Math.max(1, 2 * board.scale)
+  context.stroke()
+
+  // The flag goes on last, over the body rather than behind it, and its pole
+  // overlaps the shirt. Drawn behind, the pole was hidden by the Zombie standing in
+  // front of it and the flag floated over the lawn on its own, which is a thing
+  // near a Zombie rather than a thing the Zombie is carrying.
+  if (zombie.name === 'flag') {
+    drawFlag(context, centre, board)
+  }
+}
+
+/**
+ * The flag a Flag Zombie carries, on a pole it holds out behind it.
+ *
+ * Drawn behind the Zombie rather than in front, and out of the side the Zombie walks
+ * from, so that it reads as something being held rather than something stuck on. A
+ * Flag Zombie is otherwise an ordinary Zombie - the same health as any other, and
+ * the Wave that sends it is what makes the Wave hard - so with no flag on the
+ * screen there is nothing to tell it apart, and a player who has been told the Flag
+ * Wave is coming would have no way of seeing that this is the Zombie they are
+ * looking for.
+ *
+ * The pole is drawn first and the Zombie over it, so that the Zombie looks to be
+ * holding it: the pole disappears behind the shirt where the two meet.
+ */
+function drawFlag(
+  context: CanvasRenderingContext2D,
+  centre: { x: number; y: number },
+  board: BoardLayout,
+): void {
+  // The pole runs from the Zombie's hand to above its head, rather than being a
+  // shape of its own hung at some height: a flag whose pole stopped short of the
+  // body floated over the lawn like a decoration, and a player looking at it was
+  // looking at something near a Zombie rather than at something it was carrying.
+  const hand = centre.y + board.squareHeight * 0.06
+  const top = hand - board.squareHeight * 0.62
+  const poleX = centre.x + board.squareWidth * ZOMBIE_WIDTH * 0.3
+  const thickness = Math.max(2, board.squareWidth * 0.045)
+
+  context.fillStyle = FLAG_POLE
+  context.fillRect(poleX - thickness / 2, top, thickness, hand - top)
+
+  context.fillStyle = FLAG_CLOTH
+  context.beginPath()
+  context.moveTo(poleX, top + thickness)
+  context.lineTo(poleX + board.squareWidth * 0.34, top + (hand - top) * 0.16)
+  context.lineTo(poleX, top + (hand - top) * 0.34)
+  context.closePath()
+  context.fill()
+
+  context.strokeStyle = FLAG_EDGE
+  context.lineWidth = Math.max(1, 1.5 * board.scale)
   context.stroke()
 }
 

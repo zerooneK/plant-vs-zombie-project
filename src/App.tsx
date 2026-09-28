@@ -83,13 +83,19 @@ export function App() {
     sun: game.current.sun,
     chosen: null,
     spent: [],
-    gameOver: game.current.gameOver,
+    outcome: game.current.outcome,
+    flagWaveWarning: game.current.flagWaveWarning,
     packets: game.current.seedBank.map((packet) => ({
       name: packet.name,
       cost: packet.cost,
       ready: true,
     })),
   })
+
+  // A level that has ended has stopped, whichever way it ended, so everything that
+  // is laid over the help text is laid over the same thing and the help area keeps
+  // one height.
+  const ended = report.outcome !== 'playing'
 
   const choose = useCallback((choice: Choice) => {
     const before = game.current
@@ -110,18 +116,30 @@ export function App() {
             board would jump at the exact moment a player is looking at the lawn they
             lost on, and the Zombies frozen on it would all move a little. */}
         <div className="app__help">
-          <p aria-hidden={report.gameOver}>
+          <p aria-hidden={ended}>
             Click a Sun to collect it. Choose a Seed Packet, then click a Square to plant it.
           </p>
-          <p aria-hidden={report.gameOver}>
+          <p aria-hidden={ended}>
             Zombies walk in from the right. A Peashooter shoots the nearest one in its own Row. A
             Zombie that reaches a plant stops and eats it. One that reaches the left edge sets off
             that Row's Lawn Mower, which clears the Row once and is then gone. If that Row is
             breached again the level is lost.
           </p>
-          {report.gameOver && (
-            <p className="app__game-over" role="status">
-              Game Over. A Zombie got in at the left of the board and this level is lost.
+          {ended && (
+            <p className={`app__banner app__banner--${report.outcome}`} role="status">
+              {report.outcome === 'won'
+                ? 'Level complete. The last Wave has come and the lawn is clear.'
+                : 'Game Over. A Zombie got in at the left of the board and this level is lost.'}
+            </p>
+          )}
+          {/* The Flag Wave is announced while the level is still being played, and is
+              laid over the help text for the same reason the ending banner is: an
+              announcement that pushed the help text down would move the canvas up the
+              page, and the whole point of announcing a Wave is that the player looks
+              at the lawn. */}
+          {report.flagWaveWarning && !ended && (
+            <p className="app__banner app__banner--flag-wave" role="status">
+              A huge wave of Zombies is coming. It is the last one.
             </p>
           )}
         </div>
@@ -132,7 +150,7 @@ export function App() {
         chosen={report.chosen}
         sun={report.sun}
         onChoose={choose}
-        playable={!report.gameOver}
+        playable={report.outcome === 'playing'}
       />
 
       <Lawn game={game} onChange={setReport} />

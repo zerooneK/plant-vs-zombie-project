@@ -81,8 +81,8 @@ Each step is something you can actually play or click before the next one starts
 | 5 | Walking | A zombie enters at the right of a row and moves left at a fixed speed — **done at ticket 04** |
 | 6 | Eating | It stops at a plant, eats it, then carries on — **done** |
 | 7 | Lawn mowers | A zombie at the left edge spends the row's mower and clears the row — **done** |
-| 8 | Win and lose | Waves end, then either a win or game over — **game over done at ticket 07; winning not built** |
-| 9 | **Level 1-1** | A whole level, start to finish, playable |
+| 8 | Win and lose | Waves end, then either a win or game over — **done at ticket 08** |
+| 9 | **Level 1-1** | A whole level, start to finish, playable — **the level plays start to finish at ticket 08, won and lost; the menu and level select are ticket 19** |
 | 10 | The other 9 plants | One at a time, each with its rule test |
 | 11 | The other 4 zombies, levels 1-2 to 1-10 | Added as data |
 | 12 | Saved progress | Levels stay unlocked between sessions |

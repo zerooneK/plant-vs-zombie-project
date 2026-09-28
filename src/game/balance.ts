@@ -136,3 +136,55 @@ export const ZOMBIE_BITE_DAMAGE = 100
  * throughout: a bite, a second of chewing, a bite.
  */
 export const ZOMBIE_BITE_INTERVAL = STEPS_PER_SECOND
+
+/**
+ * How far ahead of itself the game says the Flag Wave is coming.
+ *
+ * Not the original's number, and not claimed to be. The original raises a flag and
+ * puts a message up some seconds ahead of its huge wave; how many is not something
+ * this project can hold with confidence, so it is marked here rather than
+ * borrowed.
+ *
+ * Ten seconds is long enough that a player can stop, look at the lawn and decide
+ * what to do about it - which is the whole of what an announcement is for - and
+ * short enough that it is still news rather than a reminder of something already
+ * known.
+ */
+export const FLAG_WAVE_WARNING = 10 * STEPS_PER_SECOND
+
+/**
+ * How much harder a Zombie's health counts for in a Flag Wave, as a multiple.
+ *
+ * Not the original's number, and the rule is not the original's either. The
+ * original's Flag Wave is not made of tougher Zombies at all: it is a great many
+ * ordinary ones with a Flag Zombie walking at the front of them, and that is the
+ * whole of what it is. A Wave that is only more of the same, though, is not
+ * something a player can see coming and get ready for - and getting ready is the
+ * whole of what the announcement is for. So this project's Flag Wave is both more
+ * and harder, and this is the half of that which is ours rather than copied.
+ *
+ * One and a quarter. A Zombie in the Flag Wave takes seventeen peas to fell rather
+ * than fourteen.
+ *
+ * That number was one and a half when this was first written, on the argument that
+ * a third more health was a third more climax. Playing the level said otherwise. A
+ * Peashooter in the first Column there is to plant in - one to the right of the
+ * mowers - is reached by a Zombie in about thirty-three seconds, and a Peashooter
+ * fires every one and four tenths of a second: so one and a half health is
+ * twenty-nine seconds of shooting against the thirty-three a Zombie spends getting
+ * there, a margin of three and a half seconds. Three and a half seconds is not a
+ * margin, it is a coin toss, and a first playthrough of Level 1-1 lost on it -
+ * losing a Row's mower to a Flag Wave Zombie that a Peashooter standing in the right
+ * Square could not finish in time. The error was comparing thirty-three against the
+ * forty-two a Zombie spends crossing the *whole* lawn, which is the distance to a
+ * Peashooter in the last Column and not the one in the first.
+ *
+ * One and a quarter is seventeen peas against thirty-three seconds: nine seconds to
+ * spare, which is a Peashooter placed a little late rather than a Peashooter
+ * standing in exactly the right place at exactly the right moment. Two of them in
+ * one Row is still a problem rather than a certainty, which is what the Flag Wave is
+ * for - the pressure comes from three of them arriving in three Rows at once, which
+ * is the original's Flag Wave, rather than from each one being nearly unkillable,
+ * which is not.
+ */
+export const FLAG_WAVE_TOUGHNESS = 1.25

@@ -4,7 +4,7 @@ import { drawBoard } from '../draw/board.ts'
 import { layout, pointOnBoard, squareAtPoint } from '../draw/layout.ts'
 import type { BoardLayout, Viewport } from '../draw/layout.ts'
 import { startFrames } from '../draw/frames.ts'
-import { SHOVEL, apply, type Choice, type GameState } from '../game/sim.ts'
+import { SHOVEL, apply, type Choice, type GameState, type Outcome } from '../game/sim.ts'
 import { BOARD_ROWS, MOWER_COLUMN, hasLawnMower, type Occupant, type Row, type Square } from '../game/board.ts'
 
 function isSameSquare(a: Square | null, b: Square | null): boolean {
@@ -36,8 +36,10 @@ export interface Report {
    * runs, which is a handful of times in a level rather than sixty times a second.
    */
   readonly spent: readonly Row[]
-  /** Whether the level has been lost. */
-  readonly gameOver: boolean
+  /** How the level has ended, or that it has not. */
+  readonly outcome: Outcome
+  /** Whether the game has said that the Flag Wave is coming. */
+  readonly flagWaveWarning: boolean
 }
 
 /**
@@ -84,7 +86,8 @@ function isSameReport(told: Report | null, report: Report): boolean {
     isSameSquare(told.selected, report.selected) &&
     told.sun === report.sun &&
     told.chosen === report.chosen &&
-    told.gameOver === report.gameOver &&
+    told.outcome === report.outcome &&
+    told.flagWaveWarning === report.flagWaveWarning &&
     sameRows(told.spent, report.spent) &&
     samePackets(told.packets, report.packets)
   )
@@ -171,13 +174,15 @@ export function Lawn({ game, onChange }: { game: GameRef; onChange: (report: Rep
 
         // The only place React hears about the rules, and only when the Sun
         // held, the selection, the chosen packet, a packet's readiness, the Rows
-        // that have spent their mower or the level's being over has really changed.
+        // that have spent their mower, the level's ending or the Flag Wave being
+        // announced has really changed.
         const report: Report = {
           selected: state.selected,
           sun: state.sun,
           chosen: state.chosen,
           spent: rowsWithoutAMower(state.occupants),
-          gameOver: state.gameOver,
+          outcome: state.outcome,
+          flagWaveWarning: state.flagWaveWarning,
           packets: state.seedBank.map((packet) => ({
             name: packet.name,
             cost: packet.cost,

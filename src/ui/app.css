@@ -49,24 +49,49 @@ body {
   opacity: 0.7;
 }
 
-/* Game Over is laid over the help text rather than taking its place, so that the
-   help area does not change height and the board does not move under the player.
-   Scoped with the child combinator so that it beats the rule above and is fully
+/* Banners - the ending of a level, and the Flag Wave's announcement - are laid over
+   the help text rather than taking its place, so that the help area does not change
+   height and the board does not move under the player. The board jumping at the
+   moment a level ends, or at the moment a Wave is announced, would move every Zombie
+   on it; and the announcement is only worth making if the player looks at the lawn.
+
+   Scoped with the child combinator so that they beat the rule above and are fully
    opaque - at 0.7 the help text shows through the middle of the message. */
-.app__help > .app__game-over {
+.app__help > .app__banner {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   margin: 0;
   padding: 0 1rem;
-  border: 2px solid #b71c1c;
+  border: 2px solid;
   border-radius: 0.35rem;
-  background: #4e1212;
-  color: #ffcdd2;
   font-size: 1rem;
   font-weight: 600;
   opacity: 1;
+}
+
+.app__help > .app__banner--lost {
+  border-color: #b71c1c;
+  background: #4e1212;
+  color: #ffcdd2;
+}
+
+/* A win is a different thing from a loss, and it is said in a different colour
+   rather than in the same red box with different words. */
+.app__help > .app__banner--won {
+  border-color: #2e7d32;
+  background: #14351a;
+  color: #c8e6c9;
+}
+
+/* The Flag Wave is a warning rather than an ending, so it is amber and it sits
+   behind nothing - it goes away when the Wave arrives, and it never shares the box
+   with a banner about the level being over. */
+.app__help > .app__banner--flag-wave {
+  border-color: #ef6c00;
+  background: #4e2600;
+  color: #ffe0b2;
 }
 
 .app__footer {

@@ -74,6 +74,10 @@ _Avoid_: campaign, story mode
 The end of a lost level. It happens when a zombie reaches the left edge of a row whose lawn mower has already been spent.
 _Avoid_: loss, defeat, you lose
 
+**Win**:
+The end of a cleared level. It happens when the last wave has come and no zombies remain, and it stops the level as surely as a Game Over does. Winning a level is what unlocks the next one.
+_Avoid_: victory, win screen, success, level cleared
+
 **Breach**:
 A zombie walking off the left edge of the board. Only possible in a row that has already spent its lawn mower, so a breach always means Game Over.
 _Avoid_: escape, leak, break-in

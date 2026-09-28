@@ -2,10 +2,10 @@ import { occupantAt, plantIn, startingOccupants, type Occupant, type Point, type
 import { fallSun, isResting, isSpent, spendLife, spawnSun, sunUnderPoint } from './sun.ts'
 import type { SunToken } from './sun.ts'
 import { seededRandom, type Random } from './random.ts'
-import { FIRST_SUN_DELAY, STARTING_SUN, SUN_INTERVAL } from './balance.ts'
+import { FIRST_SUN_DELAY, FLAG_WAVE_WARNING, STARTING_SUN, SUN_INTERVAL } from './balance.ts'
 import { PLANTS, type PlantName } from './plants.ts'
-import { LEVEL_1_1, type Level, type Wave } from './levels.ts'
-import { removeExhausted, walkAndEat, zombieAtEdge, type Zombie } from './zombies.ts'
+import { LEVEL_1_1, waveZombies, type Level, type Wave } from './levels.ts'
+import { removeExhausted, walkAndEat, type Zombie } from './zombies.ts'
 import { runMowers } from './mowers.ts'
 import { fireFromPlants, flyRight, type Shot } from './shots.ts'
 
@@ -75,16 +75,43 @@ export interface GameState {
   /** The name the next pea to be fired will be given. */
   readonly nextShotId: number
   /**
-   * Whether the level has been lost.
+   * How the level has ended, or that it has not.
    *
    * A fact about the level rather than about any one thing on the lawn, which is
    * why it is here and not worked out from the Zombies each step: a level is over
    * for good, and a thing that can be un-over is not the end of anything.
    *
-   * False on a fresh lawn, and a check that wants a lost level has to lose one.
+   * `playing` on a fresh lawn, and a check that wants an ended level has to end
+   * one.
    */
-  readonly gameOver: boolean
+  readonly outcome: Outcome
+  /**
+   * Whether the game has said that the Flag Wave is coming.
+   *
+   * Held in the state rather than worked out by the interface, because how far
+   * ahead of itself the Flag Wave is announced is a rule about the level's
+   * schedule and a number in `balance.ts` - not a matter of how much the
+   * interface feels like saying. The interface is told whether it is on or not,
+   * in the same way it is told whether the level has been lost.
+   */
+  readonly flagWaveWarning: boolean
 }
+
+/**
+ * The three things that can be true of a level: it is being played, it has been
+ * won, or it has been lost.
+ *
+ * One field rather than a boolean for each ending, because the two endings are
+ * not independent and the arithmetic of a single step can reach both at once: a
+ * Zombie that gets in is gone from the lawn, and a lawn with no Zombies left and
+ * no Waves still to come is the definition of a win. Two booleans would let a
+ * level be won and lost on the same step and leave the rules to decide which of
+ * the two a player is looking at; one field with three values cannot hold that
+ * state, because there is nowhere in it to put the contradiction.
+ *
+ * Which ending it is, is `advance`'s to say, from the same step that caused it.
+ */
+export type Outcome = 'playing' | 'won' | 'lost'
 
 export type Command =
   | {
@@ -143,7 +170,8 @@ export function initialGameState(
     nextZombieId: 1,
     shots: [],
     nextShotId: 1,
-    gameOver: false,
+    outcome: 'playing',
+    flagWaveWarning: isFlagWaveComing(level.waves, 0),
   }
 }
 
@@ -153,15 +181,19 @@ export function apply(state: GameState, command: Command): GameState {
   //
   // Refusing the tick as well as the plants is what stops the level rather than
   // slowing it: nothing moves, no more Sun falls, no Recharge runs down, and the
-  // state a player is left looking at is the state they lost on. Letting `advance`
-  // through would leave a lost level quietly going on with no one playing it - the
-  // Zombies still walking, Sun still landing - which is a worse thing to show a
-  // player than a stopped board.
+  // state a player is left looking at is the state the level ended on. Letting
+  // `advance` through would leave an ended level quietly going on with no one
+  // playing it - the Zombies still walking, Sun still landing - which is a worse
+  // thing to show a player than a stopped board.
+  //
+  // Won and lost are refused the same way and for the same reason. A level that
+  // has been won is as finished as one that has been lost, and a won board that
+  // kept going would be a lawn still being defended with nothing left to defend.
   //
   // Playing again is a fresh game rather than an un-freezing of this one, because
-  // there is nothing to go back to: a level that has been lost was lost on the lawn
-  // as it stands.
-  if (state.gameOver) {
+  // there is nothing to go back to: a level that has ended ended on the lawn as it
+  // stands.
+  if (state.outcome !== 'playing') {
     return { ...state }
   }
 
@@ -318,6 +350,18 @@ function advance(state: GameState): GameState {
   // and is then spent: what is left in pendingWaves is what is still to come.
   const sent = sendDueWaves(state.pendingWaves, tick, state.nextZombieId)
 
+  // The Flag Wave is announced before it arrives, and the announcement stops when
+  // it does. Asked of the Waves still to come, so that the Wave walking in this
+  // step is not announced on top of itself: the Flag Wave's announcement and the
+  // Flag Wave are the same event seen from two steps apart, and a banner that
+  // outlived the thing it was announcing would be the game's last act on screen.
+  //
+  // A consequence of asking it this way is that a Level whose Flag Wave fell
+  // inside the first ten seconds of play could not announce it, because by the
+  // first step the Wave is already walking in. That is a property of a schedule
+  // rather than a gap in the rule, and the answer to it is to move the Wave later.
+  const flagWaveWarning = isFlagWaveComing(sent.pendingWaves, tick)
+
   // A Zombie walks on the step after it arrives, so it spends one step standing
   // at the right edge of the board. Which is the place Zombies come in, so a
   // Zombie is briefly seen arriving rather than always already having taken a
@@ -343,12 +387,7 @@ function advance(state: GameState): GameState {
   // again here, because the question "did a Zombie get in?" and the question "did
   // a Zombie arrive at a mower?" are the same walk seen from two places: a Row
   // with a mower is answered by the mower and a Row without one by this.
-  //
-  // The rest of the step still happens. The level ends at the end of the step the
-  // breach was on, as everything else in this function does, so the peas already
-  // in the air land and the Sun falls one last time - and the step after this one
-  // is where nothing happens at all.
-  const gameOver = eating.breached.size > 0
+  const breached = eating.breached.size > 0
 
   // Peas travel, and only then do plants fire. Both are one step behind their own
   // arrival for the same reason: a pea leaves a plant and starts moving on the
@@ -357,11 +396,37 @@ function advance(state: GameState): GameState {
   const landing = flyRight(state.shots, mown.zombies)
   // A Zombie with nothing left of it leaves before anything can shoot at it, so
   // that a Peashooter never fires at a corpse standing on the lawn. It leaves
-  // after eating rather than before, so a Zombie killed by a pea on the same step
-  // it bit still got that bite in - everything a Zombie does on a step happens,
+  // after eating rather than before, so that a Zombie killed by a pea on the same
+  // step it bit still got that bite in - everything a Zombie does on a step happens,
   // and then the dead are cleared.
   const standing = removeExhausted(landing.zombies)
   const fired = fireFromPlants(mown.occupants, standing, landing.shots, state.nextShotId)
+
+  // Won and lost are read off this one step as well, and from the same two
+  // questions: what is still on the lawn, and what is still to come. Clearing the
+  // field is what ends a level, so both are asked of the Zombies and the Waves
+  // rather than kept as anything of their own, and both are asked *after*
+  // everything else in the step has happened - a Zombie that walked off the left
+  // edge is not on the lawn, and a level must never be won by the very act of
+  // losing it.
+  //
+  // The lawn is put together once and used both for the state and for the ending,
+  // so that the ending cannot be worked out from a different list of Zombies than
+  // the one the player is looking at. The Wave that walked in this step is on that
+  // list, which is what stops a Level being won on the step its last Wave arrives:
+  // an empty lawn one step before a Zombie walks onto it is a lawn waiting, not a
+  // level finished.
+  //
+  // A Level with no Waves at all is therefore won on its first step, which is true
+  // rather than surprising - a level with nothing to send has nothing left to send,
+  // and a lawn with nothing on it is clear.
+  const onTheLawn = [...standing, ...sent.zombies]
+  const outcome: Outcome = breached
+    ? 'lost'
+    : sent.pendingWaves.length === 0 && onTheLawn.length === 0
+      ? 'won'
+      : 'playing'
+
 
   return {
     ...state,
@@ -369,12 +434,13 @@ function advance(state: GameState): GameState {
     ...stepSun(state),
     seedBank,
     pendingWaves: sent.pendingWaves,
-    zombies: [...standing, ...sent.zombies],
+    zombies: onTheLawn,
     nextZombieId: sent.nextZombieId,
     shots: fired.shots,
     nextShotId: fired.nextShotId,
     occupants: fired.occupants,
-    gameOver,
+    outcome,
+    flagWaveWarning,
   }
 }
 
@@ -412,12 +478,25 @@ function stepSun(state: GameState): SunStep {
 }
 
 /**
+ * Whether the Flag Wave is close enough to have been announced.
+ *
+ * A question about the Waves still to come rather than about the Level's whole
+ * schedule, so that a Flag Wave that has already walked in is not announced: the
+ * announcement is for the Wave's approach, not for the Wave.
+ */
+function isFlagWaveComing(pending: readonly Wave[], tick: number): boolean {
+  return pending.some(
+    (wave) => wave.flagWave === true && wave.atStep - tick <= FLAG_WAVE_WARNING,
+  )
+}
+
+/**
  * The Zombies a level's schedule walks in on this step, and the Waves still to
  * come.
  *
  * A Wave is spent as it is sent, so the Waves left waiting are the answer to
- * "is there anything still to come?" - which is the beginning of how a Level
- * will be won, and is not decided here.
+ * "is there anything still to come?" - which is how a Level is won, decided by
+ * `advance` from the Waves left and the Zombies standing.
  */
 function sendDueWaves(
   pending: readonly Wave[],
@@ -431,10 +510,9 @@ function sendDueWaves(
     if (wave.atStep > tick) {
       continue
     }
-    for (const entry of wave.zombies) {
-      zombies.push(zombieAtEdge(nextId, entry.name, entry.row))
-      nextId += 1
-    }
+    const sent = waveZombies(wave, nextId)
+    zombies.push(...sent)
+    nextId += sent.length
   }
 
   return { pendingWaves: pending.filter((wave) => wave.atStep > tick), zombies, nextZombieId: nextId }

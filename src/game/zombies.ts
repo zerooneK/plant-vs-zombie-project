@@ -22,7 +22,7 @@ import {
  * the roster is meant to be data, so the next Zombie is an entry rather than
  * another branch in the rules.
  */
-export type ZombieName = 'basic'
+export type ZombieName = 'basic' | 'flag'
 
 /** One kind of Zombie, as the rules know it. */
 export interface ZombieKind {
@@ -37,6 +37,22 @@ export const BASIC_ZOMBIE: ZombieKind = {
 }
 
 /**
+ * A Flag Zombie: a Basic Zombie carrying a flag.
+ *
+ * In the roster as a name of its own, because carrying the flag is the whole of
+ * what it is, and a player who has been told a Flag Wave is coming looks for the
+ * flag rather than for a tougher Zombie. Deliberately the health of an ordinary
+ * Zombie and not a number of its own: a flag is something a Zombie is holding, not
+ * a kind of armour, and the Flag Wave is what is harder rather than its
+ * standard-bearer. A Wave can make it tougher, as the Flag Wave does to everything
+ * it sends, but the roster does not.
+ */
+export const FLAG_ZOMBIE: ZombieKind = {
+  name: 'flag',
+  health: BASIC_ZOMBIE_HEALTH,
+}
+
+/**
  * Every Zombie the game knows, looked up by name.
  *
  * Keyed by name for the same reason the plants are: the roster is data, so the
@@ -44,6 +60,7 @@ export const BASIC_ZOMBIE: ZombieKind = {
  */
 export const ZOMBIES: Readonly<Record<ZombieName, ZombieKind>> = {
   basic: BASIC_ZOMBIE,
+  flag: FLAG_ZOMBIE,
 }
 
 /**
@@ -83,9 +100,19 @@ export interface Zombie {
   readonly stepsUntilBite: number
 }
 
-/** A Zombie standing at the right edge of a Row, which is where Zombies come in. */
-export function zombieAtEdge(id: number, name: ZombieName, row: Row): Zombie {
-  return { id, name, row, walked: 0, health: ZOMBIES[name].health, stepsUntilBite: 0 }
+/**
+ * A Zombie standing at the right edge of a Row, which is where Zombies come in.
+ *
+ * How much health it walks in with is given rather than looked up from its name,
+ * because what a Zombie is worth is a fact about the Wave that sent it and not
+ * only about what it is: the same Zombie is worth more in a Flag Wave than in any
+ * other, and the Wave is where that is decided. Looked up from the name here, the
+ * roster would be the only place a Zombie's health could come from, and the Flag
+ * Wave would have to be a different roster rather than the same Zombies in a
+ * different Wave.
+ */
+export function zombieAtEdge(id: number, name: ZombieName, row: Row, health: number): Zombie {
+  return { id, name, row, walked: 0, health, stepsUntilBite: 0 }
 }
 
 /** A Zombie with that much damage taken off it. */

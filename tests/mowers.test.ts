@@ -217,8 +217,17 @@ test('a Row that has spent its Lawn Mower can be planted in the Square it left',
   //
   // Settled at ticket 06, when the mower stopped being a mower with a flag on it
   // and became a mower that is simply not on the lawn any more.
+  // The Wave a long way off is there so the level is still being played while this
+  // check plays it: a level of one Wave is won the moment its only Zombie is mown,
+  // and this check goes on to collect Sun and plant, which a won level will not do.
   const mown = untilTick(
-    initialGameState(DEFAULT_SEED, levelWith(oneZombieIn(ROW, 1))),
+    initialGameState(
+      DEFAULT_SEED,
+      levelWith(
+        oneZombieIn(ROW, 1),
+        oneZombieIn(ROW, 5 * 60 * STEPS_PER_SECOND),
+      ),
+    ),
     stepAZombieReachesItsMower(1),
     'the Zombie reached its mower and the mower ran',
   )

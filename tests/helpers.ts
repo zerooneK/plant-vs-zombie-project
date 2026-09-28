@@ -56,6 +56,30 @@ export function untilTick(state: GameState, tick: number, whatItIsWaitingFor: st
 }
 
 /**
+ * Plays the rules on until the level has ended, and hands back the state it ended
+ * on.
+ *
+ * Which way it ended is deliberately not asked about here: a check about losing
+ * must not be able to pass by having won, and a check about winning must not be
+ * able to pass by having lost. Each says so itself.
+ *
+ * The bound is a whole level's worth of play rather than a few thousand steps,
+ * because what is being waited for here is a level finishing rather than a thing
+ * happening, and the schedule that decides when a level finishes is exactly the
+ * thing a check like this is about.
+ */
+export function untilTheLevelEnds(state: GameState, whatItIsWaitingFor: string): GameState {
+  let current = state
+  for (let step = 0; step < 20 * 60 * STEPS_PER_SECOND; step++) {
+    if (current.outcome !== 'playing') {
+      return current
+    }
+    current = apply(current, { kind: 'advance' })
+  }
+  assert.fail(`the level never ended in twenty minutes of play: ${whatItIsWaitingFor}`)
+}
+
+/**
  * Plays until there is enough Sun in hand to pay for a Peashooter, collecting
  * every piece that falls on the way.
  *
