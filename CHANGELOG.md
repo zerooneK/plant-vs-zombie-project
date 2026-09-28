@@ -4,6 +4,78 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.13.0] - 2026-09-28
+
+### Game Over on a spent Row
+
+Ticket 07. A Zombie that walks off the left edge of the board ends the level, and
+the level then stops: no Zombies walk, no Sun falls, and nothing can be planted.
+Winning is not built, so a level can still not be *won*.
+
+- `GameState.gameOver` is the level's fate, `false` on a fresh lawn.
+- A Zombie's step reports which Rows were walked off rather than deciding what that
+  means, so `walkAndEat` stays about walking and eating and the level's rule lives
+  in `sim.ts`. A Row *with* a mower is answered by the mower, a Row without one by
+  this, and both are the same walk seen from two places.
+- The breach is at x < 0, one step *past* the left edge of the board, not on the
+  mower's Square. The asymmetry is deliberate: a mower stands on the lawn and is set
+  off there, and a Zombie with no mower left gets to the place off the edge of it.
+  All of the rule is in that one step between standing on the last Column and being
+  past it.
+- Every command is refused once the level is over, `advance` included. Refusing the
+  tick is what stops the level rather than slowing it; letting the clock run would
+  leave a lost level going on with nobody playing it.
+- A Row that has spent its mower says so: a dashed footprint of the mower's own
+  shape on the lawn, and the Rows named in the footer. Both ask the lawn the same
+  question the rules ask, so the picture and the rules cannot disagree.
+- The board does not move or resize when Game Over appears. The banner is laid over
+  the help text rather than replacing it, and the footer's mower line stays, because
+  a board that jumps at the moment a player is looking at the lawn they lost on is
+  its own small failure. A browser check watches the board's geometry before and
+  after the loss for exactly this.
+- `CONTEXT.md` gains **Breach**: a zombie walking off the left edge of the board,
+  which can only happen in a Row that has already spent its mower.
+
+### Checks
+
+Four checks in `tests/game-over.test.ts`, each made to fail against code broken on
+purpose:
+
+- a Zombie past the left edge of a spent Row ends the level, and one step earlier
+  it has not;
+- once the level is over the clock does not move, a Zombie still on the lawn does
+  not walk, and the same two commands that planted a Peashooter a step earlier now
+  change nothing;
+- spending a Row's mower saves the Row *without* ending the level, because a mower
+  running could be wired to "this Row has no mower" and every check about losing
+  would still pass;
+- a second Row still saves that Row after one has been spent, so losing a Row is not
+  losing the level.
+
+A check in `tests/zombies.test.ts` that walks a Zombie off the left edge now says
+that this is a loss, rather than treating the walk-off as an ordinary event.
+
+The level-shaping helpers the mower checks used are moved to `tests/helpers.ts`, so
+there is one copy of `levelWith`, `oneZombieIn`, `untilTick` and the walk speed
+rather than two.
+
+Checked: 68 rule checks pass, typecheck and production build clean, and the loss
+watched in a real browser — a mower running, the Row marked, the other four mowers
+untouched, then a breach, the banner, a dead Seed Bank, and not one pixel of the
+page moving in the seven seconds after.
+
+### Found while playing it
+
+**Level 1-1 as shipped cannot be lost, and cannot be won either.** It sends two
+Zombies into Row 3 twenty-five seconds apart, and the mower runs on the first at
+about 63 seconds, clearing both — a mower clears its whole Row. Nothing else is
+sent to that Row and the other Rows get one Zombie each, so no Row is ever breached
+twice. Twelve minutes of play leaves the lawn empty and the level going. Game Over
+is built and unreachable in this level, which is recorded in `docs/plan.md` as
+ticket 08's problem. It also means Game Over's presentation was checked in a
+browser against a temporary wave that was then removed, not against the level that
+ships; the code checked is the code that ships, the wave list is not.
+
 ## [0.12.0] - 2026-09-28
 
 Build order step 7 of 13: a Lawn Mower saves a Row once. A Zombie that walks the whole length of a Row no longer walks off the board — it sets off that Row's mower, which clears the Row and is then gone for the rest of the level. This is the first thing in the game that can be used up.

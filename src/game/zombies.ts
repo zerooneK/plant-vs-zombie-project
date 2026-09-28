@@ -149,10 +149,17 @@ export function plantBeingEaten(
  * and what it eats is a plant that is no longer standing there. Returning the
  * lawn as well as the Zombies is what lets a Zombie's step be one step rather
  * than two that have to be kept in step with each other.
+ *
+ * It also reports which Rows were walked off the end of, because a Zombie leaving
+ * the board is something that happened on the lawn rather than something the
+ * rules decided about it, and what it means for the level is not this function's
+ * to say.
  */
 export interface ZombieStep {
   readonly zombies: readonly Zombie[]
   readonly occupants: readonly Occupant[]
+  /** The Rows a Zombie walked off the left edge of the board in this step. */
+  readonly breached: ReadonlySet<Row>
 }
 
 /**
@@ -188,10 +195,10 @@ export interface ZombieStep {
  * on the mower Square for it to be found.
  *
  * A Row whose mower has already run is the other case, and is the end of the
- * level in the original. Game Over is not built yet, so until it is, a Zombie that
- * gets past the left edge of such a Row simply leaves - rather than standing off
- * the side of the screen for ever, where no player can see it and the state grows
- * all level.
+ * level. A Zombie that gets past the left edge of such a Row is recorded as
+ * breaching it, and `sim.ts` ends the level from that: this step is about the
+ * Zombie having walked off the lawn, not about what the loss means, so that the
+ * mower's rule stays the mower's rule and the level's is the level's.
  *
  * A Lawn Mower is not food. A Zombie walks into the Square a mower stands in and
  * does not eat it, because a mower is not a plant and there is nothing there to
@@ -209,11 +216,19 @@ export function walkAndEat(
   // plant already gone for the second Zombie, which would quietly make the
   // second bite a walk instead.
   const bites = new Map<Planted, number>()
+  const breached = new Set<Row>()
 
   const after = zombies.map((zombie) => {
     const walked = { ...zombie, walked: zombie.walked + 1 }
 
+    // Past the left edge of the board is off the board, and a Row that had a mower
+    // never gets a Zombie this far: the mower is set off on the mower Square, one
+    // Column in, so the only way to be here is a Row that has already spent its
+    // mower. Recorded rather than acted on, because a Zombie's step is about
+    // walking and eating and being gone from the lawn, and what a walk-off means
+    // for the level is `sim.ts`'s business.
     if (zombieX(walked) < 0) {
+      breached.add(zombie.row)
       return null
     }
 
@@ -248,7 +263,7 @@ export function walkAndEat(
     })
     .filter((occupant) => occupant.kind !== 'plant' || occupant.health > 0)
 
-  return { zombies: after.filter((zombie) => zombie !== null), occupants: bitten }
+  return { zombies: after.filter((zombie) => zombie !== null), occupants: bitten, breached }
 }
 
 /**

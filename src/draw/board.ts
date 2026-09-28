@@ -1,4 +1,4 @@
-import { everySquare, SQUARE_HEIGHT } from '../game/board.ts'
+import { BOARD_ROWS, MOWER_COLUMN, SQUARE_HEIGHT, everySquare, hasLawnMower } from '../game/board.ts'
 import type { Planted, Square } from '../game/board.ts'
 import type { SunToken } from '../game/sun.ts'
 import type { Shot } from '../game/shots.ts'
@@ -24,6 +24,7 @@ const PLANT_FACE = '#66bb6a'
 const MOWER_BODY = '#b0bec5'
 const MOWER_EDGE = '#546e7a'
 const MOWER_HANDLE = '#ef5350'
+const SPENT_MOWER_EDGE = 'rgba(255, 255, 255, 0.3)'
 const PEA = '#b7e04b'
 const PEA_EDGE = '#33691e'
 const ZOMBIE_SKIN = '#9e9e9e'
@@ -121,6 +122,42 @@ function drawLawnMower(
   context.strokeStyle = MOWER_EDGE
   context.lineWidth = Math.max(1, 2 * board.scale)
   context.strokeRect(centre.x - width / 2, centre.y - height / 2, width, height)
+}
+
+/**
+ * The outline a Lawn Mower leaves behind, drawn in a Row that has spent its own.
+ *
+ * A mower is not left with a flag saying it has run - it is simply not on the lawn
+ * any more - so a Row that has spent one looks like a Row whose mower is behind a
+ * plant, or one whose mower has yet to be drawn, or a Row that never had one. That
+ * is a bad thing to be unable to tell apart, because the difference between a Row
+ * that can still be saved and a Row that cannot is the whole of what Game Over
+ * turns on, and a player watching a Zombie walk down a Row needs to know which one
+ * they are watching before it gets there rather than after.
+ *
+ * So the Row says so, by marking where its mower stood. Drawn as a dashed footprint
+ * of the mower's own shape and nothing else: it is a mark on the grass, not a
+ * mower, and it is in the same place and the same size as the mower it stands for.
+ * Drawn before the plants, so that a plant in that Square - which is allowed, since
+ * a spent mower's Square is bare grass like any other - sits on top of it rather
+ * than the mark being drawn over a plant.
+ *
+ * Which Rows these are is asked of the lawn with the same question the rules ask
+ * when they work out whether a Row can be saved, and for the same reason: the
+ * picture and the rules cannot come to different answers about which Rows still
+ * have a mower, because there is only one answer and both of them look it up.
+ */
+function drawSpentMower(context: CanvasRenderingContext2D, square: Square, board: BoardLayout): void {
+  const centre = centreOf(square, board)
+  const width = board.squareWidth * 0.62
+  const height = board.squareHeight * 0.34
+
+  context.save()
+  context.strokeStyle = SPENT_MOWER_EDGE
+  context.lineWidth = Math.max(1, 2 * board.scale)
+  context.setLineDash([4 * board.scale, 4 * board.scale])
+  context.strokeRect(centre.x - width / 2, centre.y - height / 2, width, height)
+  context.restore()
 }
 
 /**
@@ -267,6 +304,17 @@ export function drawBoard(
       board.squareWidth,
       board.squareHeight,
     )
+  }
+
+  // Every Row that has spent its mower says so on the lawn, before anything is
+  // drawn standing on it. Asked of the lawn rather than remembered, so that a mark
+  // cannot be left behind by a mower that is somehow there again, or go missing
+  // from a Row that has one.
+  for (let row = 0; row < BOARD_ROWS; row++) {
+    const square: Square = { row, column: MOWER_COLUMN }
+    if (!hasLawnMower(state.occupants, square)) {
+      drawSpentMower(context, square, board)
+    }
   }
 
   if (state.selected !== null) {

@@ -9,20 +9,15 @@ import {
   type Square,
 } from '../src/game/board.ts'
 import { STEPS_PER_SECOND } from '../src/game/clock.ts'
-import { LEVEL_1_1, type Level, type Wave } from '../src/game/levels.ts'
 import { DEFAULT_SEED, apply, initialGameState, type GameState } from '../src/game/sim.ts'
 import { zombieX, type Zombie } from '../src/game/zombies.ts'
-import { withSunToPlant } from './helpers.ts'
-
-/**
- * Steps a Zombie takes to walk across one Column, worked out here rather than
- * read from the rules.
- *
- * The point of a check is to catch the number being wrong, so the number has to
- * be stated in the check: reading it from the rules would pass whatever the
- * rules happened to say.
- */
-const ZOMBIE_STEPS_PER_COLUMN = Math.round(4.7 * STEPS_PER_SECOND)
+import {
+  ZOMBIE_STEPS_PER_COLUMN,
+  levelWith,
+  oneZombieIn,
+  untilTick,
+  withSunToPlant,
+} from './helpers.ts'
 
 /** The Row the checks below defend, and breach. */
 const ROW = 2
@@ -48,39 +43,6 @@ const STEPS_TO_THE_MOWER = 8 * ZOMBIE_STEPS_PER_COLUMN
  */
 function stepAZombieReachesItsMower(walkedInAtStep: number): number {
   return walkedInAtStep + STEPS_TO_THE_MOWER + 1
-}
-
-/**
- * A level that sends in exactly the Zombies a check needs, and nothing else.
- *
- * Zombies come in on a level's schedule, so a check that wants a particular
- * number of Zombies in a particular Row has to say so, rather than take whatever
- * the level would send next.
- */
-function levelWith(...waves: Wave[]): Level {
-  return { ...LEVEL_1_1, waves }
-}
-
-/** One Basic Zombie into a Row, walking in on the given step. */
-function oneZombieIn(row: number, atStep: number): Wave {
-  return { atStep, zombies: [{ name: 'basic', row }] }
-}
-
-/**
- * Plays the rules on until the game has reached that step of play, naming what it
- * is waiting for, so that a check failing inside it reports which of the game's
- * promises was not kept rather than only that four thousand steps were not
- * enough.
- */
-function untilTick(state: GameState, tick: number, whatItIsWaitingFor: string): GameState {
-  let current = state
-  for (let step = 0; step < 4000; step++) {
-    if (current.tick >= tick) {
-      return current
-    }
-    current = apply(current, { kind: 'advance' })
-  }
-  assert.fail(`the game never got there in four thousand steps: ${whatItIsWaitingFor}`)
 }
 
 /** The one Zombie in a Row, and a complaint if that Row holds none. */function zombieIn(state: GameState, row: number): Zombie {

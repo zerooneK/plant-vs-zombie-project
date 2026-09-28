@@ -5,7 +5,7 @@ import { layout, pointOnBoard, squareAtPoint } from '../draw/layout.ts'
 import type { BoardLayout, Viewport } from '../draw/layout.ts'
 import { startFrames } from '../draw/frames.ts'
 import { SHOVEL, apply, type Choice, type GameState } from '../game/sim.ts'
-import type { Square } from '../game/board.ts'
+import { BOARD_ROWS, MOWER_COLUMN, hasLawnMower, type Occupant, type Row, type Square } from '../game/board.ts'
 
 function isSameSquare(a: Square | null, b: Square | null): boolean {
   if (a === null || b === null) {
@@ -28,6 +28,16 @@ export interface Report {
   readonly sun: number
   readonly chosen: Choice | null
   readonly packets: readonly PacketView[]
+  /**
+   * The Rows that have spent their Lawn Mower, in order.
+   *
+   * In the report rather than worked out in the interface, because the answer is
+   * the rules' and not the picture's - and because it changes only when a mower
+   * runs, which is a handful of times in a level rather than sixty times a second.
+   */
+  readonly spent: readonly Row[]
+  /** Whether the level has been lost. */
+  readonly gameOver: boolean
 }
 
 /**
@@ -74,8 +84,33 @@ function isSameReport(told: Report | null, report: Report): boolean {
     isSameSquare(told.selected, report.selected) &&
     told.sun === report.sun &&
     told.chosen === report.chosen &&
+    told.gameOver === report.gameOver &&
+    sameRows(told.spent, report.spent) &&
     samePackets(told.packets, report.packets)
   )
+}
+
+function sameRows(a: readonly Row[], b: readonly Row[]): boolean {
+  return a.length === b.length && a.every((row, index) => row === b[index])
+}
+
+/**
+ * The Rows that have spent their Lawn Mower, found by asking the lawn.
+ *
+ * Asked the same way the drawing and the rules ask, one Row at a time, so that
+ * the words on the page, the mark on the grass and the rule that saves a Row are
+ * all looking at the same thing.
+ */
+function rowsWithoutAMower(occupants: readonly Occupant[]): Row[] {
+  const spent: Row[] = []
+
+  for (let row = 0; row < BOARD_ROWS; row++) {
+    if (!hasLawnMower(occupants, { row, column: MOWER_COLUMN })) {
+      spent.push(row)
+    }
+  }
+
+  return spent
 }
 
 /** The canvas size the player sees, and the board drawn to fit it. */
@@ -135,12 +170,14 @@ export function Lawn({ game, onChange }: { game: GameRef; onChange: (report: Rep
         drawBoard(context, geometry.view, geometry.board, state)
 
         // The only place React hears about the rules, and only when the Sun
-        // held, the selection, the chosen packet or a packet's readiness has
-        // really changed.
+        // held, the selection, the chosen packet, a packet's readiness, the Rows
+        // that have spent their mower or the level's being over has really changed.
         const report: Report = {
           selected: state.selected,
           sun: state.sun,
           chosen: state.chosen,
+          spent: rowsWithoutAMower(state.occupants),
+          gameOver: state.gameOver,
           packets: state.seedBank.map((packet) => ({
             name: packet.name,
             cost: packet.cost,

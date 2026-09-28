@@ -29,16 +29,44 @@ body {
   padding: 0.75rem 1rem;
 }
 
+.app__header {
+  position: relative;
+}
+
 .app__header h1 {
   margin: 0;
   font-size: 1.1rem;
   letter-spacing: 0.02em;
 }
 
-.app__header p {
+.app__help {
+  position: relative;
+}
+
+.app__help > p {
   margin: 0.15rem 0 0;
   font-size: 0.85rem;
   opacity: 0.7;
+}
+
+/* Game Over is laid over the help text rather than taking its place, so that the
+   help area does not change height and the board does not move under the player.
+   Scoped with the child combinator so that it beats the rule above and is fully
+   opaque - at 0.7 the help text shows through the middle of the message. */
+.app__help > .app__game-over {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0 1rem;
+  border: 2px solid #b71c1c;
+  border-radius: 0.35rem;
+  background: #4e1212;
+  color: #ffcdd2;
+  font-size: 1rem;
+  font-weight: 600;
+  opacity: 1;
 }
 
 .app__footer {

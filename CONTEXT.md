@@ -73,3 +73,7 @@ _Avoid_: campaign, story mode
 **Game Over**:
 The end of a lost level. It happens when a zombie reaches the left edge of a row whose lawn mower has already been spent.
 _Avoid_: loss, defeat, you lose
+
+**Breach**:
+A zombie walking off the left edge of the board. Only possible in a row that has already spent its lawn mower, so a breach always means Game Over.
+_Avoid_: escape, leak, break-in

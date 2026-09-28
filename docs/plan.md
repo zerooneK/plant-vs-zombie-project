@@ -81,7 +81,7 @@ Each step is something you can actually play or click before the next one starts
 | 5 | Walking | A zombie enters at the right of a row and moves left at a fixed speed — **done at ticket 04** |
 | 6 | Eating | It stops at a plant, eats it, then carries on — **done** |
 | 7 | Lawn mowers | A zombie at the left edge spends the row's mower and clears the row — **done** |
-| 8 | Win and lose | Waves end, then either a win or game over |
+| 8 | Win and lose | Waves end, then either a win or game over — **game over done at ticket 07; winning not built** |
 | 9 | **Level 1-1** | A whole level, start to finish, playable |
 | 10 | The other 9 plants | One at a time, each with its rule test |
 | 11 | The other 4 zombies, levels 1-2 to 1-10 | Added as data |
@@ -95,6 +95,7 @@ Steps 1-9 use plain coloured shapes. That is not laziness — it means the rules
 - **Some original numbers are from memory.** Sun costs and health are close; exact damage and wave timings are less certain. They are all in `balance.ts` with uncertain ones marked, and playtesting will find them.
 - **I cannot tell you whether it feels right.** I can drive the game with a headless browser and take screenshots, but whether the original's *feel* is captured is your judgement, not mine. Expect to playtest early and often.
 - **The lawn mower rule is the easiest thing to get wrong.** It is a one-use life per row, and losing a second zombie in the same row must end the level.
+- **Level 1-1 as it stands cannot be lost, and cannot be won either.** Found by playing it: the level sends two Zombies into Row 3, 25 seconds apart, and the mower runs on the first of them at about 63 seconds — clearing *both*, because a mower clears its whole Row. Nothing else is ever sent to that Row, and the Zombies sent to Rows 2 and 4 are one each, so no Row is ever breached twice. A player who does nothing therefore plays for ever: the lawn empties at about 138 seconds and stays empty. Game Over is built and cannot be reached in this level, and winning is not built at all. Ticket 08 has to deal with this, and one honest way is a schedule that sends a Zombie into a Row *after* that Row's mower has run. It also means Game Over's presentation was verified in a browser against a temporary wave, not against the shipped level.
 - **WSL2**: the game window opens on the Windows side, not inside the terminal.
 
 ## Once the plan is agreed

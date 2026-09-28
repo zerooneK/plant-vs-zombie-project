@@ -74,6 +74,16 @@ export interface GameState {
   readonly shots: readonly Shot[]
   /** The name the next pea to be fired will be given. */
   readonly nextShotId: number
+  /**
+   * Whether the level has been lost.
+   *
+   * A fact about the level rather than about any one thing on the lawn, which is
+   * why it is here and not worked out from the Zombies each step: a level is over
+   * for good, and a thing that can be un-over is not the end of anything.
+   *
+   * False on a fresh lawn, and a check that wants a lost level has to lose one.
+   */
+  readonly gameOver: boolean
 }
 
 export type Command =
@@ -133,10 +143,28 @@ export function initialGameState(
     nextZombieId: 1,
     shots: [],
     nextShotId: 1,
+    gameOver: false,
   }
 }
 
 export function apply(state: GameState, command: Command): GameState {
+  // A level that is over is not a level that is played, and that is true of every
+  // command there is, `advance` included.
+  //
+  // Refusing the tick as well as the plants is what stops the level rather than
+  // slowing it: nothing moves, no more Sun falls, no Recharge runs down, and the
+  // state a player is left looking at is the state they lost on. Letting `advance`
+  // through would leave a lost level quietly going on with no one playing it - the
+  // Zombies still walking, Sun still landing - which is a worse thing to show a
+  // player than a stopped board.
+  //
+  // Playing again is a fresh game rather than an un-freezing of this one, because
+  // there is nothing to go back to: a level that has been lost was lost on the lawn
+  // as it stands.
+  if (state.gameOver) {
+    return { ...state }
+  }
+
   switch (command.kind) {
     case 'select':
       return { ...state, selected: command.square }
@@ -310,6 +338,18 @@ function advance(state: GameState): GameState {
   const eating = walkAndEat(state.zombies, state.occupants)
   const mown = runMowers(eating.zombies, eating.occupants)
 
+  // A Zombie that walked off the left edge of the board has got in, and the level
+  // is lost there and then. It is read off the Zombies' own step rather than found
+  // again here, because the question "did a Zombie get in?" and the question "did
+  // a Zombie arrive at a mower?" are the same walk seen from two places: a Row
+  // with a mower is answered by the mower and a Row without one by this.
+  //
+  // The rest of the step still happens. The level ends at the end of the step the
+  // breach was on, as everything else in this function does, so the peas already
+  // in the air land and the Sun falls one last time - and the step after this one
+  // is where nothing happens at all.
+  const gameOver = eating.breached.size > 0
+
   // Peas travel, and only then do plants fire. Both are one step behind their own
   // arrival for the same reason: a pea leaves a plant and starts moving on the
   // step after that, and a Peashooter shoots at the Zombies already walking rather
@@ -334,6 +374,7 @@ function advance(state: GameState): GameState {
     shots: fired.shots,
     nextShotId: fired.nextShotId,
     occupants: fired.occupants,
+    gameOver,
   }
 }
 

@@ -595,6 +595,12 @@ test('a Zombie that walks past the left of the board leaves the lawn', () => {
   // About forty seconds of walking to cross nine Columns, and nothing in the way
   // to interrupt it, so this check is about one thing only: where the Zombie
   // goes when it gets to the end rather than stopping there.
+  //
+  // Getting to the end is not an ordinary event any more, and the check does not
+  // pretend otherwise: a Zombie that gets past the left edge of a spent Row ends
+  // the level, and `game-over.test.ts` is where that is checked. All this asks is
+  // the narrower thing, which is the Zombie's own account - that it goes, rather
+  // than standing off the side of the board for ever where no player can see it.
   const nearlyOff = untilTick(arrivedAgain, arrivedAgain.tick + 40 * STEPS_PER_SECOND)
   assert.ok(zombieX(zombieIn(nearlyOff, 2)) < SQUARE_WIDTH, 'it is nearly off the left of the board')
 
