@@ -4,6 +4,29 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.12.0] - 2026-09-28
+
+Build order step 7 of 13: a Lawn Mower saves a Row once. A Zombie that walks the whole length of a Row no longer walks off the board — it sets off that Row's mower, which clears the Row and is then gone for the rest of the level. This is the first thing in the game that can be used up.
+
+Four checks in a new `tests/mowers.test.ts`, plus a rewrite of a ticket 04 check. That rewritten check is the one worth mentioning: `a Zombie that walks past the left of the board leaves the lawn` used to be true of every Zombie, and is now true only of a Zombie in a Row that has already spent its mower, so it was re-based on a broken Row and says so. It would have passed unchanged for the wrong reason, since a mown Row and a Zombie walking off the end of it both end with nobody standing in that Row.
+
+Every one of the four new checks was made to fail against code written on purpose to be wrong, and each one caught a different mistake:
+
+- a mower that removed only the Zombie standing on it, rather than the Row;
+- a mower that took *every* mower off the lawn with it, spending the whole level's protection at once;
+- a mower set off a Column late, once the Zombie was past it;
+- a Square that refused a plant forever because the mower Column is a special Column, which is the "fix" this consequence invites.
+
+That last one is the consequence, and it is deliberate. A mower that has run is off the lawn rather than marked spent, so its Square is bare grass and a bare Square takes a plant. This was decided before it was coded, and the browser run confirmed it reads correctly: a mown Row shows a bare Square where the mower was, not a Square that looks plantable and silently refuses.
+
+**Checked:** 64 rule checks pass. Typecheck and production build are clean.
+
+**Also:** the spec's status line and `docs/plan.md` said nothing had been built yet, which stopped being true five tickets ago. Both now say what is actually done.
+
+**Browser, for the mower, which is only ever a thing you see:** one headless Chrome session, two minutes of real play, and the pixels read back per Row. Confirmed the mower is drawn on all five Rows at the start, that Row 2's is gone and Row 2 empty about a second after the Zombie reaches the left edge, that the other four are untouched, that a second Zombie into that Row is not saved and walks off, and that Row 1's own mower later runs by itself. `--virtual-time-budget` cannot drive this game at all: its frame callback fires once per budget rather than once per display frame, so a game stepped in `requestAnimationFrame` gets a single step however much time it is given. The harness in `/tmp/opencode/` waits in real seconds instead, and `cdp.py` is a hand-written DevTools client because no browser-driving package is installed and none is to be added.
+
+**Not in this ticket:** Game Over. A Zombie reaching a spent Row still walks off the board, which is a placeholder until step 8.
+
 ## [0.11.0] - 2026-09-27
 
 Build order step 6 of 13: a Zombie eats a plant. Plants are food now, which is the first thing that makes this game a defence rather than a shooting range.

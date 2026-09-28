@@ -85,7 +85,8 @@ export function App() {
         <p>Click a Sun to collect it. Choose a Seed Packet, then click a Square to plant it.</p>
         <p>
           Zombies walk in from the right. A Peashooter shoots the nearest one in its own Row. A
-          Zombie that reaches a plant stops and eats it.
+          Zombie that reaches a plant stops and eats it. One that reaches the left edge sets off
+          that Row's Lawn Mower, which clears the Row once and is then gone.
         </p>
       </header>
 

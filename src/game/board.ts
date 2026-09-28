@@ -60,7 +60,14 @@ export function everySquare(): Square[] {
  * which is not one of the nine plantable Columns. This board has no such strip,
  * so the mower stands in the first Column instead. That is a deliberate
  * difference from the original, and it is a visible one: the first Column of
- * every Row cannot be planted, so the lawn is eight Columns wide to plant.
+ * every Row cannot be planted, so a fresh lawn is eight Columns wide to plant.
+ *
+ * Once a mower has run it is off the lawn, and its Square is bare grass like any
+ * other - so a Row that has spent its mower is nine Columns wide to plant. That
+ * is a consequence of spending the Row's last defence rather than a rule in its
+ * own right, and it is settled at ticket 06: the mower's absence is the whole of
+ * the record that it has run, and a Square nothing is standing in is a Square a
+ * plant can go in.
  */
 export const MOWER_COLUMN = 0
 

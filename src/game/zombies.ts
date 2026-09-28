@@ -179,17 +179,25 @@ export interface ZombieStep {
  * reserves a plant for one Zombie: the rule is the same for every Zombie, and
  * the plant's health runs out sooner, not later.
  *
- * Leaving the board is not what happens in the original. There, a Zombie reaching
- * the left of a Row sets off that Row's Lawn Mower, and a Row whose mower has
- * already gone is the end of the level. Neither is built yet, so until they are,
- * a Zombie that gets past the left edge simply leaves - rather than standing off
- * the side of the screen for ever, where no player can see it and the state
- * grows all level.
+ * Leaving the board is not what happens in the original, and is not what happens
+ * here any more. There, and here, a Zombie reaching the left of a Row sets off
+ * that Row's Lawn Mower, which takes the whole Row off the lawn. So a Zombie
+ * walking the length of a Row that still has a mower is stopped at the mower
+ * Square and never gets further: the mower is found and set off by the mower's
+ * own rule, one step later, and this step only has to leave the Zombie standing
+ * on the mower Square for it to be found.
  *
- * A Zombie at the very left edge has not left yet: it is still on the board, at
- * the place the Lawn Mower rule will want to find it. And a Lawn Mower is not
- * food - a Zombie walks through the Square a mower stands in, because a mower is
- * not a plant and there is nothing there to eat.
+ * A Row whose mower has already run is the other case, and is the end of the
+ * level in the original. Game Over is not built yet, so until it is, a Zombie that
+ * gets past the left edge of such a Row simply leaves - rather than standing off
+ * the side of the screen for ever, where no player can see it and the state grows
+ * all level.
+ *
+ * A Lawn Mower is not food. A Zombie walks into the Square a mower stands in and
+ * does not eat it, because a mower is not a plant and there is nothing there to
+ * eat - it sets the mower off, which is a different rule with a different answer,
+ * and is kept in `mowers.ts` so that a Zombie's step is about walking and eating
+ * and the mower's is about saving a Row.
  */
 export function walkAndEat(
   zombies: readonly Zombie[],

@@ -577,10 +577,25 @@ test('a Zombie that walks past the left of the board leaves the lawn', () => {
   const arrived = untilTick(initialGameState(DEFAULT_SEED, oneZombieIn(2, 1)), 1)
   assert.equal(arrived.zombies.length, 1, 'a Zombie walks in with nothing on the lawn to stop it')
 
+  // This used to be a Zombie walking off the board, which is what a Row with a
+  // mower in it no longer does: the mower is set off long before the left edge.
+  // A Zombie only gets past the left of the board in a Row that has already spent
+  // its mower, so that is the situation this check now sets up - a broken Row, and
+  // a second Zombie sent into it afterwards.
+  const saved = untilTick(arrived, arrived.tick + 40 * STEPS_PER_SECOND)
+  assert.equal(saved.zombies.length, 0, 'and the first one is taken off the lawn by the mower it reached')
+
+  const second = levelWith(
+    { atStep: 1, zombies: [{ name: 'basic', row: 2 }] },
+    { atStep: saved.tick + 1, zombies: [{ name: 'basic', row: 2 }] },
+  )
+  const arrivedAgain = untilTick(initialGameState(DEFAULT_SEED, second), saved.tick + 1)
+  assert.equal(arrivedAgain.zombies.length, 1, 'a second Zombie walks in behind it, into a Row with no mower left')
+
   // About forty seconds of walking to cross nine Columns, and nothing in the way
   // to interrupt it, so this check is about one thing only: where the Zombie
   // goes when it gets to the end rather than stopping there.
-  const nearlyOff = untilTick(arrived, arrived.tick + 40 * STEPS_PER_SECOND)
+  const nearlyOff = untilTick(arrivedAgain, arrivedAgain.tick + 40 * STEPS_PER_SECOND)
   assert.ok(zombieX(zombieIn(nearlyOff, 2)) < SQUARE_WIDTH, 'it is nearly off the left of the board')
 
   const gone = until(nearlyOff, (state) => state.zombies.length === 0)

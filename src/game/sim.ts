@@ -6,6 +6,7 @@ import { FIRST_SUN_DELAY, STARTING_SUN, SUN_INTERVAL } from './balance.ts'
 import { PLANTS, type PlantName } from './plants.ts'
 import { LEVEL_1_1, type Level, type Wave } from './levels.ts'
 import { removeExhausted, walkAndEat, zombieAtEdge, type Zombie } from './zombies.ts'
+import { runMowers } from './mowers.ts'
 import { fireFromPlants, flyRight, type Shot } from './shots.ts'
 
 /**
@@ -299,19 +300,28 @@ function advance(state: GameState): GameState {
   // a plant it ate this step is not standing there any more, and the plants that
   // fire below have to be the ones that are still there.
   //
+  // A Zombie reaching the left edge of a Row sets off that Row's Lawn Mower, and
+  // the mower takes the whole Row off the lawn. It comes after the Zombies walk,
+  // because a mower is set off by a Zombie arriving at it rather than by the clock,
+  // and before the peas land, because a Peashooter has nothing left to shoot at in
+  // a Row the mower has just cleared - a pea whose Zombie was mown carries on
+  // across the lawn and goes, as it does for any other Zombie that stops being
+  // there.
+  const eating = walkAndEat(state.zombies, state.occupants)
+  const mown = runMowers(eating.zombies, eating.occupants)
+
   // Peas travel, and only then do plants fire. Both are one step behind their own
   // arrival for the same reason: a pea leaves a plant and starts moving on the
   // step after that, and a Peashooter shoots at the Zombies already walking rather
   // than at one still standing at the edge of the board.
-  const eating = walkAndEat(state.zombies, state.occupants)
-  const landing = flyRight(state.shots, eating.zombies)
+  const landing = flyRight(state.shots, mown.zombies)
   // A Zombie with nothing left of it leaves before anything can shoot at it, so
   // that a Peashooter never fires at a corpse standing on the lawn. It leaves
   // after eating rather than before, so a Zombie killed by a pea on the same step
   // it bit still got that bite in - everything a Zombie does on a step happens,
   // and then the dead are cleared.
   const standing = removeExhausted(landing.zombies)
-  const fired = fireFromPlants(eating.occupants, standing, landing.shots, state.nextShotId)
+  const fired = fireFromPlants(mown.occupants, standing, landing.shots, state.nextShotId)
 
   return {
     ...state,
