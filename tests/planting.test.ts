@@ -23,12 +23,20 @@ function afterSeconds(state: GameState, seconds: number): GameState {
 test('the Seed Bank shows the plants this level allows, and what each one costs', () => {
   const bank = initialGameState().seedBank
 
-  assert.equal(bank.length, 1, 'the first level allows one plant for now')
-  const packet = bank[0]
-  assert.ok(packet, 'the Seed Bank has a packet in it')
-  assert.equal(packet.name, 'peashooter', 'the one plant this level allows is a Peashooter')
-  assert.equal(packet.cost, PEA_COST, 'a Peashooter costs 100 Sun')
-  assert.equal(packet.stepsUntilReady, 0, 'a packet you have not used yet is ready to choose')
+  assert.equal(bank.length, 2, 'the first level allows a Peashooter and a Sunflower')
+
+  const peashooter = bank.find((packet) => packet.name === 'peashooter')
+  assert.ok(peashooter, 'the Seed Bank has a Peashooter in it')
+  assert.equal(peashooter.cost, PEA_COST, 'a Peashooter costs 100 Sun')
+
+  const sunflower = bank.find((packet) => packet.name === 'sunflower')
+  assert.ok(sunflower, 'the Seed Bank has a Sunflower in it')
+  assert.equal(sunflower.cost, 50, 'a Sunflower costs 50 Sun, which is what a level begins with')
+
+  assert.ok(
+    bank.every((packet) => packet.stepsUntilReady === 0),
+    'a packet you have not used yet is ready to choose',
+  )
 })
 
 test('choosing a Seed Packet and then a Square plants it, and costs me its Sun', () => {

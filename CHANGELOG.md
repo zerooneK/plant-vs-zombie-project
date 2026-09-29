@@ -4,6 +4,50 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.16.0] - 2026-09-29
+
+### A Sunflower, and the economy it was waiting for
+
+Ticket 09. A plant that makes Sun on a timer, dropped at its own Square and
+clicked like any other. It costs 50, which is exactly what a level begins with,
+so the first decision of Level 1-1 is now whether to plant one straight away or
+save for a Peashooter. Seven checks; the suite goes from 77 to 84.
+
+- **Sun has two sources and is one resource.** The same counter, the same pieces
+  on the lawn, the same click, the same loss. What differs is where the Sun comes
+  from, and that is the whole of the new rule: a plant's Sun is asked for by
+  Square rather than by the seed, and comes to rest inside that Square. A row of
+  Sunflowers is a row of places the Sun appears.
+- **A plant makes Sun while it is standing on the lawn.** Production is read at
+  the end of a step, not the start, so a Sunflower a Zombie finishes eating on the
+  very step it was due makes nothing. Reading the start of the step instead would
+  let a plant already off the lawn put one last piece of Sun down, and there is no
+  reading of that which feels like money earned.
+- **The two timers are named apart in the code**: `state.stepsUntilSkySun` and
+  `occupant.stepsUntilSun`. The field on `GameState` was already called
+  `stepsUntilSun` and meant something else, which is the one rename this ticket
+  forced. It is why the glossary keeps one word for Sun — the code says which is
+  which, so the vocabulary does not have to.
+- **A plant that makes Sun needed a third field, not a third rule.** `shooting:
+  null` already said "this plant is not a weapon" and `stepsUntilShot` was already
+  a countdown in the state, so the Sunflower is a `producing` entry beside a
+  `shooting` one. The Wall-nut will need neither — which is ADR 0005's claim that
+  it is cheap, now demonstrated rather than argued.
+- **50, 300 health, 25 every 24.25 seconds, first Sun a whole interval after
+  planting.** All believed to be the original's and marked so. The Recharge is the
+  Peashooter's seven and a half seconds, so it is the Recharge rather than the
+  cost that stops a bank of Sunflowers being spendable every step. Ticket 11
+  settles these by playing, and moves the checks that state them.
+- **Fixed: a placeholder that is the same shape for every plant.** `drawPlant`
+  drew one green circle for whatever was planted, so the Sunflower the Seed Bank
+  names and the Peashooter it shoots were the same picture. The Sunflower is drawn
+  in the Sun's own yellow. That is not the art pass, and it is not a nicety: a
+  player choosing between two packets needs to see which one they put down.
+- **Not verified: the browser playthrough.** Chromium would not run headlessly in
+  the environment this was built in, and the two presentation changes were found by
+  reading the drawing code rather than by looking at a screen. Recorded unticked
+  in the ticket; it is the first thing to close.
+
 ## [0.15.0] - 2026-09-29
 
 ### The Sunflower before the Wall-nut

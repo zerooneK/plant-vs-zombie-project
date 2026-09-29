@@ -115,11 +115,29 @@ export interface Planted {
    * Zero for a plant that never shoots, which is harmless - nothing reads it.
    */
   readonly stepsUntilShot: number
+
+  /**
+   * Steps until this plant makes the next piece of Sun.
+   *
+   * The same idea as `stepsUntilShot` and for the same reason: a countdown in
+   * the state, so the lawn and the rules cannot disagree about when a Sunflower
+   * is next due. It is set to a whole interval when the plant goes in, so the
+   * first Sun is a whole interval after planting rather than on the step it goes
+   * down - a timer that starts at zero is not on a timer at all.
+   *
+   * Zero for a plant that makes no Sun, which is harmless - nothing reads it.
+   */
+  readonly stepsUntilSun: number
 }
 
-/** The middle of a Square, in the board's own units rather than on the screen. */
+/** The middle of a Square across, in the board's own units rather than on the screen. */
 export function centreX(square: Square): number {
   return (square.column + 0.5) * SQUARE_WIDTH
+}
+
+/** The middle of a Square up and down, which is not the same as across. */
+export function centreY(square: Square): number {
+  return (square.row + 0.5) * SQUARE_HEIGHT
 }
 
 /**

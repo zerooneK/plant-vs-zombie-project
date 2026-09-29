@@ -21,6 +21,8 @@ const RAYS = 8
 const PLANT_LEAF = '#2e7d32'
 const PLANT_LEAF_EDGE = '#1b5e20'
 const PLANT_FACE = '#66bb6a'
+const SUNFLOWER_PETAL = '#fdd835'
+const SUNFLOWER_CENTRE = '#f9a825'
 const MOWER_BODY = '#b0bec5'
 const MOWER_EDGE = '#546e7a'
 const MOWER_HANDLE = '#ef5350'
@@ -72,15 +74,24 @@ function drawPlant(
   const head = board.squareWidth * 0.26
   const left = healthFraction(plant)
 
+  // A plant that makes Sun is drawn as a flower and a plant that shoots is drawn
+  // as a green head, because the Seed Bank offers both and a player choosing
+  // between them needs to see which one they put down. A placeholder that is the
+  // same shape for every plant is not a simplification, it is a plant that cannot
+  // be told from the thing it replaces. Colours only: the art pass replaces both
+  // with the real artwork, and until then the two have to be different enough to
+  // name.
+  const flower = plant.name === 'sunflower'
+
   context.fillStyle = PLANT_LEAF_EDGE
   context.fillRect(centre.x - head * 0.15, centre.y, head * 0.3, head * 2.1)
 
-  context.fillStyle = PLANT_LEAF
+  context.fillStyle = flower ? SUNFLOWER_PETAL : PLANT_LEAF
   context.beginPath()
   context.arc(centre.x, centre.y, head, 0, Math.PI * 2)
   context.fill()
 
-  context.fillStyle = PLANT_FACE
+  context.fillStyle = flower ? SUNFLOWER_CENTRE : PLANT_FACE
   context.beginPath()
   context.arc(centre.x, centre.y, head * 0.55, 0, Math.PI * 2)
   context.fill()

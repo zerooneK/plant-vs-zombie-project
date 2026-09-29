@@ -41,6 +41,7 @@ function describeSpentRows(spent: readonly Row[]): string {
  */
 const PLANT_NAMES: Record<PlantName, string> = {
   peashooter: 'Peashooter',
+  sunflower: 'Sunflower',
 }
 
 /** What the player is holding, in words. */

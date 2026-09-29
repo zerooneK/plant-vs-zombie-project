@@ -4,6 +4,11 @@ import {
   PEASHOOTER_HEALTH,
   PEASHOOTER_RECHARGE,
   PEASHOOTER_SUN_COST,
+  SUNFLOWER_HEALTH,
+  SUNFLOWER_PRODUCE_INTERVAL,
+  SUNFLOWER_RECHARGE,
+  SUNFLOWER_SUN_AMOUNT,
+  SUNFLOWER_SUN_COST,
 } from './balance.ts'
 
 /**
@@ -12,7 +17,7 @@ import {
  * A name rather than a class or a flag, because the whole roster is meant to be
  * data: the next plant is an entry here, not another branch in the rules.
  */
-export type PlantName = 'peashooter'
+export type PlantName = 'peashooter' | 'sunflower'
 
 /** One plant, as the Seed Bank shows it and as the rules charge for it. */
 export interface Plant {
@@ -32,6 +37,20 @@ export interface Plant {
   readonly health: number
   /** How this plant shoots, or null for a plant that never shoots. */
   readonly shooting: Shooting | null
+  /** How this plant makes Sun, or null for a plant that makes none. */
+  readonly producing: Producing | null
+}
+
+/**
+ * What a plant that makes Sun does, kept together for the same reason as
+ * `Shooting`: adding a plant that makes Sun differently is an edit to this, and
+ * not a new place in the rules.
+ */
+export interface Producing {
+  /** Steps between one piece of Sun leaving this plant and the next. */
+  readonly interval: number
+  /** What the Sun it makes is worth. */
+  readonly amount: number
 }
 
 /**
@@ -51,6 +70,23 @@ export const PEASHOOTER: Plant = {
   recharge: PEASHOOTER_RECHARGE,
   health: PEASHOOTER_HEALTH,
   shooting: { fireInterval: PEASHOOTER_FIRE_INTERVAL, damage: PEA_DAMAGE },
+  producing: null,
+}
+
+/**
+ * A Sunflower: a plant with no attack at all, whose whole job is to make Sun.
+ *
+ * `shooting: null` is the whole of "no attack", and it is why adding a plant
+ * that does not shoot needed no new rule: the roster already had a way to say
+ * that a plant is not a weapon, and the Wall-nut will use the same one.
+ */
+export const SUNFLOWER: Plant = {
+  name: 'sunflower',
+  sunCost: SUNFLOWER_SUN_COST,
+  recharge: SUNFLOWER_RECHARGE,
+  health: SUNFLOWER_HEALTH,
+  shooting: null,
+  producing: { interval: SUNFLOWER_PRODUCE_INTERVAL, amount: SUNFLOWER_SUN_AMOUNT },
 }
 
 /**
@@ -62,4 +98,5 @@ export const PEASHOOTER: Plant = {
  */
 export const PLANTS: Readonly<Record<PlantName, Plant>> = {
   peashooter: PEASHOOTER,
+  sunflower: SUNFLOWER,
 }

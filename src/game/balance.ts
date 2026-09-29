@@ -62,6 +62,39 @@ export const SUN_HIT_RADIUS = SUN_RADIUS * 1.4
 export const PEASHOOTER_SUN_COST = 100
 
 /**
+ * What a Sunflower costs to plant. Believed to be the original's 50, which is
+ * exactly what a level begins with. That is not a coincidence to be tuned away:
+ * it means the first decision of a level is whether to plant one of these
+ * straight away or to save for a Peashooter, and that decision is the economy
+ * arriving before anything else does.
+ */
+export const SUNFLOWER_SUN_COST = 50
+
+/**
+ * How long between one Sun a Sunflower makes and the next. Believed to be the
+ * original's twenty-four and a quarter seconds, which is a whole number of
+ * steps at sixty a second, so the first Sun a planted Sunflower makes lands on
+ * a step rather than somewhere between two of them.
+ *
+ * Twenty-five Sun every twenty-four seconds is a slower rate than the sky's
+ * twenty-five every ten, so one Sunflower is a *worse* deal than doing nothing
+ * and waiting. It pays because you plant several and they run at once, and
+ * seeing that is the game.
+ */
+export const SUNFLOWER_PRODUCE_INTERVAL = 24.25 * STEPS_PER_SECOND
+
+/**
+ * What one piece of Sun a Sunflower makes is worth. Believed to be the
+ * original's 25, the same as Sun from the sky.
+ *
+ * The same number as the sky's, held separately anyway. Sun from the sky and Sun
+ * a plant makes are the same resource and are deliberately not two resources, but
+ * they are not the same *source*, and a change to what a falling piece is worth
+ * should not silently change what a Sunflower is worth.
+ */
+export const SUNFLOWER_SUN_AMOUNT = 25
+
+/**
  * How long the Peashooter's Seed Packet takes to Recharge before it can be
  * chosen again. Believed to be the original's seven and a half seconds, which
  * is what makes it the plant to ration: a cheap plant is also a plant you have
@@ -117,6 +150,36 @@ export const BASIC_ZOMBIE_HEALTH = 270
  * that you shoot from behind something that buys time.
  */
 export const PEASHOOTER_HEALTH = 300
+
+/**
+ * How much health a Sunflower is planted with. Believed to be the original's
+ * 300 — the same as a Peashooter's, and deliberately so.
+ *
+ * The spec asks for a Sunflower that is cheap and weak, and it is tempting to
+ * read "weak" as a smaller number than a Peashooter's. It is not what makes a
+ * Sunflower weak. Nothing about 50 Sun of investment and a Sun not yet made
+ * survives a Zombie arriving, and that is the punishment: losing one costs a
+ * plant and the Sun it would have made, which is the whole reason to plant
+ * them where nothing can reach. A Sunflower's weakness is what it cost, not how
+ * fast it dies, and a smaller number would only make it a worse plant without
+ * making it a more interesting decision.
+ *
+ * Settled by playing in ticket 11, where a number that is wrong gets moved.
+ */
+export const SUNFLOWER_HEALTH = 300
+
+/**
+ * How long the Sunflower's Seed Packet takes to Recharge before it can be
+ * chosen again. Believed to be the original's seven and a half seconds, the
+ * same as the Peashooter's.
+ *
+ * The same as a Peashooter on purpose. A Sunflower's Sun is worth a quarter of
+ * what a Peashooter's is, so a Recharge shared with the Peashooter is what stops
+ * a bank of Sunflowers being a thing you can spend every step on — which is
+ * where the interesting decision is: the more Sun you have already made, the
+ * more you want another, and the less often you can have one.
+ */
+export const SUNFLOWER_RECHARGE = 7.5 * STEPS_PER_SECOND
 
 /**
  * What one bite takes off a plant. From memory, 100.

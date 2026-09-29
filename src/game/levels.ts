@@ -109,7 +109,7 @@ export interface Level {
  */
 export const LEVEL_1_1: Level = {
   name: '1-1',
-  plants: ['peashooter'],
+  plants: ['peashooter', 'sunflower'],
   waves: [
     { atStep: 25 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 2 }] },
     { atStep: 50 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 1 }] },

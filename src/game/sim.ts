@@ -1,5 +1,5 @@
 import { occupantAt, plantIn, startingOccupants, type Occupant, type Point, type Square } from './board.ts'
-import { fallSun, isResting, isSpent, spendLife, spawnSun, sunUnderPoint } from './sun.ts'
+import { fallSun, isResting, isSpent, spendLife, spawnSun, sunFrom, sunUnderPoint } from './sun.ts'
 import type { SunToken } from './sun.ts'
 import { seededRandom, type Random } from './random.ts'
 import { FIRST_SUN_DELAY, FLAG_WAVE_WARNING, STARTING_SUN, SUN_INTERVAL } from './balance.ts'
@@ -55,7 +55,7 @@ export interface GameState {
   readonly tokens: readonly SunToken[]
   readonly random: Random
   /** Steps until the next Sun falls from the sky. */
-  readonly stepsUntilSun: number
+  readonly stepsUntilSkySun: number
   /** The name the next piece of Sun will be given. */
   readonly nextSunId: number
   /** The Seed Bank: the plants this level allows, and each one's Recharge. */
@@ -156,7 +156,7 @@ export function initialGameState(
     sun: STARTING_SUN,
     tokens: [],
     random: seededRandom(seed),
-    stepsUntilSun: FIRST_SUN_DELAY,
+    stepsUntilSkySun: FIRST_SUN_DELAY,
     nextSunId: 1,
     seedBank: level.plants.map((name) => ({
       name,
@@ -300,10 +300,59 @@ function place(state: GameState, square: Square): GameState {
         name,
         health: PLANTS[name].health,
         stepsUntilShot: 0,
+        // A plant that makes Sun starts a whole interval from being planted. A
+        // countdown of zero would mean it makes Sun on the step it goes in, and
+        // the Sun a plant makes is the slowest thing in the game - starting it
+        // at the beginning of its own interval would take that away.
+        stepsUntilSun: PLANTS[name].producing?.interval ?? 0,
       },
     ],
     seedBank: startRecharge(state.seedBank, name),
   }
+}
+
+/**
+ * One step of the Sun that plants make, asked of each plant on the lawn.
+ *
+ * It runs on the plants standing at the *end* of the step, not the ones standing
+ * at the start, and that is the rule rather than a detail: a Sunflower makes Sun
+ * while it is on the lawn. A Zombie that finishes eating one this step has taken
+ * it off the lawn before this runs, so a plant that was due and was eaten makes
+ * nothing at all — the Sun it would have made is part of what was lost, and is
+ * lost the same way the Peashooter that died mid-shot is lost.
+ *
+ * Every plant is asked the same single question, is it due, and answers it from
+ * its own countdown. A plant that makes no Sun is left exactly as it was, so
+ * there is one place that knows about production and it is this one.
+ */
+function stepProduction(
+  occupants: readonly Occupant[],
+  firstId: number,
+): { occupants: readonly Occupant[]; tokens: readonly SunToken[]; nextId: number } {
+  let nextId = firstId
+  const made: SunToken[] = []
+
+  const stepped = occupants.map((occupant) => {
+    if (occupant.kind !== 'plant') {
+      return occupant
+    }
+
+    const producing = PLANTS[occupant.name].producing
+    if (producing === null) {
+      return occupant
+    }
+
+    if (occupant.stepsUntilSun > 1) {
+      return { ...occupant, stepsUntilSun: occupant.stepsUntilSun - 1 }
+    }
+
+    made.push(sunFrom(occupant.square, nextId, producing.amount))
+    nextId += 1
+
+    return { ...occupant, stepsUntilSun: producing.interval }
+  })
+
+  return { occupants: stepped, tokens: made, nextId }
 }
 
 /**
@@ -428,17 +477,25 @@ function advance(state: GameState): GameState {
       : 'playing'
 
 
+  // Sun that plants make is made last of all, on the plants still standing when
+  // everything else in the step has happened. That is the whole of its rule: a
+  // Sunflower makes Sun while it is on the lawn.
+  const sky = stepSun(state)
+  const grown = stepProduction(fired.occupants, sky.nextSunId)
+
   return {
     ...state,
     tick,
-    ...stepSun(state),
+    ...sky,
+    tokens: [...sky.tokens, ...grown.tokens],
+    nextSunId: grown.nextId,
     seedBank,
     pendingWaves: sent.pendingWaves,
     zombies: onTheLawn,
     nextZombieId: sent.nextZombieId,
     shots: fired.shots,
     nextShotId: fired.nextShotId,
-    occupants: fired.occupants,
+    occupants: grown.occupants,
     outcome,
     flagWaveWarning,
   }
@@ -448,7 +505,7 @@ function advance(state: GameState): GameState {
 interface SunStep {
   readonly random: Random
   readonly tokens: readonly SunToken[]
-  readonly stepsUntilSun: number
+  readonly stepsUntilSkySun: number
   readonly nextSunId: number
 }
 
@@ -458,11 +515,11 @@ function stepSun(state: GameState): SunStep {
     .map((token) => (isResting(token) ? spendLife(token) : fallSun(token)))
     .filter((token) => !isSpent(token))
 
-  if (state.stepsUntilSun > 1) {
+  if (state.stepsUntilSkySun > 1) {
     return {
       random: state.random,
       tokens: living,
-      stepsUntilSun: state.stepsUntilSun - 1,
+      stepsUntilSkySun: state.stepsUntilSkySun - 1,
       nextSunId: state.nextSunId,
     }
   }
@@ -472,7 +529,7 @@ function stepSun(state: GameState): SunStep {
   return {
     random: spawn.random,
     tokens: [...living, spawn.token],
-    stepsUntilSun: SUN_INTERVAL,
+    stepsUntilSkySun: SUN_INTERVAL,
     nextSunId: state.nextSunId + 1,
   }
 }

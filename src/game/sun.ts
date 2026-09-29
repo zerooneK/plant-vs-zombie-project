@@ -1,4 +1,12 @@
-import { LOGICAL_HEIGHT, LOGICAL_WIDTH, SQUARE_HEIGHT, type Point } from './board.ts'
+import {
+  LOGICAL_HEIGHT,
+  LOGICAL_WIDTH,
+  SQUARE_HEIGHT,
+  centreX,
+  centreY,
+  type Point,
+  type Square,
+} from './board.ts'
 import { nextBetween, type Random } from './random.ts'
 import {
   SUN_AMOUNT,
@@ -79,6 +87,33 @@ export function spawnSun(id: number, random: Random): SunFall {
       amount: SUN_AMOUNT,
       life: SUN_LIFETIME,
     },
+  }
+}
+
+/**
+ * A piece of Sun made by a plant rather than fallen from the sky.
+ *
+ * It is asked for a Square and not for a point, because a plant's Sun is made
+ * *at* the plant. That is the whole of the difference between the two sources,
+ * and a Sun that appeared at a place the seed chose would be a second sky: the
+ * player would have no way to tell the Sun they grew from the Sun they waited
+ * for, and no way to aim for the one that was theirs.
+ *
+ * It falls like any other Sun, from where the plant is to the foot of its own
+ * Square, and it comes to rest *inside* that Square rather than out on the
+ * lawn. That is what makes the plant's Sun look like the plant's: the Sun ends
+ * up where the player put the plant, so a row of Sunflowers is a row of places
+ * the Sun appears, and a Sun that dropped to a random place on the lawn would
+ * give back the one thing the two sources are meant not to share.
+ */
+export function sunFrom(square: Square, id: number, amount: number): SunToken {
+  return {
+    id,
+    x: centreX(square),
+    y: centreY(square),
+    restingY: (square.row + 1) * SQUARE_HEIGHT - SUN_RADIUS,
+    amount,
+    life: SUN_LIFETIME,
   }
 }
 
