@@ -127,17 +127,19 @@ function untilFirstBite(state: GameState, square: Square): GameState {
  * what it offers is a claim of its own: it is not enough for the Wall-nut to be
  * in it. A Seed Bank that had quietly lost the Tall-nut would still let every
  * other check here pass, because they each build the Level they need.
+ *
+ * Only the two nuts, and not the whole bank. What the test bed is made of is
+ * `tests/shooters.test.ts`'s claim to make, and a list of every plant written in
+ * two files is a list that has to be changed in two files - which is how the two
+ * came to disagree the moment a third plant arrived.
  */
 test('the test bed is the only Level that offers either nut, and it offers both', () => {
   const bed = initialGameState(1, LEVEL_TEST).seedBank
   const costs = (name: PlantName) => bed.find((packet) => packet.name === name)?.cost
 
-  assert.deepEqual(
-    bed.map((packet) => packet.name),
-    ['peashooter', 'sunflower', 'wall-nut', 'tall-nut'],
-    'the test bed offers all four plants the game has, Wall-nut and Tall-nut among them',
-  )
+  assert.ok(bed.some((packet) => packet.name === 'wall-nut'), 'the test bed offers a Wall-nut')
   assert.equal(costs('wall-nut'), NUT_COST, 'and a Wall-nut for 50 Sun')
+  assert.ok(bed.some((packet) => packet.name === 'tall-nut'), 'and a Tall-nut')
   assert.equal(costs('tall-nut'), NUT_COST, 'and a Tall-nut for the same 50')
 
   // And Level 1-1 is left as it was, which is the whole reason the test bed

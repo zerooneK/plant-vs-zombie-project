@@ -4,6 +4,125 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.19.0] - 2026-09-29
+
+### Three more shooters, and a check that was measuring the wrong thing
+
+Ticket 12. Snow Pea, Repeater and Puff-shroom — six of the other nine plants done, and the
+first three that are *not* about Sun or about standing in the way. Each is the
+Peashooter with one thing changed, and that is now a fact about the data rather than a
+sentence in a comment: what a shot does is one value — its damage, whether it slows what
+it reaches, whether it goes through what it reaches instead of stopping, and how far
+along the Row it goes — and the four shooters are four versions of a single plain pea.
+Read the three entries, and the one line that differs in each is the whole difference.
+
+- **A Snow Pea goes through a whole line of Zombies and leaves every one of them walking
+  slowly.** A passing-through pea hits each Zombie it sweeps over, once, in its own Row
+  and no other.
+- **A slowed Zombie walks at half speed, and goes back to full speed when the slow is
+  over** — measured against a Zombie in the next Row that was never slowed. The
+  countdown lives on the Zombie, not on the Snow Pea, so **digging the Snow Pea up
+  leaves the Zombie slow for what is left of the ten seconds and then not**. A slow is
+  something that happened to a Zombie's legs, not something a plant is holding on to.
+- **A Repeater fires two peas in one shot, both aimed at the same nearest Zombie.** So
+  it lands forty damage on one Zombie rather than reaching two: a Repeater is worth
+  exactly twice a Peashooter's damage for 200 Sun, and a player can do that sum without
+  a balance pass having any say in it.
+- **A Puff-shroom costs nothing and shoots three Columns.** It is free *because* of that
+  limit rather than in spite of it — a plant that costs nothing and reached the length of
+  the lawn would be strictly better than every other plant in the game. It goes down on a
+  lawn with no Sun in it at all, which is the situation the plant exists for.
+- **All three are in the test bed's Seed Bank** with their costs, alongside the four
+  plants already there, and each is drawn so a player can tell it apart: a Snow Pea is
+  the plain head gone pale and frosty, a Repeater has two faces where the others have
+  one, and a Puff-shroom is a small grey cap on a short stalk. A slowed Zombie is drawn
+  cold blue, because a Zombie at half speed and a Zombie at full speed are otherwise the
+  same picture and a player who cannot see which Zombies are slowed cannot tell what
+  their Snow Peas are for.
+
+**A slow shortens a Zombie's step rather than making it skip one.** `walked` is a tally
+of steps, not a position, so that where a Zombie is can never drift and a fast machine
+and a slow one agree. A step-granular slow cannot be expressed in that tally — halving a
+speed by taking a step every other step works exactly, and nothing else does — so half a
+step is not a nice number to pick but the only one that is exact in whole and half steps
+together.
+
+### The check that was measuring the wrong thing
+
+The first version of this ticket's main check watched a **whole level** and counted how
+many Zombies in a Row were ever hit by a Snow Pea. It passed. **And the Snow Pea was not
+passing through anything** — `passesThrough` was never set, and every pea aimed at the
+nearest Zombie like any other. It hit all three anyway, over about a second and a half,
+because the Zombies it hit were slowed and fell behind, so the next became the nearest
+and was aimed at in turn.
+
+That is a completely different mechanism, and it stops working the moment a Row's
+Zombies are spread out instead of queueing up: a pea that has to re-aim between Zombies
+cannot hit Zombies that walk in together. The check had been measuring an accident of
+the numbers and would have gone on reporting it as a rule.
+
+Rewritten to watch **one shot** — wait for three Zombies in a Row, note the next pea
+that plant fires, count how many Zombies that one pea reaches before it leaves the lawn
+— it failed at once with `1 !== 3`. The fix then caught a real bug in the rule itself:
+the first version of "every Zombie it has reached" tested only that the pea had got level
+with a Zombie, so a passing-through pea went on hitting the same Zombie on every step for
+the rest of its flight and emptied it in a fraction of the time its health says. A pea
+sweeps over a Zombie on one step, and the rule now says so with both edges of the pea.
+
+**Each of the four shooters is now asked what one shot did, from two places on the
+lawn**, and both places are load-bearing. From the seventh Column, where every Zombie in
+the Row is within a Puff-shroom's reach, a variant quietly given a *second* difference is
+caught — a Repeater whose peas also passed through, a Puff-shroom whose puff also slowed.
+From the first Column, where they are five Columns out, a plain shooter given a
+Puff-shroom's reach is caught, which close up behaves exactly like a Peashooter and
+passes everything else in the suite. Every field of every shooter's *shot* is now held
+by a check, and every break was tried against the data and watched to fail: the three
+costs, the three reaches, the slow's fraction and its ten seconds, the Repeater's two
+peas, the pass-through, and the plain pea itself given any of the four.
+
+**A second review caught the one claim that was stronger than the check behind it.** The
+Puff-shroom's reach was annotated "pinned from both sides" and was not: the check asked
+how far a *Zombie* stood when the puff reached it and answered "between two and three
+Columns", which caught a reach of one and a reach of nine and passed on two and a
+quarter — the puff and the Zombie were closing on each other, so it was reading a mixture
+of the reach and the Zombie's walking speed. Seven intermediate values, from 2.1 to 3.1,
+passed the whole suite unchanged. **Asking where the puff stops** — which is the reach,
+with no Zombie in it at all — pins it to three Columns within one puff-step, about a
+twentieth of a Column, and every value from 1 to 9 except 3 now fails.
+
+It also caught the Repeater's two peas being drawn as one disc. They leave on the same
+step at the same speed, so they spend the whole flight at the same place: the rules were
+right and the picture was hiding the one thing the plant is. A cluster of peas at a
+place is now drawn as that many peas.
+
+**A review found the rest, and found them by breaking the numbers rather than by reading
+them.** The three new plants' health and Recharge are copied from the Peashooter's —
+correctly, and with a comment in `balance.ts` saying exactly that — and **nothing was
+holding the copy**: a Snow Pea given a Wall-nut's health, or a Repeater given a
+two-second Recharge, passed the whole suite unchanged, because every other check here is
+about what a plant does with a shot and none of them looked at how long it survives or
+how long its packet takes. Five such breaks sailed straight through and are now caught,
+by counting bites until a Square is bare and by finding the step a used packet can be
+chosen again on. **A copy is not a check** — and it is the third time this project has
+learned that from a number rather than from a sentence.
+
+**A fix from ticket 10 had no check behind it, and this pass found it by breaking the
+rules rather than the numbers.** "A pea that hits nothing now leaves the lawn" could not
+be produced by a single shooter — one plant's peas leave and land on the same step, so a
+pea in the air behind the one that fells a Zombie needs two things shooting at that
+Zombie, and no check had two. A Peashooter and a Repeater in one Row now hold it. Getting
+there also needed a Wave still to come: a level whose last Zombie has died is *won*, and
+a won level stops moving, so with nothing left to send the orphan pea is frozen on the
+lawn for ever and the check is watching the wrong thing.
+
+**Not in this ticket.** Whether any of these numbers are *these* numbers. Every number
+this ticket added is from memory, and **none of it has ever been played** — the only Level offering them is
+the test bed, and a test bed is somewhere to look at a plant rather than somewhere to
+balance one. That is the honest thing to record about them, and it is the next question
+when a Level sells them. Also not in this ticket: the Potato Mine, the Chomper and the
+Cherry Bomb, and how a plant does something *instead of* shooting, which is the shape
+those three share and the open question this ticket leaves.
+
 ## [0.18.0] - 2026-09-29
 
 ### A balance pass, and the claim that had to be thrown away

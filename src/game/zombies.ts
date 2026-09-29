@@ -10,6 +10,7 @@ import {
 } from './board.ts'
 import {
   BASIC_ZOMBIE_HEALTH,
+  SLOWED_WALK_FRACTION,
   ZOMBIE_BITE_DAMAGE,
   ZOMBIE_BITE_INTERVAL,
   ZOMBIE_STEPS_PER_COLUMN,
@@ -98,6 +99,21 @@ export interface Zombie {
    * cycle it was never eating through.
    */
   readonly stepsUntilBite: number
+  /**
+   * Steps of slowness still to run out on this Zombie. Zero means it walks at its
+   * usual speed.
+   *
+   * A countdown on the Zombie rather than a flag or a speed for the same reason a
+   * bite is a countdown: the lawn and the rules read the same number, and a slow
+   * cannot be a step out of step with what is causing it.
+   *
+   * It is on the Zombie and not on whatever slowed it, which is what makes a slow
+   * outlast its cause - dig the Snow Pea up and the Zombie it had slowed is still
+   * walking slowly for what is left of the ten seconds, and then is not. That is
+   * the rule rather than a detail: a slow is something that happened *to* a Zombie,
+   * and undoing the plant does not undo the Zombie's legs.
+   */
+  readonly stepsSlowed: number
 }
 
 /**
@@ -112,12 +128,24 @@ export interface Zombie {
  * different Wave.
  */
 export function zombieAtEdge(id: number, name: ZombieName, row: Row, health: number): Zombie {
-  return { id, name, row, walked: 0, health, stepsUntilBite: 0 }
+  return { id, name, row, walked: 0, health, stepsUntilBite: 0, stepsSlowed: 0 }
 }
 
 /** A Zombie with that much damage taken off it. */
 export function takeDamage(zombie: Zombie, damage: number): Zombie {
   return { ...zombie, health: zombie.health - damage }
+}
+
+/**
+ * A Zombie with that many steps of slowness on it.
+ *
+ * The longer of the two rather than the newer, so that a second Snow Pea pea
+ * landing on a Zombie that is already slowed cannot *undo* the slowness it was
+ * already under. A slow is a floor and not a setting: being slowed again for ten
+ * seconds leaves a Zombie no less slowed than it was, and never less.
+ */
+export function takeSlow(zombie: Zombie, steps: number): Zombie {
+  return { ...zombie, stepsSlowed: Math.max(zombie.stepsSlowed, steps) }
 }
 
 /**
@@ -246,7 +274,24 @@ export function walkAndEat(
   const breached = new Set<Row>()
 
   const after = zombies.map((zombie) => {
-    const walked = { ...zombie, walked: zombie.walked + 1 }
+    // A slow runs down on every step, whatever the Zombie is doing. A Zombie being
+    // slowed while it is already eating something is not walking any slower, but it
+    // is still coming back to full speed while it chews - and a countdown that only
+    // ran while a Zombie happened to be walking would be a slow that could be kept
+    // off for ever by standing in front of a Wall-nut.
+    const slowed: Zombie = { ...zombie, stepsSlowed: Math.max(0, zombie.stepsSlowed - 1) }
+    // Whether *this* step was a slowed one, taken before the countdown is spent:
+    // the last step of a slow is still a slow step, so a Zombie that is slowed for
+    // one step walks half a step and then walks properly.
+    const wasSlowed = zombie.stepsSlowed > 0
+
+    // A slow shortens the step rather than making the Zombie skip one. Skipping is
+    // the obvious way to slow something down and it cannot express a fraction: a
+    // Zombie that took a whole step every other step is walking at half speed
+    // exactly, and one slowed to anything else would either have to skip a step it
+    // did not have or drift. Half a step is a number the tally can hold, which is
+    // the whole reason `walked` is a tally of steps and not a place.
+    const walked = { ...slowed, walked: slowed.walked + (wasSlowed ? SLOWED_WALK_FRACTION : 1) }
 
     // Past the left edge of the board is off the board, and a Row that had a mower
     // never gets a Zombie this far: the mower is set off on the mower Square, one
@@ -269,14 +314,14 @@ export function walkAndEat(
     // It has reached the plant, so it stops where it is rather than taking
     // another step: the plant is in the Square it is standing in, and walking on
     // would be walking into it.
-    const readyIn = Math.max(0, zombie.stepsUntilBite - 1)
+    const readyIn = Math.max(0, slowed.stepsUntilBite - 1)
     if (readyIn > 0) {
-      return { ...zombie, stepsUntilBite: readyIn }
+      return { ...slowed, stepsUntilBite: readyIn }
     }
 
     bites.set(food, (bites.get(food) ?? 0) + ZOMBIE_BITE_DAMAGE)
 
-    return { ...zombie, stepsUntilBite: ZOMBIE_BITE_INTERVAL }
+    return { ...slowed, stepsUntilBite: ZOMBIE_BITE_INTERVAL }
   })
 
   const bitten = occupants

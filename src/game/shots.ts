@@ -1,7 +1,7 @@
 import { centreX, LOGICAL_WIDTH, SQUARE_WIDTH, type Occupant, type Row, type Square } from './board.ts'
 import { SHOT_STEPS_PER_COLUMN } from './balance.ts'
-import { PLANTS } from './plants.ts'
-import { nearestAheadOf, takeDamage, zombieX, type Zombie } from './zombies.ts'
+import { PLANTS, type ShotEffect } from './plants.ts'
+import { nearestAheadOf, takeDamage, takeSlow, zombieX, type Zombie } from './zombies.ts'
 
 /**
  * One pea in flight.
@@ -32,6 +32,22 @@ export interface Shot {
    * behave differently later on.
    */
   readonly damage: number
+  /** Steps of slowness a Zombie this pea reaches is left with. Zero for none. */
+  readonly slowSteps: number
+  /**
+   * Whether this pea passes through a Zombie it reaches rather than being spent on
+   * the first one.
+   */
+  readonly passesThrough: boolean
+  /**
+   * How far along its Row this pea goes before it is spent, in board units.
+   *
+   * Worked out when the pea is fired rather than carried as a Column count, for
+   * the same reason the damage above is carried rather than looked up: this is
+   * what the pea is, and it cannot change while the pea is in the air. A pea
+   * whose plant is dug up mid-flight still reaches as far as it was going to.
+   */
+  readonly reachX: number
 }
 
 /** What one step of the peas on the lawn did. */
@@ -45,23 +61,48 @@ export interface ShotStep {
 /** How far a pea travels in one step, in board units. */
 export const SHOT_MOVE_PER_STEP = SQUARE_WIDTH / SHOT_STEPS_PER_COLUMN
 
-/** A pea leaving a plant, on its way to a particular Zombie. */
-export function fireShot(id: number, square: Square, target: Zombie, damage: number): Shot {
-  return { id, row: square.row, x: centreX(square), targetId: target.id, damage }
+/**
+ * A pea leaving a plant, on its way to a particular Zombie.
+ *
+ * The pea is built here from what the plant shoots, so the plant's own description
+ * of its shot is turned into the travelling thing once and the flight never has to
+ * ask what plant this came from.
+ */
+export function fireShot(id: number, square: Square, target: Zombie, effect: ShotEffect): Shot {
+  const x = centreX(square)
+
+  return {
+    id,
+    row: square.row,
+    x,
+    targetId: target.id,
+    damage: effect.damage,
+    slowSteps: effect.slowSteps,
+    passesThrough: effect.passesThrough,
+    reachX: x + effect.reachIn * SQUARE_WIDTH,
+  }
 }
 
 /**
- * One step of every pea on the lawn: each travels right, and a pea that has
- * reached the Zombie it was aimed at hits it and is spent.
+ * One step of every pea on the lawn: each travels right, and lands on the Zombies
+ * it has reached, and is spent unless it passes through what it meets.
  *
- * A pea lands by arriving at its target's place, not by touching whatever is
+ * A plain pea lands by arriving at its target's place, not by touching whatever is
  * under it. That is the whole of "only the Zombie it was aimed at": a pea whose
  * target has already gone carries on past a Zombie that happens to be walking
  * into its path, and a pea only ever names a Zombie in its own Row, so it cannot
  * cross into another one however the Rows are lined up.
+ *
+ * The three shooter variants are this loop with one of three answers changed, and
+ * each of them is a field on the pea rather than a branch in here: a pea that
+ * passes through lands on every Zombie it has reached and carries on, and a pea
+ * with a reach is spent when it has gone that far. A Peashooter's pea sets all
+ * three the ordinary way and behaves exactly as it did before any of them existed,
+ * which is the point of the Peashooter being the plain one.
  */
 export function flyRight(shots: readonly Shot[], zombies: readonly Zombie[]): ShotStep {
   const damage = new Map<number, number>()
+  const slowed = new Map<number, number>()
 
   const flying = shots
     .map((shot) => ({ ...shot, x: shot.x + SHOT_MOVE_PER_STEP }))
@@ -72,20 +113,95 @@ export function flyRight(shots: readonly Shot[], zombies: readonly Zombie[]): Sh
       if (shot.x >= LOGICAL_WIDTH) {
         return false
       }
-      const target = zombies.find((zombie) => zombie.id === shot.targetId && zombie.row === shot.row)
-      if (target === undefined || shot.x < zombieX(target)) {
+
+      // A pea that runs out of reach goes the same way, and for the same reason:
+      // it has nowhere further to go. Kept apart from the lawn above because they
+      // are different answers - a pea that crossed the whole lawn was never going
+      // to stop, whereas a Puff-shroom's pea was always going to stop and has
+      // stopped. The plant that fired it is not asked which of the two this is;
+      // the pea knows, because its reach came with it.
+      if (shot.x >= shot.reachX) {
+        return false
+      }
+
+      const hit = shot.passesThrough
+        ? everyZombieItHasReached(shot, zombies)
+        : theOneItWasAimedAt(shot, zombies)
+
+      if (hit.length === 0) {
         return true
       }
-      damage.set(target.id, (damage.get(target.id) ?? 0) + shot.damage)
-      return false
+
+      for (const zombie of hit) {
+        damage.set(zombie.id, (damage.get(zombie.id) ?? 0) + shot.damage)
+        if (shot.slowSteps > 0) {
+          slowed.set(zombie.id, shot.slowSteps)
+        }
+      }
+
+      return shot.passesThrough
     })
 
+  // Damage and slowness are collected first and dealt out together, for the same
+  // reason bites are in `walkAndEat`: two peas can reach one Zombie in the same step
+  // and the Zombie has one amount of health and one slow between them. A pea that
+  // found the Zombie already dead of the other's damage would find it already off
+  // the lawn, and would quietly leave it un-slowed.
   const wounded = zombies.map((zombie) => {
     const taken = damage.get(zombie.id)
-    return taken === undefined ? zombie : takeDamage(zombie, taken)
+    const chilled = slowed.get(zombie.id)
+    if (taken === undefined && chilled === undefined) {
+      return zombie
+    }
+
+    const hurt = taken === undefined ? zombie : takeDamage(zombie, taken)
+
+    return chilled === undefined ? hurt : takeSlow(hurt, chilled)
   })
 
   return { shots: flying, zombies: wounded }
+}
+
+/**
+ * The one Zombie a pea was aimed at, if the pea has got there.
+ *
+ * Empty for a pea still short of its target, which is what keeps a pea flying, and
+ * empty for one whose target is no longer on the lawn at all: a pea aimed at a
+ * Zombie that something else has killed carries on down the Row and leaves, rather
+ * than stopping on the spot where a Zombie used to be.
+ */
+function theOneItWasAimedAt(shot: Shot, zombies: readonly Zombie[]): readonly Zombie[] {
+  const target = zombies.find((zombie) => zombie.id === shot.targetId && zombie.row === shot.row)
+
+  return target !== undefined && shot.x >= zombieX(target) ? [target] : []
+}
+
+/**
+ * Every Zombie in this pea's own Row that this pea swept over on this step.
+ *
+ * *Every* one rather than the first, which is the whole of what a Snow Pea's shot
+ * is: a pea that goes through what it meets instead of stopping on it, so one of
+ * them damages and slows a whole line of Zombies walking into it.
+ *
+ * Both edges of the pea matter, and the second one is the whole of the rule. A pea
+ * moves right and a Zombie walks left, so they cross exactly once, and a Zombie is
+ * hit on the step the pea comes level with it - neither before the pea has got there
+ * nor after it has gone past. Testing only "the pea has reached it" would say a pea
+ * hits a Zombie it has already walked past, and on every step for the rest of its
+ * life, which would empty a Zombie in a fraction of the time its health says it
+ * takes and would do it to a Zombie that had already gone by.
+ *
+ * The Zombie also has to be in this pea's own Row, so a pea level with a Zombie in
+ * the Row above is as unaffected by it as any other pea is - the same rule as the
+ * plain one, and the reason a Snow Pea cannot be a plant that slows the whole lawn
+ * by accident.
+ */
+function everyZombieItHasReached(shot: Shot, zombies: readonly Zombie[]): readonly Zombie[] {
+  const from = shot.x - SHOT_MOVE_PER_STEP
+
+  return zombies.filter(
+    (zombie) => zombie.row === shot.row && zombieX(zombie) <= shot.x && zombieX(zombie) >= from,
+  )
 }
 
 /**
@@ -127,8 +243,16 @@ export function fireFromPlants(
       return { ...occupant, stepsUntilShot: readyIn }
     }
 
-    flying = [...flying, fireShot(nextId, occupant.square, target, shooting.damage)]
-    nextId += 1
+    // A plant that fires more than one projectile fires them all in the same shot,
+    // at the same target, and is then ready again on the same rhythm as a plant that
+    // fires one. The alternative - a Repeater firing its second pea a firing
+    // interval later - is not a plant that shoots twice as hard but one that shoots
+    // twice as often, which is a different plant and a worse one: it would spend the
+    // whole of the Peashooter's rhythm on half as much damage.
+    for (let pea = 0; pea < shooting.projectiles; pea++) {
+      flying = [...flying, fireShot(nextId, occupant.square, target, shooting.shot)]
+      nextId += 1
+    }
 
     return { ...occupant, stepsUntilShot: shooting.fireInterval }
   })

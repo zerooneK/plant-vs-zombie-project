@@ -30,6 +30,12 @@ const MOWER_BODY = '#b0bec5'
 const MOWER_EDGE = '#546e7a'
 const MOWER_HANDLE = '#ef5350'
 const SPENT_MOWER_EDGE = 'rgba(255, 255, 255, 0.3)'
+const SNOW_HEAD = '#7fb3cc'
+const SNOW_FACE = '#dcedf7'
+const SHROOM_CAP = '#a9a49b'
+const SHROOM_FACE = '#e6e2da'
+const CHILLED_SKIN = '#8ea9c4'
+const CHILLED_SKIN_EDGE = '#4a5f7a'
 const PEA = '#b7e04b'
 const PEA_EDGE = '#33691e'
 const ZOMBIE_SKIN = '#9e9e9e'
@@ -67,13 +73,16 @@ function lawnColour(square: Square): string {
  * is the rules', so the plant on the screen is exactly as eaten as the plant in
  * the state.
  *
- * Each of the four plants is a different shape, because a placeholder that is the
- * same shape for every plant is not a simplification, it is a plant that cannot
- * be told from the thing it replaces. Colours and outlines only: the art pass
- * replaces all of them with the real artwork, and until then the four have to be
- * different enough to name. A Peashooter is a green head on a stalk and a
- * Sunflower is a yellow one; a Wall-nut is a wide nut sitting on the grass and a
- * Tall-nut is a narrow one standing up out of it.
+ * Each plant is a different shape, because a placeholder that is the same shape
+ * for every plant is not a simplification, it is a plant that cannot be told from
+ * the thing it replaces. Colours and outlines only: the art pass replaces all of
+ * them with the real artwork, and until then there has to be enough of each to
+ * name. A Peashooter is a green head on a stalk and a Sunflower is a yellow one; a
+ * Wall-nut is a wide nut sitting on the grass and a Tall-nut is a narrow one
+ * standing up out of it; and the three shooters that are variations on the
+ * Peashooter are that same head in a different colour, a different size, or with
+ * two faces where the others have one - the shape of the difference each of them
+ * actually makes, so the picture is not having to annotate itself.
  */
 function drawPlant(
   context: CanvasRenderingContext2D,
@@ -93,31 +102,73 @@ function drawPlant(
     return
   }
 
-  // A plant that makes Sun is drawn as a flower and a plant that shoots is drawn
-  // as a green head, because the Seed Bank offers both and a player choosing
+  // A plant that makes Sun is drawn as a flower and a plant that shoots is drawn as
+  // a head on a stalk, because the Seed Bank offers both and a player choosing
   // between them needs to see which one they put down.
   const flower = plant.name === 'sunflower'
 
+  // The four shooters are told apart by one visible thing each, which is the test
+  // the test bed is judged by: it exists so that a person can go and look at a
+  // plant, and a plant that cannot be told from the thing beside it is a plant
+  // nobody is looking at. So a Peashooter is the plain green head, a Snow Pea is
+  // that same head gone pale and frosty, a Repeater has two faces where the others
+  // have one, and a Puff-shroom is a small grey cap on a short stalk rather than a
+  // head at all.
+  //
+  // Each of those is one visible thing and each is the plant's actual difference:
+  // the Snow Pea is the one that is cold, the Repeater is the one with two of
+  // everything, and the Puff-shroom is the small one. Colours and one mark, all of
+  // which the art pass replaces - and none of which is a number, because a player
+  // choosing between four shooters is looking at the lawn, not reading it.
+  const cold = plant.name === 'snow-pea'
+  const twice = plant.name === 'repeater'
+  const shroom = plant.name === 'puff-shroom'
+
+  // The Puff-shroom is drawn smaller and on a shorter stalk because that is what
+  // makes it read as a shroom rather than as a small Peashooter, and because the
+  // limit on it is that it is a small thing that shoots a short way.
+  const size = shroom ? 0.7 : 1
+  const cap = head * size
+  const stalk = cap * (shroom ? 1.1 : 2.1)
+
+  const body = flower ? SUNFLOWER_PETAL : cold ? SNOW_HEAD : shroom ? SHROOM_CAP : PLANT_LEAF
+  const face = flower ? SUNFLOWER_CENTRE : cold ? SNOW_FACE : shroom ? SHROOM_FACE : PLANT_FACE
+
   context.fillStyle = PLANT_LEAF_EDGE
-  context.fillRect(centre.x - head * 0.15, centre.y, head * 0.3, head * 2.1)
+  context.fillRect(centre.x - cap * 0.15, centre.y, cap * 0.3, stalk)
 
-  context.fillStyle = flower ? SUNFLOWER_PETAL : PLANT_LEAF
+  context.fillStyle = body
   context.beginPath()
-  context.arc(centre.x, centre.y, head, 0, Math.PI * 2)
+  context.arc(centre.x, centre.y, cap, 0, Math.PI * 2)
   context.fill()
 
-  context.fillStyle = flower ? SUNFLOWER_CENTRE : PLANT_FACE
-  context.beginPath()
-  context.arc(centre.x, centre.y, head * 0.55, 0, Math.PI * 2)
-  context.fill()
+  // Two faces for the Repeater, side by side, where every other shooter has one.
+  // The whole of what makes a Repeater a Repeater is that there are two of
+  // everything, so two faces is the one mark that says so without a caption.
+  if (twice) {
+    context.fillStyle = face
+    for (const offset of [-0.3, 0.3]) {
+      context.beginPath()
+      context.arc(centre.x + cap * offset, centre.y, cap * 0.42, 0, Math.PI * 2)
+      context.fill()
+    }
+  } else {
+    context.fillStyle = face
+    context.beginPath()
+    context.arc(centre.x, centre.y, cap * 0.55, 0, Math.PI * 2)
+    context.fill()
+  }
 
   // Nothing is cut out of a plant that is untouched, so the shape a healthy plant
   // is drawn as is the shape it always was.
-  const bite = head * 0.9 * (1 - healthLeft)
+  // Cut out of whatever head this plant actually has, so a partly eaten Puff-shroom
+  // is a partly eaten Puff-shroom rather than a bite drawn across a head that is no
+  // longer the size it was.
+  const bite = cap * 0.9 * (1 - healthLeft)
   if (bite > 0) {
     context.fillStyle = lawnColour(square)
     context.beginPath()
-    context.arc(centre.x + head * 0.5, centre.y - head * 0.1, bite, 0, Math.PI * 2)
+    context.arc(centre.x + cap * 0.5, centre.y - cap * 0.1, bite, 0, Math.PI * 2)
     context.fill()
   }
 }
@@ -284,13 +335,22 @@ function drawZombie(
   const head = width * 0.34
   const headY = centre.y - board.squareHeight * 0.18
 
+  // A slowed Zombie is drawn in cold colours, because a Zombie walking at half speed
+  // and a Zombie walking at its usual speed are the same picture otherwise, and the
+  // whole of a Snow Pea is that difference - a player who cannot see which Zombies
+  // are slowed cannot tell what their Snow Peas are for. Read from the state rather
+  // than from anything worked out here, so the picture cannot show a Zombie slowed
+  // where the rules have it walking.
+  const skin = zombie.stepsSlowed > 0 ? CHILLED_SKIN : ZOMBIE_SKIN
+  const skinEdge = zombie.stepsSlowed > 0 ? CHILLED_SKIN_EDGE : ZOMBIE_SKIN_EDGE
+
   if (eating) {
     // Two arms out to the left, which is the way the Zombie came and the side the
     // plant is on. The lower one is at the height of the middle of the Square,
     // because that is where a plant's head is drawn and an arm that reached for a
     // plant at head height would be reaching over it. Drawn in the skin colour and
     // in front of the body, so they read as arms rather than as part of it.
-    context.fillStyle = ZOMBIE_SKIN
+    context.fillStyle = skin
     context.fillRect(centre.x - width, headY - head * 0.18, width * 0.72, head * 0.42)
     context.fillRect(centre.x - width, centre.y - head * 0.28, width * 0.72, head * 0.42)
   }
@@ -302,12 +362,12 @@ function drawZombie(
   context.fillStyle = ZOMBIE_SHIRT
   context.fillRect(centre.x - width * 0.34, centre.y - head * 0.5, width * 0.68, head * 1.1)
 
-  context.fillStyle = ZOMBIE_SKIN
+  context.fillStyle = skin
   context.beginPath()
   context.arc(centre.x, headY, head, 0, Math.PI * 2)
   context.fill()
 
-  context.strokeStyle = ZOMBIE_SKIN_EDGE
+  context.strokeStyle = skinEdge
   context.lineWidth = Math.max(1, 2 * board.scale)
   context.stroke()
 
@@ -375,10 +435,37 @@ function drawFlag(
  * natural green is within a shade or two of both lawn stripes and of a plant -
  * drawn in its own colour it was a ring on grass, which is a thing a player has
  * to be told about rather than a thing they can see.
+ *
+ * `withOthers` is how many peas are in the air at this same place, and a Repeater's
+ * two peas leave on the same step at the same speed for the whole of their flight -
+ * which means they are also at the same place for the whole of their flight, and drawn
+ * where the rules put them they are one disc rather than two. The whole of a Repeater
+ * is that there are two of everything, so the picture has to say so: a cluster is drawn
+ * as that many peas, spread just far enough apart to be counted at a glance. It is the
+ * one place this drawing knowingly shows something other than a position the rules
+ * gave it, and it is a position *inside* the cluster rather than a different one.
  */
-function drawShot(context: CanvasRenderingContext2D, shot: Shot, board: BoardLayout): void {
-  const centre = place({ x: shot.x, y: middleOfRow(shot.row) }, board)
+function drawShot(
+  context: CanvasRenderingContext2D,
+  shot: Shot,
+  board: BoardLayout,
+  withOthers: number,
+  thisIndexInItsCluster: number,
+): void {
   const radius = PEA_RADIUS * board.scale
+  // Spread along the Row rather than up and down it, so a cluster of peas reads as
+  // peas travelling together rather than as a taller thing standing in the Row.
+  //
+  // The spacing is more than a diameter, which is the whole of why two peas are
+  // visible at all: two discs of the same radius whose centres are less than a
+  // diameter apart are one disc, and a first attempt at this put them half a radius
+  // apart, which drew a pair as a slightly wider single pea. A lone pea gets no
+  // offset at all, which is most of them.
+  const alone =
+    withOthers < 2
+      ? 0
+      : (thisIndexInItsCluster - (withOthers - 1) / 2) * radius * 2.4
+  const centre = place({ x: shot.x + alone, y: middleOfRow(shot.row) }, board)
 
   context.fillStyle = PEA
   context.beginPath()
@@ -484,8 +571,15 @@ export function drawBoard(
     }
   }
 
+  // Peas in the same Row and at the same place are a cluster - a Repeater's two, or
+  // one pea from two Repeaters in a Row - and each is told which of them it is so
+  // they can be drawn side by side. A pea a whole pea-width away from its neighbour is
+  // travelling alone, whatever else is in the Row.
   for (const shot of state.shots) {
-    drawShot(context, shot, board)
+    const cluster = state.shots.filter(
+      (other) => other.row === shot.row && Math.abs(other.x - shot.x) <= PEA_RADIUS,
+    )
+    drawShot(context, shot, board, cluster.length, cluster.findIndex((o) => o.id === shot.id))
   }
 
   // Zombies are drawn last, over the plants and the peas, because a Zombie is

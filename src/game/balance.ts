@@ -198,6 +198,97 @@ export const SUNFLOWER_HEALTH = 300
 export const SUNFLOWER_RECHARGE = 7.5 * STEPS_PER_SECOND
 
 /**
+ * The three shooter variants: what they cost, and the two numbers that are their
+ * own rather than the Peashooter's.
+ *
+ * Every number in this block is from memory and **none of it has been played**.
+ * That is a real difference from everything above, and it is the reason the
+ * comments here are shorter than the ones they sit among. The Sunflower's numbers
+ * were confirmed at ticket 11 by playing Level 1-1 and watching what the plant did
+ * in it; these three have never been in a Level a player can play, because the only
+ * Level that offers them is the test bed, and a test bed is somewhere to look at a
+ * plant rather than somewhere to balance one. So a Snow Pea at 175 and a Repeater
+ * at 200 are the original's numbers as best they are remembered, and nothing has yet
+ * asked whether they are *these* numbers.
+ *
+ * That is not a reason to guess better. It is a reason to know which numbers are
+ * load-bearing before a Level offers any of them, and the honest place to find out
+ * is a balance pass on a Level that sells these plants - which is a later ticket,
+ * because the only Level there is offers a Peashooter and a Sunflower, and adding
+ * a packet to it would change what that Level asks of a player.
+ */
+
+/** What a Snow Pea costs to plant. Believed to be the original's 175. */
+export const SNOW_PEA_SUN_COST = 175
+
+/**
+ * How long a Snow Pea's shot leaves a Zombie slowed for, and how much slower it
+ * walks while it lasts. Both from memory: the original's is about ten seconds, and
+ * the slowed Zombie walks at half speed.
+ *
+ * Half rather than some other fraction because a fraction that is not a half cannot
+ * be counted in whole steps. A Zombie is a tally of steps walked, and a slow that
+ * made it walk four fifths of a step would either drift or need a step it did not
+ * take; half is the only slowdown that is exact in whole and half steps together,
+ * which is what keeps a slowed Zombie's place on the lawn identical on a fast
+ * machine and a slow one.
+ */
+export const SNOW_PEA_SLOW_STEPS = 10 * STEPS_PER_SECOND
+export const SLOWED_WALK_FRACTION = 0.5
+
+/** What a Repeater costs to plant. Believed to be the original's 200. */
+export const REPEATER_SUN_COST = 200
+
+/**
+ * What a Puff-shroom costs to plant. Believed to be the original's nothing at all.
+ *
+ * The only plant in the game that is free, and the reason that is a decision rather
+ * than an oversight is the reach it buys: a plant that costs nothing and shoots as
+ * far as a Peashooter would be strictly better than every other plant in the game,
+ * since a player could fill every Square of every Row with them and never be short
+ * of anything. Being free is only interesting against a limit.
+ */
+export const PUFF_SHROOM_SUN_COST = 0
+
+/**
+ * How far a Puff-shroom's shot goes, in Columns from the plant. Believed to be the
+ * original's three, and the least certain of this plant's numbers along with its reach
+ * being a Columns figure at all rather than something read off the original.
+ *
+ * Short enough to be a plant for what is walking in front of it rather than one for
+ * the whole Row, which is the limit that makes it free. A Zombie has to be within
+ * three Columns of the puff to be hit by it, and a Zombie on the far side of the
+ * lawn is a thing a Peashooter answers and this does not.
+ */
+export const PUFF_SHROOM_REACH = 3
+
+/**
+ * How much health each of the three variants is planted with, and how long their
+ * Seed Packets take to Recharge.
+ *
+ * The Peashooter's own numbers rather than copies of them, because the original's
+ * four shooters are all 300 health and all Recharge in seven and a half seconds, as
+ * best they are remembered, and there is no reading in which a Snow Pea is a tougher
+ * or a quicker plant than the Peashooter beside it. Marked as remembered rather than
+ * asserted, because nothing in this project can support it: the original's plant
+ * statistics are not in here to be read, and a number written down without its marker
+ * reads as a number somebody checked. One name for each, so that a check can say what a
+ * Puff-shroom costs without the number being written out twice and able to drift -
+ * which is the same reason the Tall-nut's cost is the Wall-nut's.
+ *
+ * The consequence worth knowing: what separates these three from a Peashooter is
+ * *only* what they do differently, and none of it is that they are sturdier or
+ * faster to get back. A Snow Pea standing where a Peashooter would be standing is
+ * eaten in exactly three bites.
+ */
+export const SNOW_PEA_HEALTH = PEASHOOTER_HEALTH
+export const SNOW_PEA_RECHARGE = PEASHOOTER_RECHARGE
+export const REPEATER_HEALTH = PEASHOOTER_HEALTH
+export const REPEATER_RECHARGE = PEASHOOTER_RECHARGE
+export const PUFF_SHROOM_HEALTH = PEASHOOTER_HEALTH
+export const PUFF_SHROOM_RECHARGE = PEASHOOTER_RECHARGE
+
+/**
  * What a Wall-nut costs to plant. Believed to be the original's 50 - the same as a
  * Sunflower, and the same as a Tall-nut.
  *

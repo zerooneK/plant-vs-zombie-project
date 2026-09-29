@@ -142,7 +142,7 @@ export const LEVEL_1_1: Level = {
  * wants to look at one. The first is what the checks do, and the second is this -
  * because "the drawing is right" is not an answer a check can give, and the whole
  * of the artwork so far has been plain shapes that a player would mistake for each
- * other if they were not distinguishable. Four packets side by side, one Zombie in
+ * other if they were not distinguishable. Seven packets side by side, one Zombie in
  * every Row, and a second pair in Row 0 later on so a Row can actually be lost.
  *
  * The schedule is not balanced and does not claim to be. Nothing walks in for
@@ -153,7 +153,7 @@ export const LEVEL_1_1: Level = {
  */
 export const LEVEL_TEST: Level = {
   name: 'test-bed',
-  plants: ['peashooter', 'sunflower', 'wall-nut', 'tall-nut'],
+  plants: ['peashooter', 'snow-pea', 'repeater', 'puff-shroom', 'sunflower', 'wall-nut', 'tall-nut'],
   waves: [
     { atStep: 45 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 0 }] },
     { atStep: 48 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 1 }] },

@@ -47,6 +47,9 @@ function describeSpentRows(spent: readonly Row[]): string {
  */
 const PLANT_NAMES: Record<PlantName, string> = {
   peashooter: 'Peashooter',
+  'snow-pea': 'Snow Pea',
+  repeater: 'Repeater',
+  'puff-shroom': 'Puff-shroom',
   sunflower: 'Sunflower',
   'wall-nut': 'Wall-nut',
   'tall-nut': 'Tall-nut',
