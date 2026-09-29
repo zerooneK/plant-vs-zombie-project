@@ -80,6 +80,15 @@ export const SUNFLOWER_SUN_COST = 50
  * twenty-five every ten, so one Sunflower is a *worse* deal than doing nothing
  * and waiting. It pays because you plant several and they run at once, and
  * seeing that is the game.
+ *
+ * Confirmed at ticket 11 by playing rather than by reading, and confirmed for a
+ * sharper reason than the one above. Two pieces pay a Sunflower back at 48.5
+ * seconds, and a Zombie crosses the whole lawn in 42.3 - **the payback time is
+ * longer than the lawn is wide**. So what a Sunflower earns is decided by how long
+ * before a Zombie reaches it, not by which Row it is in: measured across Level 1-1,
+ * the Row the first Wave reaches at twenty-five seconds breaks even exactly and the
+ * Rows reached later all come out ahead. The interval is not a rate to be tuned but
+ * the thing that makes timing a decision, and shortening it would take that away.
  */
 export const SUNFLOWER_PRODUCE_INTERVAL = 24.25 * STEPS_PER_SECOND
 
@@ -164,7 +173,14 @@ export const PEASHOOTER_HEALTH = 300
  * fast it dies, and a smaller number would only make it a worse plant without
  * making it a more interesting decision.
  *
- * Settled by playing in ticket 11, where a number that is wrong gets moved.
+ * Settled by playing in ticket 11, and it did not move - but the pass found the
+ * number is load-bearing in a way the note above did not say. Health does not
+ * change what a Sunflower is worth: it earns no Sun, so making it tougher changes
+ * nothing about its value and nothing about its payback either, since a Sunflower
+ * in an attacked Row is eaten either side of its second piece. All 300 buys is
+ * the two seconds between three bites. A Wall-nut buys forty and a Tall-nut
+ * eighty, and that range is the whole difference between a plant that is barely in
+ * the way and one that decides a Row.
  */
 export const SUNFLOWER_HEALTH = 300
 

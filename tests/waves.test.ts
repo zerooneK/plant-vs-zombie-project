@@ -1,12 +1,12 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { BOARD_ROWS, LOGICAL_WIDTH, occupantAt, type Row, type Square } from '../src/game/board.ts'
+import { LOGICAL_WIDTH, type Row } from '../src/game/board.ts'
 import { STEPS_PER_SECOND } from '../src/game/clock.ts'
-import { DEFAULT_SEED, apply, initialGameState, type GameState } from '../src/game/sim.ts'
+import { DEFAULT_SEED, apply, initialGameState } from '../src/game/sim.ts'
 import { LEVEL_1_1 } from '../src/game/levels.ts'
 import { zombieX, type Zombie } from '../src/game/zombies.ts'
+import { DEFENCE_FIRST, playLevel } from './plans.ts'
 import {
-  PEA_COST,
   ZOMBIE_STEPS_PER_COLUMN,
   levelWith,
   oneZombieIn,
@@ -392,132 +392,13 @@ test('a player who does nothing at all loses Level 1-1', () => {
   )
 })
 
-/**
- * Where a defending player puts their Peashooters: the first Column to the right of
- * the mowers.
- *
- * The back of the lawn rather than the front, and not out of caution. A Peashooter
- * kills a Flag Wave Zombie in about thirty seconds of shooting and a Zombie spends
- * about forty-two walking the whole board, so a plant at the back has time to
- * finish one off - while the same plant a few Columns further forward is reached
- * before it can, and is eaten. Where a player puts their plants is the single
- * biggest thing about whether they win, so a check that plays the level has to
- * plant them where a player would.
- */
-const DEFENCE_COLUMN = 1
-
-/**
- * The middle Row, and the first Row of a lawn to be worth a Peashooter.
- *
- * A guess, like any other opening move: with nothing walking on the lawn there is
- * nothing to react to, and the middle of the lawn is where Zombies come from. It is
- * here rather than buried in the check because it is a decision about playing, not
- * about the level.
- */
-const MIDDLE_ROW = 2
-
-/**
- * Plays a level the way a player who has read the rules would: collect every piece
- * of Sun, and put a Peashooter at the back of the Row that most needs one as soon
- * as there is Sun for it.
- *
- * The Row that most needs one is the Row of the Zombie nearest the left of the lawn
- * among Rows with no Peashooter in them; and with nothing walking, the middle of the
- * lawn. It plants in the first Column to the right of the mowers and never moves a
- * plant, which is the plan a first-time player uses: everything in one place,
- * shooting right.
- *
- * It is not a good player and is not meant to be. It does not look at which Rows
- * are about to be attacked, it does not save for anything, and it plants in Rows
- * that are never attacked at all. It is the *obvious* plan, and the point of playing
- * the shipped schedule this way is that a schedule which only a player who already
- * knows the level can finish is not a schedule anyone can check.
- */
-function playingDefensively(start: GameState): GameState {
-  let state = start
-
-  for (let step = 0; step < 20 * 60 * STEPS_PER_SECOND; step++) {
-    if (state.outcome !== 'playing') {
-      return state
-    }
-    state = takeEverySunOnTheLawn(state)
-    const row = rowMostInNeedOfAPlant(state)
-    if (row !== null) {
-      state = plantInTheBackOf(state, { row, column: DEFENCE_COLUMN })
-    }
-    state = apply(state, { kind: 'advance' })
-  }
-
-  assert.fail('the level did not end in twenty minutes of a player planting Peashooters')
-}
-
-/** The Row of the Zombie nearest the left of the lawn, among Rows with no Peashooter. */
-function rowMostInNeedOfAPlant(state: GameState): Row | null {
-  let mostUrgent: Row | null = null
-  let nearest = Number.POSITIVE_INFINITY
-
-  for (const zombie of state.zombies) {
-    if (!isBareAtTheBack(state, zombie.row) || zombieX(zombie) >= nearest) {
-      continue
-    }
-    nearest = zombieX(zombie)
-    mostUrgent = zombie.row
-  }
-
-  if (mostUrgent !== null) {
-    return mostUrgent
-  }
-  if (isBareAtTheBack(state, MIDDLE_ROW)) {
-    return MIDDLE_ROW
-  }
-  for (let row = 0; row < BOARD_ROWS; row++) {
-    if (isBareAtTheBack(state, row)) {
-      return row
-    }
-  }
-  return null
-}
-
-function isBareAtTheBack(state: GameState, row: Row): boolean {
-  return occupantAt(state.occupants, { row, column: DEFENCE_COLUMN }) === null
-}
-
-/**
- * Collects every piece of Sun lying on the lawn.
- *
- * Sun that is not collected is not spent, and a player who does not click the Sun
- * does not plant anything - so a check that plays a level has to click it, or it is
- * playing a game where the player never acts at all and is only ever testing what
- * happens to somebody who loses every exchange.
- */
-function takeEverySunOnTheLawn(state: GameState): GameState {
-  let current = state
-  for (const token of state.tokens) {
-    current = apply(current, { kind: 'collect', point: { x: token.x, y: token.y } })
-  }
-  return current
-}
-
-/** A Peashooter in that Square, if there is room for one and Sun to pay for it. */
-function plantInTheBackOf(state: GameState, square: Square): GameState {
-  if (occupantAt(state.occupants, square) !== null || state.sun < PEA_COST) {
-    return state
-  }
-  const packet = state.seedBank.find((candidate) => candidate.name === 'peashooter')
-  if (packet === undefined || packet.stepsUntilReady > 0) {
-    return state
-  }
-
-  return apply(apply(state, { kind: 'choose', choice: 'peashooter' }), { kind: 'place', square })
-}
-
 test('Level 1-1 can be played from its first Zombie through to a win', () => {
   // The other half of "a player has to be able to lose it", and the half that was
   // missing before: a level that can be lost is not the same as a level that can
   // be finished. It is about the schedule that ships, played with the obvious plan,
   // because a schedule that only a player who knows the level can win is not a
   // schedule anyone can check.
-  const won = playingDefensively(initialGameState(DEFAULT_SEED, LEVEL_1_1))
+  const won = playLevel(DEFENCE_FIRST, initialGameState(DEFAULT_SEED, LEVEL_1_1))
 
   assert.equal(won.pendingWaves.length, 0, "the level's last Wave has been sent")
   assert.equal(won.zombies.length, 0, 'and the lawn is clear of Zombies')

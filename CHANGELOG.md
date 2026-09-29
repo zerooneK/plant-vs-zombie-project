@@ -4,6 +4,74 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.18.0] - 2026-09-29
+
+### A balance pass, and the claim that had to be thrown away
+
+Ticket 11. The first playtest the plan has been promising since before the
+Sunflower existed. It changed no numbers, which is the outcome, and it is the first
+pass in this project to have anything to confirm.
+
+- **An economy-first plan still wins Level 1-1, by a margin of 22.9 seconds** after
+  the last Wave walks in — and finishes 0.3 seconds *sooner* than the defence-only
+  plan the spacing was balanced against. The Sunflower's arrival did not disturb
+  the pacing, so **the Wave spacing does not move**.
+- **A player who plants nothing still loses, at 142.3 seconds.** That figure was in
+  a comment since ticket 08. It is a number in a check now, and so is the 22.9.
+- **All three of the Sunflower's numbers are confirmed**, each read out of the
+  rules rather than asserted beside a literal. Cost 50, interval 24.25 seconds,
+  health 300 — and the interval is the interesting one. A Sunflower earns its 50
+  Sun back at 48.5 seconds while a Zombie crosses the whole lawn in 42.3, so the
+  payback is longer than the lawn is wide. The number is the decision: shorten it
+  and the plant is safe everywhere and the placement decision goes with it.
+- **Level 1-1 leaving two of five Rows unattacked is load-bearing.** It is the only
+  place an economy is safe in the first level, and a check now says so directly.
+
+**The claim this pass was written around turned out to be false, and that is the
+most useful thing in it.** The ticket said a Sunflower planted in the first Column
+is eaten before it has paid for itself. A check written from that sentence found
+one Row where it breaks even *exactly* — two pieces against a cost of 50 — and
+nearly recorded it as the rule. Measuring every Row instead:
+
+| Row | first Wave | made | vs a cost of 50 |
+|---|---|---|---|
+| 1 | never | 125 | +75 |
+| 2 | 50s | 75 | +25 |
+| 3 | 25s | 50 | +0 |
+| 4 | 80s | 100 | +50 |
+| 5 | never | 125 | +75 |
+
+**Every attacked Row pays for its Sunflower.** The single break-even Row is simply
+the one the first Wave reaches earliest, and it is the tightest the level ever makes
+it — not a rule about Rows. What decides a Sunflower is *when* a Zombie arrives.
+The original check would have gone on being wrong for as long as the schedule held
+still, and the Rows it compared were hard-coded rather than read off the schedule,
+so a schedule change would have invalidated the comparison silently.
+
+The same pass caught three assertions that could never fail: a local constant
+asserted equal to a local constant, which would have passed unchanged if the
+Sunflower had been re-priced to 25 Sun. Two of the three Sunflower numbers were not
+being checked at all. They are now read out of the rules by charging for a plant
+and watching when its Sun arrives.
+
+Seven checks, and each was shown to fail against a deliberately broken number before
+being believed — in both directions where it mattered: the interval both shortened
+and lengthened, health both raised and lowered, cost raised, the schedule both
+tightened until an economy was unaffordable and opened until no Row was safe, and
+the Zombie speed changed to move the loss time.
+
+The two plans that play the level now live in one file, `tests/plans.ts`, along
+with the loop that runs them. They had already drifted: the copy in `waves.test.ts`
+opens on the middle Row and the first draft of the balance pass opened on a Row
+Level 1-1 never attacks, so a plan that spent its first Peashooter defending
+nothing lost — and looked like a finding about the level rather than a bug in the
+check. It is the same class of error this project has hit before: a check that
+measures the wrong thing and is believed because it failed.
+
+**Not in this ticket.** How the level *feels*, which is the player's judgement and
+is settled by them playing it. Putting either new plant in a Level. Visual polish,
+which is ticket 21.
+
 ## [0.17.0] - 2026-09-29
 
 ### A Wall-nut, a Tall-nut, and a level for looking at them in

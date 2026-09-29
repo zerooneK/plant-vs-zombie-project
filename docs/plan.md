@@ -84,7 +84,7 @@ Each step is something you can actually play or click before the next one starts
 | 8 | Win and lose | Waves end, then either a win or game over — **done at ticket 08** |
 | 9 | **Level 1-1** | A whole level, start to finish, playable — **the level plays start to finish at ticket 08, won and lost; the menu and level select are ticket 19** |
 | 10 | The other 9 plants | One at a time, each with its rule test — **Sunflower done at ticket 09, Wall-nut and Tall-nut done at ticket 10** (two of the nine), ahead of each other as ADR 0005 sets out |
-| 11 | Level 1-1 balance pass | Level 1-1's pacing settled by playing it, not by reading it — **ticket 11** |
+| 11 | Level 1-1 balance pass | Level 1-1's pacing settled by playing it, not by reading it — **done, ticket 11** |
 | 12 | The other 4 zombies, levels 1-2 to 1-10 | Added as data |
 | 13 | Saved progress | Levels stay unlocked between sessions |
 | 14 | Art pass | Placeholder shapes replaced with the real SVG art |
@@ -104,7 +104,7 @@ Level 1-1's Wave spacing was set at step 8 on the assumption that a Peashooter i
 - **Some original numbers are from memory.** Sun costs and health are close; exact damage and wave timings are less certain. They are all in `balance.ts` with uncertain ones marked, and playtesting will find them.
 - **I cannot tell you whether it feels right.** I can drive the game with a headless browser and take screenshots, but whether the original's *feel* is captured is your judgement, not mine. Expect to playtest early and often.
 - **The lawn mower rule is the easiest thing to get wrong.** It is a one-use life per row, and losing a second zombie in the same row must end the level.
-- **Level 1-1 could not be lost, and could not be won either.** Found by playing it: the old schedule sent two Zombies into Row 3, 25 seconds apart, and the mower ran on the first of them at about 63 seconds — clearing *both*, because a mower clears its whole Row. Nothing else was ever sent to that Row, so no Row was ever breached twice and a player who did nothing played for ever. **Fixed at ticket 08** by a schedule that sends a Zombie into a Row *after* that Row's mower has run: doing nothing now loses at about 142 seconds, and the obvious plan wins at about 173.
+- **Level 1-1 could not be lost, and could not be won either.** Found by playing it: the old schedule sent two Zombies into Row 3, 25 seconds apart, and the mower ran on the first of them at about 63 seconds — clearing *both*, because a mower clears its whole Row. Nothing else was ever sent to that Row, so no Row was ever breached twice and a player who did nothing played for ever. **Fixed at ticket 08** by a schedule that sends a Zombie into a Row *after* that Row's mower has run: doing nothing loses at **142.3 seconds** and the obvious plan wins at **173.2** — both stated in checks since **ticket 11**, which is the balance pass this file has been promising. That pass also settled the Sunflower's numbers by playing rather than by reading them, and found that **Level 1-1 leaving two Rows unattacked is what makes an economy possible at all**. See `docs/adr/0007-sunflower-numbers-confirmed-by-playing.md`.
 - **WSL2**: the game window opens on the Windows side, not inside the terminal. A browser *can* still be driven headlessly from inside WSL, which is how presentation gets checked, and it is not the missing libraries it looks like:
 
   ```
