@@ -182,6 +182,71 @@ export const SUNFLOWER_HEALTH = 300
 export const SUNFLOWER_RECHARGE = 7.5 * STEPS_PER_SECOND
 
 /**
+ * What a Wall-nut costs to plant. Believed to be the original's 50 - the same as a
+ * Sunflower, and the same as a Tall-nut.
+ *
+ * 50 Sun for something that does nothing but stand there is the cheapest way to
+ * spend Sun in the game, and that is what makes it a real decision rather than an
+ * obvious one: the same 50 buys a Peashooter, which shoots, or a Sunflower, which
+ * makes Sun. What it will not buy is a defence that can be walked past, so the
+ * plant behind the nut is still the thing that wins the Row.
+ */
+export const WALL_NUT_SUN_COST = 50
+
+/**
+ * How much health a Wall-nut is planted with. Believed to be the original's 4000.
+ *
+ * Bites are 100 and come one a second, so this is forty seconds of a Zombie
+ * standing still and chewing. Compare a Peashooter's 300, which is three bites
+ * and three seconds: a Peashooter in a Zombie's way is barely an inconvenience,
+ * and a Wall-nut in a Zombie's way is the longest thing in the game that is not a
+ * Zombie's health. That difference is the whole of what the plant is for - it
+ * buys time for whatever is shooting from behind it - and it is a bigger number
+ * rather than a slower Zombie, so it costs the attacker nothing to have to wait
+ * it out.
+ */
+export const WALL_NUT_HEALTH = 4000
+
+/**
+ * How long the Wall-nut's Seed Packet takes to Recharge. Believed to be the
+ * original's thirty seconds, and the slowest in the game.
+ *
+ * Half a second is not a whole number of steps at sixty a second, so the Recharge
+ * runs out between two steps and 1800 is the first step on which the packet can be
+ * chosen again. It is a long wait, and deliberately so: a nut that Recharged in
+ * seven and a half seconds could be lined across a Row faster than a Zombie could
+ * walk it, which would make it a wall across the whole Row rather than a plant
+ * placed where it is needed. A slow Recharge is what makes the first one on a Row
+ * a decision.
+ */
+export const WALL_NUT_RECHARGE = 30 * STEPS_PER_SECOND
+
+/**
+ * How much health a Tall-nut is planted with. Believed to be the original's 8000 -
+ * exactly twice a Wall-nut's, and the least certain number on this page.
+ *
+ * Twice as much health for exactly the same 50 Sun is not a question of
+ * arithmetic but of placement, and it is what the plant exists to be: a Wall-nut
+ * is a thing you put in front of what is shooting, and a Tall-nut is a thing you
+ * put in front of the Wall-nut when one Wall-nut was not enough. Eighty seconds
+ * of chewing rather than forty buys a Row twice as long, and a Row that is going
+ * to lose anyway is a Row that lost after a minute and a half of being held rather
+ * than after forty seconds of it.
+ */
+export const TALL_NUT_HEALTH = 8000
+
+/**
+ * What a Tall-nut costs to plant, and how long its Seed Packet Recharges.
+ *
+ * Both the Wall-nut's own numbers rather than copies, because they are the same
+ * numbers and there is no reading in which the Tall-nut is a cheaper or a
+ * quicker plant. One name for each, so that a check can say what a Tall-nut costs
+ * without the number being written out twice and able to drift.
+ */
+export const TALL_NUT_SUN_COST = WALL_NUT_SUN_COST
+export const TALL_NUT_RECHARGE = WALL_NUT_RECHARGE
+
+/**
  * What one bite takes off a plant. From memory, 100.
  *
  * The same bite on every plant, so that health is comparable across the roster:

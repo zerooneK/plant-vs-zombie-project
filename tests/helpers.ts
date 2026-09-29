@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { STEPS_PER_SECOND } from '../src/game/clock.ts'
 import { LEVEL_1_1, type Level, type Wave } from '../src/game/levels.ts'
+import type { PlantName } from '../src/game/plants.ts'
 import { apply, type GameState } from '../src/game/sim.ts'
 
 /**
@@ -31,6 +32,21 @@ export const ZOMBIE_STEPS_PER_COLUMN = Math.round(4.7 * STEPS_PER_SECOND)
  */
 export function levelWith(...waves: Wave[]): Level {
   return { ...LEVEL_1_1, waves }
+}
+
+/**
+ * A Level that offers exactly the plants a check needs, and sends in exactly the
+ * Zombies it needs, and nothing else.
+ *
+ * Two things a check has to be able to say at once, which `levelWith` cannot: a
+ * Level's Seed Bank is part of the Level's design, so a check about a plant that
+ * Level 1-1 does not offer cannot be written against Level 1-1 however few Waves
+ * it is given. Naming the plants says which Seed Bank the rules are working from,
+ * and the game starts with 50 Sun - so a check about a 50-Sun plant can plant one
+ * at once, and one about a 100-Sun plant has to collect first.
+ */
+export function levelOffering(plants: readonly PlantName[], ...waves: Wave[]): Level {
+  return { ...LEVEL_1_1, name: 'for-one-check', plants, waves }
 }
 
 /** One Basic Zombie into a Row, walking in on the given step. */
@@ -80,19 +96,23 @@ export function untilTheLevelEnds(state: GameState, whatItIsWaitingFor: string):
 }
 
 /**
- * Plays until there is enough Sun in hand to pay for a Peashooter, collecting
- * every piece that falls on the way.
+ * Plays until there is enough Sun in hand to plant something, collecting every
+ * piece that falls on the way.
  *
  * A level begins with 50 Sun and a Peashooter costs 100, exactly as in the
  * original, so nothing can be planted until Sun has been collected. Every
  * planting check has to start from here: a check that tried to plant on 50 Sun
  * would be refused for being broke rather than for the reason it is about, and
  * would pass whether or not the rule worked.
+ *
+ * The amount defaults to a Peashooter and is passed when a check needs more than
+ * one plant - a Wall-nut and a Tall-nut are 50 each, so planting both of them is
+ * 150 and not something the default could reach.
  */
-export function withSunToPlant(start: GameState): GameState {
+export function withSunToPlant(start: GameState, howMuch: number = PEA_COST): GameState {
   let state = start
   for (let step = 0; step < 2 * 60 * STEPS_PER_SECOND; step++) {
-    if (state.sun >= PEA_COST) {
+    if (state.sun >= howMuch) {
       return state
     }
     state = apply(state, { kind: 'advance' })
@@ -101,5 +121,5 @@ export function withSunToPlant(start: GameState): GameState {
       state = apply(state, { kind: 'collect', point: { x: token.x, y: token.y } })
     }
   }
-  assert.fail(`only ${state.sun} Sun fell in two minutes, not enough to plant a Peashooter`)
+  assert.fail(`only ${state.sun} Sun fell in two minutes, not the ${howMuch} the check needed`)
 }

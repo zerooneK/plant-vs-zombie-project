@@ -23,6 +23,9 @@ const PLANT_LEAF_EDGE = '#1b5e20'
 const PLANT_FACE = '#66bb6a'
 const SUNFLOWER_PETAL = '#fdd835'
 const SUNFLOWER_CENTRE = '#f9a825'
+const NUT_SHELL = '#c68642'
+const NUT_EDGE = '#6b4423'
+const NUT_SEAM = '#8d5524'
 const MOWER_BODY = '#b0bec5'
 const MOWER_EDGE = '#546e7a'
 const MOWER_HANDLE = '#ef5350'
@@ -51,8 +54,8 @@ function lawnColour(square: Square): string {
 }
 
 /**
- * A plant as a plain green head with a stalk, so that what is standing on the
- * lawn can be told apart from bare grass at a glance. The real artwork is
+ * A plant as a plain green head with a stalk, so that what is standing on
+ * the lawn can be told apart from bare grass at a glance. The real artwork is
  * ticket 20; this is a shape, not a picture.
  *
  * A plant being eaten has a bite taken out of it, on the side the Zombie is
@@ -63,6 +66,14 @@ function lawnColour(square: Square): string {
  * which says the same thing in a placeholder's way. The health it is drawn from
  * is the rules', so the plant on the screen is exactly as eaten as the plant in
  * the state.
+ *
+ * Each of the four plants is a different shape, because a placeholder that is the
+ * same shape for every plant is not a simplification, it is a plant that cannot
+ * be told from the thing it replaces. Colours and outlines only: the art pass
+ * replaces all of them with the real artwork, and until then the four have to be
+ * different enough to name. A Peashooter is a green head on a stalk and a
+ * Sunflower is a yellow one; a Wall-nut is a wide nut sitting on the grass and a
+ * Tall-nut is a narrow one standing up out of it.
  */
 function drawPlant(
   context: CanvasRenderingContext2D,
@@ -72,15 +83,19 @@ function drawPlant(
   const square = plant.square
   const centre = centreOf(square, board)
   const head = board.squareWidth * 0.26
-  const left = healthFraction(plant)
+  // Named for what it is rather than for a side: this file is full of lefts and
+  // rights that mean the way along a Row, and a bare `left` next to a Zombie
+  // walking leftwards reads as one of them.
+  const healthLeft = healthFraction(plant)
+
+  if (plant.name === 'wall-nut' || plant.name === 'tall-nut') {
+    drawNut(context, plant, board, centre, healthLeft)
+    return
+  }
 
   // A plant that makes Sun is drawn as a flower and a plant that shoots is drawn
   // as a green head, because the Seed Bank offers both and a player choosing
-  // between them needs to see which one they put down. A placeholder that is the
-  // same shape for every plant is not a simplification, it is a plant that cannot
-  // be told from the thing it replaces. Colours only: the art pass replaces both
-  // with the real artwork, and until then the two have to be different enough to
-  // name.
+  // between them needs to see which one they put down.
   const flower = plant.name === 'sunflower'
 
   context.fillStyle = PLANT_LEAF_EDGE
@@ -98,11 +113,76 @@ function drawPlant(
 
   // Nothing is cut out of a plant that is untouched, so the shape a healthy plant
   // is drawn as is the shape it always was.
-  const bite = head * 0.9 * (1 - left)
+  const bite = head * 0.9 * (1 - healthLeft)
   if (bite > 0) {
     context.fillStyle = lawnColour(square)
     context.beginPath()
     context.arc(centre.x + head * 0.5, centre.y - head * 0.1, bite, 0, Math.PI * 2)
+    context.fill()
+  }
+}
+
+/**
+ * A Wall-nut or a Tall-nut: a brown nut, and the only two plants on the lawn
+ * that stand on the grass rather than on a stalk.
+ *
+ * The two are told apart by shape and not by colour, which is the original's own
+ * answer - a Tall-nut is a Wall-nut that is taller, the same nut in a taller
+ * shell - and it is the better one here as well: they cost exactly the same Sun,
+ * so the Seed Bank offers two packets for 50 and a player has to tell which is
+ * which by looking, and two different browns would be a harder thing to name than
+ * one brown that is wide and one that is tall.
+ *
+ * A Wide nut and a tall one. Both are kept inside their own Square, which is a
+ * rule about the drawing rather than about the nut: a plant that spills over into
+ * the Row below is a plant a player can read as being in the wrong Row, and the
+ * whole of reading this board is knowing which Row each thing is standing in. So
+ * the Tall-nut is drawn down the height of its own Square and the Wall-nut is
+ * wide and squat and sits low in it, and the two are that different at a glance
+ * that they read as two plants rather than as one plant at two sizes.
+ */
+function drawNut(
+  context: CanvasRenderingContext2D,
+  plant: Planted,
+  board: BoardLayout,
+  centre: { x: number; y: number },
+  healthLeft: number,
+): void {
+  const tall = plant.name === 'tall-nut'
+  const across = board.squareWidth * (tall ? 0.25 : 0.36)
+  const down = board.squareHeight * (tall ? 0.44 : 0.17)
+  // Where the middle of the nut is, down its own Square. `ellipse` centres on the
+  // point it is given rather than hanging from it, so this is the middle and not
+  // the foot - reading it as the foot drew the Tall-nut over a third of the way
+  // into the Row below, which is the mistake the comment above is about.
+  const middleY = centre.y + board.squareHeight * (tall ? 0 : 0.27)
+
+  context.fillStyle = NUT_SHELL
+  context.beginPath()
+  context.ellipse(centre.x, middleY, across, down, 0, 0, Math.PI * 2)
+  context.fill()
+
+  context.strokeStyle = NUT_EDGE
+  context.lineWidth = Math.max(1.5, 2.5 * board.scale)
+  context.stroke()
+
+  // A line up the middle, which is the seam in a nut's shell. It is what tells
+  // the two apart when both are partly eaten, where the bite has taken the
+  // outline that used to do it.
+  context.strokeStyle = NUT_SEAM
+  context.beginPath()
+  context.moveTo(centre.x, middleY - down)
+  context.lineTo(centre.x, middleY + down)
+  context.stroke()
+
+  // The bite, out of the side the Zombie is standing, exactly as for every other
+  // plant. Sized from the nut rather than from a head radius, so that a Wall-nut
+  // at half its health shows half a nut whichever of the two it is.
+  const bite = across * 0.9 * (1 - healthLeft)
+  if (bite > 0) {
+    context.fillStyle = lawnColour(plant.square)
+    context.beginPath()
+    context.arc(centre.x + across * 0.45, middleY - down * 0.2, bite, 0, Math.PI * 2)
     context.fill()
   }
 }

@@ -4,6 +4,65 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.17.0] - 2026-09-29
+
+### A Wall-nut, a Tall-nut, and a level for looking at them in
+
+Ticket 10, two of the nine plants. The rules were not touched once: both plants
+are `shooting: null` and a bigger number, and every acceptance criterion passed
+against a table entry. That is what ADR 0005 claimed would be true when it put the
+Sunflower first — that the Wall-nut needed no new mechanism, so it could wait
+cheaply. It is now demonstrated rather than argued.
+
+- **A Wall-nut is 4000 health, a Tall-nut 8000, and both cost 50 Sun**, with a
+  thirty-second Recharge each. Bites are 100 and come one a second, so a
+  Wall-nut holds a Zombie for forty bites and a Tall-nut for eighty, against a
+  Peashooter's three. All believed to be the original's and marked as such; the
+  Tall-nut's 8000 is the least certain number in `balance.ts`, and ticket 11 is
+  where any of them get settled by playing.
+- **Neither ever fires and neither ever makes Sun**, and both are checked with a
+  control — every step that has a Zombie on the lawn is also asked whether one was
+  standing in front of the nut, because "fires nothing" is also what a broken game
+  looks like. The control caught its own first version.
+- **Six new checks, 84 to 90, and seven deliberate rule breaks.** Six of the
+  breaks were caught. The seventh was not: a Wall-nut with `producing` set, quietly
+  making 25 Sun every twenty-four seconds, was caught by nothing, because no check
+  had asked. That is worth more than the six. The field that makes a nut a nut was
+  already there and nothing was reading it wrongly, so the next plant added by
+  copying a Wall-nut would have inherited it free. It is checked now.
+- **Level 1-1 does not grow a packet to make these reachable.** The balance pass
+  immediately after is meant to measure Level 1-1 as it is, and a fourth Seed
+  Packet is a change to what that level asks of a player. There is a test bed
+  offering all four plants at `dist/index.html?level=test-bed` instead, because
+  the one claim no check can make is whether a Wall-nut *looks* like a Wall-nut.
+  See `docs/adr/0006-a-test-bed-for-plants-level-1-1-does-not-offer.md`.
+- **The two nuts are told apart by shape and not by colour** — they cost the same
+  50 Sun, so the Seed Bank shows two packets at one price, and one wide brown nut
+  and one tall brown nut is easier to name than two browns. Measured off the live
+  canvas: 60 pixels across by 32 down, and 41 by 88.
+
+### Two bugs, and only a screenshot finds either
+
+- **"Row 3 and Row 41 have no Lawn Mower left."** There is no Row 41. The names
+  were counted up to one and then the last had `+ 1` hung off it as well, inside a
+  template — so it was string concatenation and "Row 4" became "Row 41". From
+  ticket 07, and invisible to every committed check, because the checks are about
+  the rules and this is about words. A screenshot of a level that happened to lose
+  two mowers at once found it, and it now reads "Row 1, Row 2, Row 3 and Row 4".
+- **A Tall-nut was drawn a third of the way into the Row below.** `context.ellipse`
+  centres on the point it is given rather than hanging from it, and the code was
+  treating that point as the foot of the nut. A plant drawn across the Row
+  underneath is a plant a player reads as being in the wrong Row. The browser check
+  asks the Row *below* the Tall-nut for nut pixels rather than trusting the picture:
+  1050 of them before the fix, none after.
+
+And one about the checking itself: the browser run took six attempts, and five of
+the six were my harness rather than the game — a wrong argument convention, a CDP
+helper that generated `EXPR(a0, a1)(a0, a1)` for two arguments and had been correct
+for exactly one, a bounding box reporting the colour of its own corner, and a
+variable shadowing the loop's target colour. A harness that has never been wrong is
+a harness nobody has looked at.
+
 ## [0.16.1] - 2026-09-29
 
 ### The Sunflower looked at, and a browser that was never broken

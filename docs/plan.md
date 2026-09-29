@@ -83,13 +83,17 @@ Each step is something you can actually play or click before the next one starts
 | 7 | Lawn mowers | A zombie at the left edge spends the row's mower and clears the row — **done** |
 | 8 | Win and lose | Waves end, then either a win or game over — **done at ticket 08** |
 | 9 | **Level 1-1** | A whole level, start to finish, playable — **the level plays start to finish at ticket 08, won and lost; the menu and level select are ticket 19** |
-| 10 | The other 9 plants | One at a time, each with its rule test — **Sunflower done at ticket 09**, ahead of the Wall-nut (ticket 10) as ADR 0005 sets out |
+| 10 | The other 9 plants | One at a time, each with its rule test — **Sunflower done at ticket 09, Wall-nut and Tall-nut done at ticket 10** (two of the nine), ahead of each other as ADR 0005 sets out |
 | 11 | Level 1-1 balance pass | Level 1-1's pacing settled by playing it, not by reading it — **ticket 11** |
 | 12 | The other 4 zombies, levels 1-2 to 1-10 | Added as data |
 | 13 | Saved progress | Levels stay unlocked between sessions |
 | 14 | Art pass | Placeholder shapes replaced with the real SVG art |
 
 Steps 1-11 use plain coloured shapes. That is not laziness — it means the rules get right before any pixel does. The art is a swap at the end, and it is the first thing you would want changed anyway.
+
+### Why the two Wall-nut plants are not in Level 1-1
+
+A Wall-nut is only ever planted if some Level offers it, and Level 1-1 is the only Level there is. It does not offer them, and the balance pass at step 11 is better for that: the Sunflower went in because the pacing was tuned without an economy, but a fourth packet is a change to what the level asks of a player, and a pass that measures Level 1-1 should be measuring Level 1-1. So the two are reached through a test bed offering all four, at `dist/index.html?level=test-bed`. What belongs in a level, and when, is step 11's answer. See `docs/adr/0006-a-test-bed-for-plants-level-1-1-does-not-offer.md`.
 
 ### Why the Sunflower comes before the Wall-nut
 

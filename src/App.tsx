@@ -3,6 +3,7 @@ import { Lawn } from './ui/Lawn.tsx'
 import type { GameRef, PacketView, Report } from './ui/Lawn.tsx'
 import type { Row, Square } from './game/board.ts'
 import { SHOVEL, apply, initialGameState, type Choice } from './game/sim.ts'
+import { LEVEL_1_1, LEVELS, type Level } from './game/levels.ts'
 import type { PlantName } from './game/plants.ts'
 
 /** Player-facing wording. Rows and Columns count from one, not zero. */
@@ -30,7 +31,12 @@ function describeSpentRows(spent: readonly Row[]): string {
     return `Row ${spent[0]! + 1} has no Lawn Mower left`
   }
   const names = spent.map((row) => `Row ${row + 1}`)
-  return `${names.slice(0, -1).join(', ')} and ${names[spent.length - 1]! + 1} have no Lawn Mower left`
+  // The names are already counted up to one here, and the last of them used to
+  // have a "+ 1" hung off it as well - inside a template that is string
+  // concatenation, so two spent Rows read "Row 3 and Row 41". It only ever showed
+  // up with exactly two Rows spent, which nothing had ever put on the screen
+  // before: a screenshot of a level that happened to lose two at once did.
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]} have no Lawn Mower left`
 }
 
 /**
@@ -42,6 +48,8 @@ function describeSpentRows(spent: readonly Row[]): string {
 const PLANT_NAMES: Record<PlantName, string> = {
   peashooter: 'Peashooter',
   sunflower: 'Sunflower',
+  'wall-nut': 'Wall-nut',
+  'tall-nut': 'Tall-nut',
 }
 
 /** What the player is holding, in words. */
@@ -65,6 +73,36 @@ function freshSeed(): number {
   return Math.floor(Math.random() * 0x7fffffff)
 }
 
+/**
+ * The Level this page was asked to play, named in its own address.
+ *
+ * This is not level select. Nothing here is unlocked and nothing is chosen from
+ * a menu, which is ticket 20; all it does is let the address name a Level, which
+ * is what a Level already is - the rules begin from one, and say which.
+ *
+ * It exists because the test bed has to be reachable in a browser. A check can
+ * build whatever Level it needs, and a person cannot: the one thing that is not a
+ * check about this game is whether the Wall-nut and the Tall-nut look like two
+ * different plants, and the answer to that is a screenshot. The address is the
+ * smallest way to reach a Level that is not the one the game starts on, and the
+ * rules are not asked anything about it - they do not know what a URL is, and
+ * this is read once before the game exists, so it cannot change anything while a
+ * level is being played.
+ *
+ * An address naming a Level that does not exist gets the one the game starts on,
+ * rather than a blank lawn: a mistyped query string is a wrong request, and the
+ * rules' own answer to a Level nobody defined is the first one.
+ */
+function levelFromTheAddress(): Level {
+  const asked = new URLSearchParams(window.location.search).get('level')
+
+  if (asked !== null && Object.hasOwn(LEVELS, asked)) {
+    return LEVELS[asked] as Level
+  }
+
+  return LEVEL_1_1
+}
+
 export function App() {
   // The rules are held here, once, and shared with the canvas that drives them:
   // the Seed Bank has to send commands to the same state the lawn draws, and
@@ -75,7 +113,7 @@ export function App() {
   // it a new one each time.
   const holder = useRef<GameRef | null>(null)
   if (holder.current === null) {
-    holder.current = { current: initialGameState(freshSeed()) }
+    holder.current = { current: initialGameState(freshSeed(), levelFromTheAddress()) }
   }
   const game = holder.current
 

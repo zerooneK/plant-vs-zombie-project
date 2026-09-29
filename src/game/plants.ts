@@ -9,6 +9,12 @@ import {
   SUNFLOWER_RECHARGE,
   SUNFLOWER_SUN_AMOUNT,
   SUNFLOWER_SUN_COST,
+  TALL_NUT_HEALTH,
+  TALL_NUT_RECHARGE,
+  TALL_NUT_SUN_COST,
+  WALL_NUT_HEALTH,
+  WALL_NUT_RECHARGE,
+  WALL_NUT_SUN_COST,
 } from './balance.ts'
 
 /**
@@ -16,8 +22,14 @@ import {
  *
  * A name rather than a class or a flag, because the whole roster is meant to be
  * data: the next plant is an entry here, not another branch in the rules.
+ *
+ * `wall-nut` and `tall-nut` are two names rather than one name with a taller
+ * number attached, because they are not the same plant at two sizes: a Tall-nut
+ * is placed *in front of* a Wall-nut rather than instead of one, and a player
+ * holding two packets of the same thing at different prices could not tell which
+ * was which. They are the same price, so the Seed Bank has to name them apart.
  */
-export type PlantName = 'peashooter' | 'sunflower'
+export type PlantName = 'peashooter' | 'sunflower' | 'wall-nut' | 'tall-nut'
 
 /** One plant, as the Seed Bank shows it and as the rules charge for it. */
 export interface Plant {
@@ -90,6 +102,42 @@ export const SUNFLOWER: Plant = {
 }
 
 /**
+ * A Wall-nut: a plant with no attack and an enormous amount of health, whose
+ * entire job is to be in the way.
+ *
+ * `shooting: null` is the whole of it, and adding it needed no new rule - which
+ * is what the Sunflower's note above promised, and the reason this roster is a
+ * table. There was already a way to say a plant is not a weapon; a Wall-nut is
+ * food with a lot of it, and the rules already know how to eat food.
+ */
+export const WALL_NUT: Plant = {
+  name: 'wall-nut',
+  sunCost: WALL_NUT_SUN_COST,
+  recharge: WALL_NUT_RECHARGE,
+  health: WALL_NUT_HEALTH,
+  shooting: null,
+  producing: null,
+}
+
+/**
+ * A Tall-nut: a Wall-nut with twice the health for the same Sun.
+ *
+ * A second entry rather than a flag on the Wall-nut, and that is the whole of
+ * what makes it a different plant. It does not behave differently - it is eaten
+ * by the same rule, in the same way, at the same rate, and it makes no Sun and
+ * fires nothing - it simply has more of itself to be eaten. So there is no
+ * behaviour here to write, and adding one would have been a rule about a size.
+ */
+export const TALL_NUT: Plant = {
+  name: 'tall-nut',
+  sunCost: TALL_NUT_SUN_COST,
+  recharge: TALL_NUT_RECHARGE,
+  health: TALL_NUT_HEALTH,
+  shooting: null,
+  producing: null,
+}
+
+/**
  * Every plant the game knows, looked up by name.
  *
  * Keyed by the name so that the rules can go from a chosen packet to its
@@ -99,4 +147,6 @@ export const SUNFLOWER: Plant = {
 export const PLANTS: Readonly<Record<PlantName, Plant>> = {
   peashooter: PEASHOOTER,
   sunflower: SUNFLOWER,
+  'wall-nut': WALL_NUT,
+  'tall-nut': TALL_NUT,
 }

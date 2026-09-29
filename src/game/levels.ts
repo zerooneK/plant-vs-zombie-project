@@ -126,3 +126,63 @@ export const LEVEL_1_1: Level = {
     },
   ],
 }
+
+/**
+ * The test bed: a Level that offers every plant the game has, and is not a Level
+ * anybody plays.
+ *
+ * It exists because Level 1-1 offers a Peashooter and a Sunflower and nothing
+ * else, and is not going to offer more: a Wall-nut in the first level would
+ * change what that level is, and the balance pass coming next is meant to measure
+ * Level 1-1 as it is rather than as it would be with a fourth packet in the bank.
+ * See `docs/adr/0006-a-test-bed-for-plants-level-1-1-does-not-offer.md`.
+ *
+ * So the plants that no Level offers still have to be reachable, and there are two
+ * ways of reaching them: a check that builds the Level it needs, and a person who
+ * wants to look at one. The first is what the checks do, and the second is this -
+ * because "the drawing is right" is not an answer a check can give, and the whole
+ * of the artwork so far has been plain shapes that a player would mistake for each
+ * other if they were not distinguishable. Four packets side by side, one Zombie in
+ * every Row, and a second pair in Row 0 later on so a Row can actually be lost.
+ *
+ * The schedule is not balanced and does not claim to be. Nothing walks in for
+ * forty-five seconds, which is as long as it takes a Zombie to cross the whole
+ * lawn - so there is time to put a Row of something down and watch it happen,
+ * which is the only reason to be here. After that, one Zombie in every Row, and
+ * a second pair in Rows 1 and 2 later on so a Row can actually be lost.
+ */
+export const LEVEL_TEST: Level = {
+  name: 'test-bed',
+  plants: ['peashooter', 'sunflower', 'wall-nut', 'tall-nut'],
+  waves: [
+    { atStep: 45 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 0 }] },
+    { atStep: 48 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 1 }] },
+    { atStep: 52 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 2 }] },
+    { atStep: 56 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 3 }] },
+    { atStep: 60 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 4 }] },
+    {
+      atStep: 90 * STEPS_PER_SECOND,
+      zombies: [
+        { name: 'basic', row: 0 },
+        { name: 'basic', row: 1 },
+      ],
+    },
+  ],
+}
+
+/**
+ * Every Level, by the name a person would ask for it by.
+ *
+ * Level select is ticket 20 and this is not it: nothing here is unlocked, nothing
+ * is chosen from a menu, and `LEVEL_1_1` is still what the game starts on. It
+ * exists so that a Level can be asked for by name from outside the rules - which
+ * is how the test bed is reached in a browser, given that a browser is told which
+ * Level to play by a word in its address and not by a list of buttons.
+ *
+ * Keyed by name rather than listed, so that a Level cannot be added to the game
+ * without being findable by the thing that hands the game its Level.
+ */
+export const LEVELS: Readonly<Record<string, Level>> = {
+  [LEVEL_1_1.name]: LEVEL_1_1,
+  [LEVEL_TEST.name]: LEVEL_TEST,
+}

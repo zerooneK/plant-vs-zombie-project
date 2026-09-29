@@ -23,12 +23,20 @@ _Avoid_: mower, lawnmower, sentinel, last line of defence
 ## Plants and sun
 
 **Plant**:
-A living thing standing in a Square with health of its own. Each one has a single job on the lawn — it shoots, it makes Sun, or it blocks a Row — and a Zombie that reaches it eats it.
+A living thing standing in a Square with health of its own. Each one has a single job on the lawn — it shoots, it makes Sun, or it blocks a Row — and a Zombie that reaches it eats it. A plant is planted whole, so its health is also how long it is food for.
 _Avoid_: seed (that is the packet), unit, card, defender (only some of them defend)
 
 **Sunflower**:
 A plant that makes Sun on a timer. It has no attack and is not a defence; the Sun it makes is the whole of it.
 _Avoid_: economy plant, money tree, generator, sun plant
+
+**Wall-nut**:
+A plant with an enormous amount of health and no attack, which a Zombie stops to eat. It does not defend a Row — it delays one, buying time for whatever is planted behind it. Cheap, and among the last to be Recharged.
+_Avoid_: nut, barrier, shield, wall, blocker, defence
+
+**Tall-nut**:
+A Wall-nut with twice the health for the same Sun. It is eaten in exactly the same way and behaves identically; it simply has more of itself to be eaten, so it is placed *in front of* a Wall-nut rather than instead of one.
+_Avoid_: big nut, super nut, taller wall-nut, upgraded wall-nut
 
 **Sun**:
 The only resource. It falls from the sky over time and is made by some plants, and it is spent to plant everything else. Uncollected sun does not count.
