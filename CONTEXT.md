@@ -22,8 +22,16 @@ _Avoid_: mower, lawnmower, sentinel, last line of defence
 
 ## Plants and sun
 
+**Plant**:
+A living thing standing in a Square with health of its own. Each one has a single job on the lawn — it shoots, it makes Sun, or it blocks a Row — and a Zombie that reaches it eats it.
+_Avoid_: seed (that is the packet), unit, card, defender (only some of them defend)
+
+**Sunflower**:
+A plant that makes Sun on a timer. It has no attack and is not a defence; the Sun it makes is the whole of it.
+_Avoid_: economy plant, money tree, generator, sun plant
+
 **Sun**:
-The only resource. It falls from the sky over time and is produced by some plants, and it is spent to plant everything else. Uncollected sun does not count.
+The only resource. It falls from the sky over time and is made by some plants, and it is spent to plant everything else. Uncollected sun does not count.
 _Avoid_: currency, money, energy, points
 
 **Seed Packet**:

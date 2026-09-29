@@ -4,6 +4,42 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.15.0] - 2026-09-29
+
+### The Sunflower before the Wall-nut
+
+The build order changes, and the two tickets that caused it swap places. No code
+changes: this release moves the work, and records why.
+
+- The Sunflower is built **before** the Wall-nut, as ticket 09 rather than ticket 10.
+  Level 1-1's Wave spacing was set at ticket 08 on the assumption that a Peashooter
+  is the only thing Sun is ever spent on, and a Sunflower invalidates that
+  assumption — so balancing the level before one exists is balancing against a lie.
+  The Sunflower is also the only plant so far that needs a new mechanism: Sun made
+  at a plant rather than by the sky. The Wall-nut needs none, and waits without cost.
+- The cost is real and is not hidden: eating sits purposeless for one release longer,
+  since nothing is worth being eaten *for* until a plant blocks a Row. That gap was
+  recorded in 0.11.0 and is now recorded as a decision rather than an oversight.
+  See `docs/adr/0005-sunflower-before-wall-nut.md`.
+- A new ticket, **11, balances Level 1-1** against a real economy, blocked by 08
+  and 09. It is scoped to measurement — margins in seconds, and numbers moved where
+  playing says a number is wrong. How the level *feels* is the player's judgement
+  and is not this ticket's; visual polish is the art pass.
+- The Wall-nut stays blocked by 04 only, and is **not** blocked by the Sunflower. The
+  sequence is a convention, not a dependency, and coupling them would stop anyone
+  working on defence until the economy was done.
+- Tickets 11 to 20 become 12 to 21. The Sunflower's settled numbers are recorded in
+  its ticket: 50 Sun, 300 health, 25 every 24.25 seconds, all believed to be the
+  original's, with the first Sun a whole interval after planting rather than on the
+  step it goes down.
+- `CONTEXT.md` gains **Plant** and **Sunflower**, which the reorder made a gap —
+  "plant" was used in four definitions and defined in none. Sun stays one term: the
+  spec's "Sun is the only resource" is load-bearing, and splitting it to
+  "Sky Sun" and "Grown Sun" would weaken a true claim to decorate a glossary.
+- `docs/plan.md` gains a row for the balance pass, so the plan is 14 steps, and its
+  Level 1-1 risk is corrected — it still described the unlosable schedule that
+  ticket 08 fixed.
+
 ## [0.14.0] - 2026-09-29
 
 ### The Flag Wave, and winning a Level
@@ -234,7 +270,7 @@ The cost, and it is a real one: a Zombie can never be *about* to eat something t
 ### Not done
 
 - A Zombie at the left of a Row still just walks off the board. In the original the Lawn Mower goes off instead, and a Row whose mower is spent ends the level: tickets 06 and 07.
-- There is no Wall-nut, so nothing is worth being eaten *for*. The whole reason to plant something a Zombie will stop at arrives in ticket 09.
+- There is no Wall-nut, so nothing is worth being eaten *for*. The whole reason to plant something a Zombie will stop at arrives in the Wall-nut ticket, second from here — see `docs/adr/0005-sunflower-before-wall-nut.md` for why it waits.
 - A Zombie shows no sign of being hurt when a pea lands, so a Zombie being shot at and a Zombie eating a plant look alike from the other Rows.
 
 ### Checked

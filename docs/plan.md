@@ -83,19 +83,24 @@ Each step is something you can actually play or click before the next one starts
 | 7 | Lawn mowers | A zombie at the left edge spends the row's mower and clears the row — **done** |
 | 8 | Win and lose | Waves end, then either a win or game over — **done at ticket 08** |
 | 9 | **Level 1-1** | A whole level, start to finish, playable — **the level plays start to finish at ticket 08, won and lost; the menu and level select are ticket 19** |
-| 10 | The other 9 plants | One at a time, each with its rule test |
-| 11 | The other 4 zombies, levels 1-2 to 1-10 | Added as data |
-| 12 | Saved progress | Levels stay unlocked between sessions |
-| 13 | Art pass | Placeholder shapes replaced with the real SVG art |
+| 10 | The other 9 plants | One at a time, each with its rule test — **led by the Sunflower (ticket 09), ahead of the Wall-nut (ticket 10); see ADR 0005** |
+| 11 | Level 1-1 balance pass | Level 1-1's pacing settled by playing it, not by reading it — **ticket 11** |
+| 12 | The other 4 zombies, levels 1-2 to 1-10 | Added as data |
+| 13 | Saved progress | Levels stay unlocked between sessions |
+| 14 | Art pass | Placeholder shapes replaced with the real SVG art |
 
-Steps 1-9 use plain coloured shapes. That is not laziness — it means the rules get right before any pixel does. The art is a swap at the end, and it is the first thing you would want changed anyway.
+Steps 1-11 use plain coloured shapes. That is not laziness — it means the rules get right before any pixel does. The art is a swap at the end, and it is the first thing you would want changed anyway.
+
+### Why the Sunflower comes before the Wall-nut
+
+Level 1-1's Wave spacing was set at step 8 on the assumption that a Peashooter is the only thing Sun is spent on, so a Sunflower has to land before that spacing can honestly be balanced — otherwise the level is balanced against a lie. It is also the only plant needing a new mechanism: Sun made at a plant rather than by the sky. The Wall-nut needs none, and waits without cost. The cost of this order is real and recorded: eating sits purposeless a release longer, since nothing is worth being eaten *for* until a plant blocks a Row. See `docs/adr/0005-sunflower-before-wall-nut.md`.
 
 ## Known risks
 
 - **Some original numbers are from memory.** Sun costs and health are close; exact damage and wave timings are less certain. They are all in `balance.ts` with uncertain ones marked, and playtesting will find them.
 - **I cannot tell you whether it feels right.** I can drive the game with a headless browser and take screenshots, but whether the original's *feel* is captured is your judgement, not mine. Expect to playtest early and often.
 - **The lawn mower rule is the easiest thing to get wrong.** It is a one-use life per row, and losing a second zombie in the same row must end the level.
-- **Level 1-1 as it stands cannot be lost, and cannot be won either.** Found by playing it: the level sends two Zombies into Row 3, 25 seconds apart, and the mower runs on the first of them at about 63 seconds — clearing *both*, because a mower clears its whole Row. Nothing else is ever sent to that Row, and the Zombies sent to Rows 2 and 4 are one each, so no Row is ever breached twice. A player who does nothing therefore plays for ever: the lawn empties at about 138 seconds and stays empty. Game Over is built and cannot be reached in this level, and winning is not built at all. Ticket 08 has to deal with this, and one honest way is a schedule that sends a Zombie into a Row *after* that Row's mower has run. It also means Game Over's presentation was verified in a browser against a temporary wave, not against the shipped level.
+- **Level 1-1 could not be lost, and could not be won either.** Found by playing it: the old schedule sent two Zombies into Row 3, 25 seconds apart, and the mower ran on the first of them at about 63 seconds — clearing *both*, because a mower clears its whole Row. Nothing else was ever sent to that Row, so no Row was ever breached twice and a player who did nothing played for ever. **Fixed at ticket 08** by a schedule that sends a Zombie into a Row *after* that Row's mower has run: doing nothing now loses at about 142 seconds, and the obvious plan wins at about 173.
 - **WSL2**: the game window opens on the Windows side, not inside the terminal.
 
 ## Once the plan is agreed
