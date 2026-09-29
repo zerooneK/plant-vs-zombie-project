@@ -101,7 +101,14 @@ Level 1-1's Wave spacing was set at step 8 on the assumption that a Peashooter i
 - **I cannot tell you whether it feels right.** I can drive the game with a headless browser and take screenshots, but whether the original's *feel* is captured is your judgement, not mine. Expect to playtest early and often.
 - **The lawn mower rule is the easiest thing to get wrong.** It is a one-use life per row, and losing a second zombie in the same row must end the level.
 - **Level 1-1 could not be lost, and could not be won either.** Found by playing it: the old schedule sent two Zombies into Row 3, 25 seconds apart, and the mower ran on the first of them at about 63 seconds — clearing *both*, because a mower clears its whole Row. Nothing else was ever sent to that Row, so no Row was ever breached twice and a player who did nothing played for ever. **Fixed at ticket 08** by a schedule that sends a Zombie into a Row *after* that Row's mower has run: doing nothing now loses at about 142 seconds, and the obvious plan wins at about 173.
-- **WSL2**: the game window opens on the Windows side, not inside the terminal.
+- **WSL2**: the game window opens on the Windows side, not inside the terminal. A browser *can* still be driven headlessly from inside WSL, which is how presentation gets checked, and it is not the missing libraries it looks like:
+
+  ```
+  chromium --headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage \
+           --hide-scrollbars --remote-debugging-port=9333 --user-data-dir=/tmp/profile about:blank
+  ```
+
+  It comes up, and the `dbus` and `GCM` errors it prints afterwards are WSL noise that mean nothing here. What does not work is a WebSocket client that forgets to mask its frames: a frame sent *by* a client must have bit `0x80` set in its second byte, and without it the browser drops the socket with no error at all. That failure looks identical to a sandbox problem and is not one, so check the mask bit before reaching for `--no-sandbox`. Read the game back by dispatching real `Input.dispatchMouseEvent` clicks and reading pixels off the canvas with `getImageData`; the Sun's core colour, `#fff9c4`, is used by nothing else in the drawing, so those pixels are Sun and only Sun.
 
 ## Once the plan is agreed
 

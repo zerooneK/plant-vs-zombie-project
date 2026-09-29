@@ -4,6 +4,34 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.16.1] - 2026-09-29
+
+### The Sunflower looked at, and a browser that was never broken
+
+Ticket 09 was committed as unverified. It is now verified: sixteen checks in a
+real browser with real mouse events, real canvas pixels and real time. The gap
+was never WSL.
+
+- **Chromium runs in WSL** with `--headless=new --no-sandbox --disable-gpu
+  --disable-dev-shm-usage`. The `dbus` and `GCM` errors it prints are noise. What
+  had actually gone wrong was a hand-written DevTools client that was not
+  masking its WebSocket frames: a frame sent by a client must have bit `0x80` set
+  in its second byte, and without it the browser drops the socket *silently*.
+  That reads exactly like a sandbox failure, which is why it was worth writing
+  down in `docs/plan.md` rather than only fixing.
+- **The drawing fix is confirmed by looking.** The Sunflower is `[249,168,37]`
+  and a Peashooter planted beside it is `[102,187,106]`. Two clicks out of a
+  two-packet Seed Bank plant it; the Sun it makes appears over its own Square at
+  24.25 seconds, falls, rests at the foot of that Square, and is worth 25 when
+  clicked; and the level still reaches a real ending rather than only the Flag
+  Wave announcement.
+- **Two of the sixteen checks were wrong before they were right**, and both are
+  recorded in the ticket. A colour assertion two points too tight failed on a
+  pixel that *was* the Sunflower's own colour. Worse, a "the level ends" check
+  passed by matching the Flag Wave announcement banner instead of an ending — a
+  check that could not fail, which is the one thing a check must not be. It now
+  asks for the ending banner specifically.
+
 ## [0.16.0] - 2026-09-29
 
 ### A Sunflower, and the economy it was waiting for
