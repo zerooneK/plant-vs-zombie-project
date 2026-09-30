@@ -3,6 +3,8 @@ import assert from 'node:assert/strict'
 import { SHOVEL, apply, initialGameState } from '../src/game/sim.ts'
 import type { GameState } from '../src/game/sim.ts'
 import { BOARD_ROWS, MOWER_COLUMN, hasLawnMower, plantIn } from '../src/game/board.ts'
+import { LEVEL_TEST } from '../src/game/levels.ts'
+import type { PlantName } from '../src/game/plants.ts'
 import { STEPS_PER_SECOND } from '../src/game/clock.ts'
 import { PEA_COST, withSunToPlant } from './helpers.ts'
 
@@ -36,6 +38,95 @@ test('the Seed Bank shows the plants this level allows, and what each one costs'
   assert.ok(
     bank.every((packet) => packet.stepsUntilReady === 0),
     'a packet you have not used yet is ready to choose',
+  )
+})
+
+/**
+ * What every plant in the game costs to plant, written out here rather than read
+ * from the rules.
+ *
+ * The point of a check is to catch the number being wrong, so the numbers have to
+ * be stated in the check. Reading them from `balance.ts` would pass whatever that
+ * file happened to say - which is how two of the Sunflower's three numbers went
+ * unchecked until ticket 11.
+ *
+ * Every plant, and this is the one place the whole list is written. The list used to
+ * be split between `shooters.test.ts` and `wall-nut.test.ts`, each holding the plants it
+ * had an opinion about, so every plant's cost was written down twice and a change to a cost
+ * was a change in two files - a thing to be sorry about rather than a thing that had
+ * actually gone wrong. One list, here, in the file that already owns what the Seed Bank
+ * shows, and the `Record<PlantName, number>` is what turns a new plant into a compiler error
+ * in this file rather than something to remember.
+ *
+ * The nuts' own check said the test bed was the only Level offering either of them, and
+ * that the two had to cost the same, and is gone: it is this check, one plant at a time.
+ * A per-file claim about one plant's place in the Seed Bank is worth having when nothing
+ * else says it, and by ticket 13 something else did.
+ */
+const COSTS: Record<PlantName, number> = {
+  peashooter: 100,
+  'snow-pea': 175,
+  repeater: 200,
+  'puff-shroom': 0,
+  sunflower: 50,
+  'wall-nut': 50,
+  'tall-nut': 50,
+  'potato-mine': 25,
+}
+
+/**
+ * The test bed's Seed Bank is the whole roster, and each packet shows what it costs.
+ *
+ * Two claims in one check because they are one claim. The test bed is the only
+ * Level that offers most of these plants, so a plant missing from it is a plant no
+ * player can ever reach - and a Seed Bank that had quietly lost one would let every
+ * other check in the project pass, because each of them builds the Level it needs
+ * for itself. So what the bank contains, what order it is in, and what each packet
+ * charges are all things a person would notice going wrong, and all three are held
+ * here.
+ *
+ * The order is held too, because it is something a player reads. Four shooters
+ * together - the three variants beside the Peashooter they are variations of, so
+ * the question a player is actually asking, *which of these four do I want in this
+ * Row*, is answered by looking along one shelf - then the plant that makes Sun,
+ * then the two blocks, then the trap. Nothing in the rules depends on the order, so
+ * this check is the only place it is decided, which is the point of deciding it
+ * here rather than in the level.
+ */
+test('the test bed offers every plant the game has, in a readable order, at its own cost', () => {
+  const bed = initialGameState(1, LEVEL_TEST).seedBank
+
+  assert.deepEqual(
+    bed.map((packet) => packet.name),
+    [
+      'peashooter',
+      'snow-pea',
+      'repeater',
+      'puff-shroom',
+      'sunflower',
+      'wall-nut',
+      'tall-nut',
+      'potato-mine',
+    ],
+    'the test bed offers every plant there is: four shooters, the Sun maker, the two nuts, the trap',
+  )
+
+  for (const [name, cost] of Object.entries(COSTS)) {
+    assert.equal(
+      bed.find((packet) => packet.name === name)?.cost,
+      cost,
+      `a ${name} packet for ${cost} Sun`,
+    )
+  }
+
+  // And Level 1-1 is left as it was, which is the whole reason the test bed exists:
+  // adding a third packet to the first level would have changed what that level asks
+  // of a player, and the balance pass is meant to measure it as it is rather than as
+  // it would be with a Potato Mine in the bank.
+  assert.deepEqual(
+    initialGameState(1).seedBank.map((packet) => packet.name),
+    ['peashooter', 'sunflower'],
+    'while Level 1-1 still offers a Peashooter and a Sunflower and nothing else',
   )
 })
 

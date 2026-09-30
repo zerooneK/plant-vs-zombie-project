@@ -4,7 +4,7 @@ import { STEPS_PER_SECOND } from '../src/game/clock.ts'
 import { apply, initialGameState, type GameState } from '../src/game/sim.ts'
 import { centreX, centreY, plantIn, type Square } from '../src/game/board.ts'
 import { zombieX } from '../src/game/zombies.ts'
-import { LEVEL_TEST, type Level } from '../src/game/levels.ts'
+import type { Level } from '../src/game/levels.ts'
 import type { PlantName } from '../src/game/plants.ts'
 import { levelOffering, oneZombieIn, untilTick, withSunToPlant } from './helpers.ts'
 
@@ -121,38 +121,6 @@ function untilFirstBite(state: GameState, square: Square): GameState {
     'a Zombie began eating the plant',
   )
 }
-
-/**
- * The test bed is the only place a player can reach either of these plants, so
- * what it offers is a claim of its own: it is not enough for the Wall-nut to be
- * in it. A Seed Bank that had quietly lost the Tall-nut would still let every
- * other check here pass, because they each build the Level they need.
- *
- * Only the two nuts, and not the whole bank. What the test bed is made of is
- * `tests/shooters.test.ts`'s claim to make, and a list of every plant written in
- * two files is a list that has to be changed in two files - which is how the two
- * came to disagree the moment a third plant arrived.
- */
-test('the test bed is the only Level that offers either nut, and it offers both', () => {
-  const bed = initialGameState(1, LEVEL_TEST).seedBank
-  const costs = (name: PlantName) => bed.find((packet) => packet.name === name)?.cost
-
-  assert.ok(bed.some((packet) => packet.name === 'wall-nut'), 'the test bed offers a Wall-nut')
-  assert.equal(costs('wall-nut'), NUT_COST, 'and a Wall-nut for 50 Sun')
-  assert.ok(bed.some((packet) => packet.name === 'tall-nut'), 'and a Tall-nut')
-  assert.equal(costs('tall-nut'), NUT_COST, 'and a Tall-nut for the same 50')
-
-  // And Level 1-1 is left as it was, which is the whole reason the test bed
-  // exists: adding a nut to the first level would have changed what that level
-  // asks of a player, and the balance pass after this is meant to measure it as
-  // it is rather than as it would be with a nut in the bank.
-  const first = initialGameState(1).seedBank
-  assert.deepEqual(
-    first.map((packet) => packet.name),
-    ['peashooter', 'sunflower'],
-    'while Level 1-1 still offers a Peashooter and a Sunflower and nothing else',
-  )
-})
 
 test('a Zombie that reaches a Wall-nut stops there and eats it, rather than walking through', () => {
   const planted = withIn('wall-nut', NUT_SQUARE)

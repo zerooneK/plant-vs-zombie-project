@@ -4,6 +4,136 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.20.0] - 2026-10-01
+
+### A Potato Mine, and a bug that had been in the lawn for thirteen tickets
+
+Ticket 13. Seven of the other nine plants done, and the first one that is *useless* from
+the moment it goes down. A Potato Mine does nothing for fifteen seconds, arms itself,
+takes the first Zombie that reaches it, and leaves the lawn. The whole of the plant is
+that wait, and the roster now says so with a third optional description next to
+`shooting` and `producing` — `arming`, which is one number, because what an armed plant
+*does* is not a choice left open per plant.
+
+- **A mine is planted dormant and says so, from one number.** `stepsUntilArmed` sits on
+  the plant beside the firing and Sun countdowns, and the drawing reads that same number
+  for the lamp on the mine's top: a brown lump with no light for fifteen seconds and a
+  red light after. The picture and the rules are one claim about one field, the same
+  arrangement as a Recharge and a Sunflower's interval.
+- **It arms on the fifteenth second and not a step later**, and then stays armed. Two
+  Zombies reaching one mine on the same step destroy one of them and not both — a mine
+  that destroyed both would have two uses, which is the one thing it is not — and the
+  second walks on through the Square the mine was in. A Zombie that arrives on the very
+  step the mine arms is destroyed by it; a step earlier it walks through.
+- **A mine reached before it has armed does nothing, and gets eaten.** Not a new rule: a
+  mine is a plant, and a Zombie that reaches a plant stops and eats it. Three bites and
+  the trap is gone, and the player watches their 25 Sun and their Row's only defence go.
+  This came free out of rules that were already there, and it is the best argument the
+  design has for the fifteen seconds — the cost of putting a mine in the wrong place is
+  paid in full, by the thing the plant was for.
+- **A mine destroys rather than damages.** It removes a Zombie from the lawn, the way a
+  Lawn Mower removes a Row, and there is no damage figure anywhere in it. That refuses a
+  question nobody has asked: whether a Potato Mine is enough for a Conehead or a
+  Buckethead. Ticket 16 owns that, and a number here would be that decision made by
+  accident. If ticket 16 finds the original's answer this becomes a field on `Arming` and
+  nothing else moves.
+
+### The bug the mine was built on top of
+
+**A Zombie that had reached a plant was reporting itself in the Square *before* it.**
+`walkAndEat` worked out where a Zombie had got to, then handed back the place it had been
+standing at before the step, so that the Zombie would stay put — which reads as equivalent
+and is not. A Zombie that had just arrived was one quarter of a Column to the right of the
+plant it was chewing on, so the plant it was eating was not the plant `plantBeingEaten`
+found for it afterwards.
+
+Nothing noticed for thirteen tickets, and the reason is worth keeping: every check that
+asked *where the Zombie stopped* passed, because a Zombie that has arrived does not move on
+the next step either. A quarter of a Column is nothing a player or a screenshot can see.
+It crossed a Square boundary, which only something asking a *second* question about the
+lawn can see — and the second question is what the Potato Mine asks. So the mine could not
+fire at all: the Zombie standing on it was standing next to it, as far as the rules were
+concerned. The other reader was the drawing: every Zombie in this project had been drawn
+standing beside the plant it was eating with its arms down.
+
+The fix is the order of two lines — **ask where a Zombie is before it walks, not after** —
+and it is worth being exact about how little it disturbed: reverting `zombies.ts` alone
+leaves every check in the project that existed before this ticket passing, apart from the
+one added here to name the bug. The wrong number was wrong *consistently*, and nothing
+downstream of it depended on the right one.
+
+### One rule changed that this ticket did not ask about
+
+A Zombie now stops a quarter of a Column further left than it used to, which means every
+plant in the game is eaten from a different place. That is outside the ticket's six
+criteria and it is disclosed here rather than buried: the Potato Mine cannot exist without
+it, and the ticket could not have been done without it. It is one rule, in one function,
+and the alternative — leaving it and adding a second question for the mine — is a lawn with
+two readers. `docs/adr/0009` sets out why.
+
+**Also beyond the ticket, and here because leaving it out would be worse:** the mine's
+thirty-second Recharge and the check that holds it. Every plant has a Recharge, so the
+number had to exist; the check is extra, and it is here because an unchecked number is how
+the three shooter variants ended up holding nothing at ticket 12. Cost and health are
+forced by planting at all.
+
+### What breaking the rules rather than the numbers found
+
+Nine checks, and every number and every rule was broken in turn and watched to fail: the
+cost (0, 20, 30, 50), the arming delay (0, 1, 12, 20, 30 seconds), the health (1, 100,
+1000), the Recharge (7.5, 15, 60 seconds), the mine never leaving the lawn after firing,
+firing while still asleep, never spending its countdown, arms a step late, arms two steps
+late, being asked of the lawn from before the Zombies walked, and every plant in the game
+being treated as a mine if the roster's field is ignored.
+
+**Three checks did not have teeth, and two of them were mine to fix.**
+
+- *"Two Zombies at one mine: one is destroyed and one walks on" could not tell one
+  destroyed from **none** destroyed.* It asserted that one Zombie was left, which is also
+  what a mine that destroyed all of them leaves behind — so when the rule was broken to
+  destroy every Zombie that reached it, nothing was destroyed and the check still passed.
+  Said by *which* Zombie, now: the second is still on the lawn, because the mine was spent
+  on the first in the list.
+- *"It stays armed" was asked at an even number of steps after arming*, and a countdown
+  that keeps spending itself once armed goes 0, −1, 0, −1 — so a round number found
+  whichever half it happened to land on and passed against exactly that. Now asked one
+  step later, and the step after that, because there is no interval in one step to fall
+  through.
+- One mutation is **equivalent rather than caught**, and is recorded as such: making the
+  mine fire for any Zombie that is eating anything, rather than for the Zombie eating *it*.
+  No check can tell them apart, and no player can either — a Zombie walks leftwards and
+  stops at the first plant it meets, so it cannot be chewing on one plant while an armed
+  mine stands in the Square it has not reached. The identity check is still the right
+  code; it just happens to say what another rule already guarantees.
+
+### The whole roster's Seed Bank now has one owner
+
+The test bed's eight packets were held in two files — `shooters.test.ts` for the shooters
+and `wall-nut.test.ts` for the nuts — which is a list that has to be changed in two files.
+They came to disagree the moment a fifth plant arrived, and a `Record<PlantName, number>`
+gave the compiler no way to notice until there were eight plants rather than five. One
+list, in `tests/planting.test.ts`, in the file that already owns what the Seed Bank shows.
+The shooters and the nuts keep checks about *their own* plants, and the fixture helpers
+that take a plant are typed to the four shooters, so a reach check can no longer be handed
+a Sunflower.
+
+### Verified in a browser
+
+The test bed's eight packets read back with their costs, the Potato Mine among them at 25.
+A mine planted in the last Column is a brown lump with no light; the same mine fifteen
+seconds later has a red light on it, read from the same field the rules step. An armed
+mine with a Zombie walking into it leaves the Row empty — both of them gone on the same
+step. And a mine planted with a Zombie already on its way is drawn being eaten, with the
+Zombie's arms out, and then gone three bites later while the Zombie walks on with its arms
+down — which is the reaching arms the off-by-one had been suppressing this whole time.
+
+**Not in this ticket.** Whether any of these numbers are *these* numbers: the 25, the
+fifteen seconds, the 300 health and the 30-second Recharge are all from memory, and none
+of it has been played — the only Level offering the mine is the test bed, and a test bed
+is somewhere to look at a plant rather than somewhere to balance one. Not in it either:
+the Chomper and the Cherry Bomb, and the armour question this ticket deliberately leaves
+open. See `docs/adr/0009-a-plants-third-job-is-arming-and-a-mine-destroys-rather-than-damages.md`.
+
 ## [0.19.0] - 2026-09-29
 
 ### Three more shooters, and a check that was measuring the wrong thing

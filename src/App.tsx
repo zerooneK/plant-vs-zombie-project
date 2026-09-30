@@ -53,6 +53,7 @@ const PLANT_NAMES: Record<PlantName, string> = {
   sunflower: 'Sunflower',
   'wall-nut': 'Wall-nut',
   'tall-nut': 'Tall-nut',
+  'potato-mine': 'Potato Mine',
 }
 
 /** What the player is holding, in words. */

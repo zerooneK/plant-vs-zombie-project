@@ -9,19 +9,25 @@ import type { PlantName } from '../src/game/plants.ts'
 import { levelOffering, oneZombieIn, untilTick, withSunToPlant } from './helpers.ts'
 
 /**
- * What every plant in the game costs to plant, written out here rather than read
- * from the rules.
+ * The four shooters, and what each one costs to plant.
  *
- * The point of a check is to catch the number being wrong, so the number has to be
- * stated in the check. Reading it from `balance.ts` would pass whatever that file
+ * Written out rather than read from the rules, because the point of a check is to
+ * catch the number being wrong: reading `balance.ts` would pass whatever that file
  * happened to say - which is how two of the Sunflower's three numbers went
  * unchecked until ticket 11.
+ *
+ * Only the four shooters, and not the whole roster. What the test bed offers is
+ * `tests/planting.test.ts`'s claim to make and is written there, once; a list of every
+ * plant held in two files is a list whose every number has to be changed in two files.
+ * What is left here is the part that is about shooting: that these four, and not the
+ * other plants, are the ones a player chooses between when the question is which plant
+ * goes in this Row.
  */
-const COSTS: Record<PlantName, number> = {
+/** The four shooters, named as a type so a check about a shot cannot be handed a nut. */
+type ShooterName = 'peashooter' | 'snow-pea' | 'repeater' | 'puff-shroom'
+
+const SHOOTER_COSTS: Record<ShooterName, number> = {
   peashooter: 100,
-  sunflower: 50,
-  'wall-nut': 50,
-  'tall-nut': 50,
   'snow-pea': 175,
   repeater: 200,
   'puff-shroom': 0,
@@ -34,26 +40,17 @@ const COSTS: Record<PlantName, number> = {
  * It is not enough for a Snow Pea to be in the game: a Seed Bank that had quietly
  * lost one would still let every other check in this file pass, because they each
  * build the Level they need for themselves. This is the check that says a person can
- * reach all three, and the cost each packet shows is the number a player reads
+ * reach all four, and the cost each packet shows is the number a player reads
  * before deciding what to plant.
  */
-test('the test bed offers all seven plants, and each packet shows what it costs', () => {
+test('the test bed offers all four shooters, and each packet shows what it costs', () => {
   const bed = initialGameState(1, LEVEL_TEST)
 
-  // The order as well as the contents, because the order is something a player
-  // reads: four shooters together, then the one that makes Sun, then the two
-  // blocks. The three variants sit next to the Peashooter they are variations of,
-  // so that the question a player is actually asking - which of these four do I
-  // want in this Row - is answered by looking along one shelf rather than by
-  // reading the bank. Nothing in the rules depends on the order; this check is the
-  // only place it is decided, which is the point of deciding it here.
-  assert.deepEqual(
-    bed.seedBank.map((packet) => packet.name),
-    ['peashooter', 'snow-pea', 'repeater', 'puff-shroom', 'sunflower', 'wall-nut', 'tall-nut'],
-    'the test bed offers every plant the game has, the three shooter variants beside the Peashooter',
-  )
-
-  for (const [name, cost] of Object.entries(COSTS)) {
+  for (const [name, cost] of Object.entries(SHOOTER_COSTS)) {
+    assert.ok(
+      bed.seedBank.some((packet) => packet.name === name),
+      `the test bed offers a ${name}`,
+    )
     assert.equal(
       bed.seedBank.find((packet) => packet.name === name)?.cost,
       cost,
@@ -117,8 +114,8 @@ function oneZombieComing(...plants: PlantName[]) {
  * The named plant standing in the middle of the lawn, with the Sun to pay for it
  * gathered first, and nothing else on the board.
  */
-function withShooterIn(name: PlantName, square: Square = SHOOTER_SQUARE): GameState {
-  const started = withSunToPlant(initialGameState(101, oneZombieComing(name)), COSTS[name])
+function withShooterIn(name: ShooterName, square: Square = SHOOTER_SQUARE): GameState {
+  const started = withSunToPlant(initialGameState(101, oneZombieComing(name)), SHOOTER_COSTS[name])
   const planted = apply(apply(started, { kind: 'choose', choice: name }), { kind: 'place', square })
 
   assert.ok(planted.occupants.length > started.occupants.length, `the ${name} was planted`)
@@ -135,7 +132,7 @@ function withShooterIn(name: PlantName, square: Square = SHOOTER_SQUARE): GameSt
  * that differs between two Rows is what is standing in them. A check that compares
  * two plants without that is comparing two accidents.
  */
-function oneShooterPerRow(...rowsAndPlants: readonly [number, PlantName][]): GameState {
+function oneShooterPerRow(...rowsAndPlants: readonly [number, ShooterName][]): GameState {
   const started = withSunToPlant(
     initialGameState(
       101,
@@ -147,7 +144,7 @@ function oneShooterPerRow(...rowsAndPlants: readonly [number, PlantName][]): Gam
         },
       ),
     ),
-    rowsAndPlants.reduce((total, [, plant]) => total + COSTS[plant], 0),
+    rowsAndPlants.reduce((total, [, plant]) => total + SHOOTER_COSTS[plant], 0),
   )
 
   return rowsAndPlants.reduce(
@@ -295,9 +292,9 @@ test('a Puff-shroom shoots three Columns, where a Peashooter crosses the whole l
   const row = SHOOTER_SQUARE.row
 
   /** Where a shot fired by the named plant stops, in Columns out from the plant. */
-  const stopsAfter = (plant: PlantName) => {
+  const stopsAfter = (plant: ShooterName) => {
     const level = levelOffering([plant], oneZombieIn(row, WAVE_AT))
-    const started = withSunToPlant(initialGameState(101, level), COSTS[plant])
+    const started = withSunToPlant(initialGameState(101, level), SHOOTER_COSTS[plant])
     const square = { row, column: SHOOTER_SQUARE.column }
     const planted = apply(apply(started, { kind: 'choose', choice: plant }), { kind: 'place', square })
 
@@ -363,7 +360,6 @@ test('a Puff-shroom shoots three Columns, where a Peashooter crosses the whole l
     `while a Peashooter's pea in the very same place was still on the lawn three Columns further on (${((pea.last - pea.from) / SQUARE_WIDTH).toFixed(1)} Columns out against the puff's ${((puff.last - puff.from) / SQUARE_WIDTH).toFixed(1)})`,
   )
 })
-
 
 /**
  * A slowed Zombie walks at half the speed of a Zombie that is not slowed.
@@ -552,7 +548,7 @@ const STAGGER = 3
  * be 475 Sun, which is seventeen pieces off the sky and longer than any check in this
  * project is willing to wait for.
  */
-function oneShooterThreeZombiesIn(row: number, plant: PlantName, column: number): GameState {
+function oneShooterThreeZombiesIn(row: number, plant: ShooterName, column: number): GameState {
   const started = withSunToPlant(
     initialGameState(
       101,
@@ -564,7 +560,7 @@ function oneShooterThreeZombiesIn(row: number, plant: PlantName, column: number)
         })),
       ),
     ),
-    COSTS[plant],
+    SHOOTER_COSTS[plant],
   )
 
   return apply(apply(started, { kind: 'choose', choice: plant }), {
@@ -609,7 +605,7 @@ const FAR_SHOOTER: Square = { row: 3, column: 1 }
  * out instead of queueing up: a pea that has to re-aim between Zombies cannot hit
  * Zombies that walk in together.
  */
-function oneShotDid(plant: PlantName, square: Square): { reached: number; slowed: number[] } {
+function oneShotDid(plant: ShooterName, square: Square): { reached: number; slowed: number[] } {
   const row = square.row
   const planted = oneShooterThreeZombiesIn(row, plant, square.column)
 
@@ -699,7 +695,7 @@ function oneShotDid(plant: PlantName, square: Square): { reached: number; slowed
  * Pea's reach it would reach three, and this says one.
  */
 test('one shot from each shooter reaches as many Zombies as that shooter should, and no more', () => {
-  const reaches: readonly [PlantName, number][] = [
+  const reaches: readonly [ShooterName, number][] = [
     ['peashooter', 1],
     ['repeater', 1],
     ['snow-pea', 3],
@@ -735,7 +731,7 @@ test('one shot from each shooter reaches as many Zombies as that shooter should,
  * the lawn, having never asked it about anything else.
  */
 test('a shot reaches a Zombie across the lawn, except a Puff-shroom\'s', () => {
-  const reaches: readonly [PlantName, number][] = [
+  const reaches: readonly [ShooterName, number][] = [
     ['peashooter', 1],
     ['repeater', 1],
     ['snow-pea', 3],
@@ -768,7 +764,7 @@ test('a shot reaches a Zombie across the lawn, except a Puff-shroom\'s', () => {
  * slowed" is a thing each of them has to earn.
  */
 test('one shot from each shooter leaves the Zombies it reaches slowed only if it is a Snow Pea', () => {
-  const slows: readonly [PlantName, number[]][] = [
+  const slows: readonly [ShooterName, number[]][] = [
     ['peashooter', [0]],
     ['repeater', [0]],
     ['snow-pea', [SLOW_SECONDS * STEPS_PER_SECOND, SLOW_SECONDS * STEPS_PER_SECOND, SLOW_SECONDS * STEPS_PER_SECOND]],
@@ -825,7 +821,7 @@ test('all four shooters are food for three bites and Recharge for seven and a ha
 
   for (const plant of ['peashooter', 'snow-pea', 'repeater', 'puff-shroom'] as const) {
     const level = levelOffering([plant], oneZombieIn(row, WAVE_AT))
-    const started = withSunToPlant(initialGameState(101, level), COSTS[plant])
+    const started = withSunToPlant(initialGameState(101, level), SHOOTER_COSTS[plant])
     let planted = apply(apply(started, { kind: 'choose', choice: plant }), { kind: 'place', square })
 
     // The plant is down and its packet is on Recharge, and the Recharge is held by
@@ -868,7 +864,10 @@ test('all four shooters are food for three bites and Recharge for seven and a ha
     // for a plant that is food for three, which is the sort of off-by-one that a
     // check written to agree with the code would have kept.
     const fresh = apply(
-      apply(withSunToPlant(initialGameState(101, level), COSTS[plant]), { kind: 'choose', choice: plant }),
+      apply(withSunToPlant(initialGameState(101, level), SHOOTER_COSTS[plant]), {
+        kind: 'choose',
+        choice: plant,
+      }),
       { kind: 'place', square },
     )
 
@@ -937,7 +936,7 @@ test('a pea whose Zombie is killed by something else leaves the lawn', () => {
     oneZombieIn(row, WAVE_AT),
     oneZombieIn(row, WAVE_AT + 60 * STEPS_PER_SECOND),
   )
-  const started = withSunToPlant(initialGameState(101, level), COSTS.peashooter + COSTS.repeater)
+  const started = withSunToPlant(initialGameState(101, level), SHOOTER_COSTS.peashooter + SHOOTER_COSTS.repeater)
   const peashooter = apply(apply(started, { kind: 'choose', choice: 'peashooter' }), {
     kind: 'place',
     square: { row, column: 2 },

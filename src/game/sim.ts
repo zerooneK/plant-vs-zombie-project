@@ -7,6 +7,7 @@ import { PLANTS, type PlantName } from './plants.ts'
 import { LEVEL_1_1, waveZombies, type Level, type Wave } from './levels.ts'
 import { removeExhausted, walkAndEat, type Zombie } from './zombies.ts'
 import { runMowers } from './mowers.ts'
+import { detonateMines } from './mines.ts'
 import { fireFromPlants, flyRight, type Shot } from './shots.ts'
 
 /**
@@ -305,6 +306,12 @@ function place(state: GameState, square: Square): GameState {
         // the Sun a plant makes is the slowest thing in the game - starting it
         // at the beginning of its own interval would take that away.
         stepsUntilSun: PLANTS[name].producing?.interval ?? 0,
+        // A plant that arms itself starts a whole delay from being planted, and
+        // for the same reason: a countdown already spent would be a mine that is
+        // armed before it has been planted, and the whole of the plant is that it
+        // is not ready yet. A plant that does not arm is left at zero, which is
+        // "armed" and is nothing, because nothing reads it.
+        stepsUntilArmed: PLANTS[name].arming?.delay ?? 0,
       },
     ],
     seedBank: startRecharge(state.seedBank, name),
@@ -431,6 +438,19 @@ function advance(state: GameState): GameState {
   const eating = walkAndEat(state.zombies, state.occupants)
   const mown = runMowers(eating.zombies, eating.occupants)
 
+  // Mines go after the Zombies have walked and after the mowers, and for the same
+  // reason the mowers do: a mine is set off by a Zombie *arriving* at it, so it can
+  // only be asked once the Zombies have taken their step and are standing where they
+  // have got to. A mine reached while it is still asleep is not spared the bite it
+  // would get from any other plant - it is a plant in a Zombie's way, and the rule
+  // for that is that the Zombie eats it.
+  //
+  // It comes after the mowers so that a Row a mower has just cleared holds no Zombie
+  // for a mine to be spent on, and before the peas fly so that a pea aimed at a Zombie
+  // a mine has just taken finds nothing and crosses the lawn and goes - which is what
+  // a pea whose Zombie died any other way already does.
+  const mined = detonateMines(mown.zombies, mown.occupants)
+
   // A Zombie that walked off the left edge of the board has got in, and the level
   // is lost there and then. It is read off the Zombies' own step rather than found
   // again here, because the question "did a Zombie get in?" and the question "did
@@ -442,14 +462,14 @@ function advance(state: GameState): GameState {
   // arrival for the same reason: a pea leaves a plant and starts moving on the
   // step after that, and a Peashooter shoots at the Zombies already walking rather
   // than at one still standing at the edge of the board.
-  const landing = flyRight(state.shots, mown.zombies)
+  const landing = flyRight(state.shots, mined.zombies)
   // A Zombie with nothing left of it leaves before anything can shoot at it, so
   // that a Peashooter never fires at a corpse standing on the lawn. It leaves
   // after eating rather than before, so that a Zombie killed by a pea on the same
   // step it bit still got that bite in - everything a Zombie does on a step happens,
   // and then the dead are cleared.
   const standing = removeExhausted(landing.zombies)
-  const fired = fireFromPlants(mown.occupants, standing, landing.shots, state.nextShotId)
+  const fired = fireFromPlants(mined.occupants, standing, landing.shots, state.nextShotId)
 
   // Won and lost are read off this one step as well, and from the same two
   // questions: what is still on the lawn, and what is still to come. Clearing the

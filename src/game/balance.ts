@@ -354,6 +354,58 @@ export const TALL_NUT_SUN_COST = WALL_NUT_SUN_COST
 export const TALL_NUT_RECHARGE = WALL_NUT_RECHARGE
 
 /**
+ * What a Potato Mine costs to plant. Believed to be the original's 25 - the
+ * cheapest thing in the game that is not free, and the same as a Puff-shroom is
+ * not: those two are the two ends of it, one that costs nothing and shoots three
+ * Columns, the other that costs 25 and kills one Zombie outright.
+ *
+ * Cheapest, and the most expensive thing to use badly, which is the same
+ * statement from the other side. 25 Sun is a quarter of a Peashooter, so a player
+ * can put four or five mines down before they have paid for the shooter that
+ * covers the rest of the Row, and each of them is a Square a Zombie cannot walk
+ * through for the fifteen seconds it takes to arm.
+ */
+export const POTATO_MINE_SUN_COST = 25
+
+/**
+ * How long a Potato Mine takes to arm itself after it is planted, from planting
+ * until it is ready. Believed to be the original's fifteen seconds.
+ *
+ * This is the whole of what the plant is, and it is why the number is a delay
+ * rather than a cost. A mine is the one plant in the game that does not help from
+ * the moment it goes in, so where it is planted has to be decided *before* the
+ * Zombie that will set it off: fifteen seconds is a quarter of the forty-two a
+ * Zombie spends crossing the whole lawn, and a player who plants one as the first
+ * thing they do has put it in a Row a Zombie can reach before it is ready.
+ *
+ * Fifteen seconds is also what stops the mine being strictly worse than a
+ * Peashooter. A mine that armed at once would destroy a Zombie for 25 Sun, which is
+ * a third of what a Peashooter costs and needs no Row in front of it; the delay is
+ * what it is traded for.
+ */
+export const POTATO_MINE_ARMING_DELAY = 15 * STEPS_PER_SECOND
+
+/**
+ * How much health a Potato Mine is planted with, and how long its Seed Packet
+ * takes to Recharge.
+ *
+ * The Peashooter's health and the Wall-nut's Recharge, and both from memory like
+ * everything else on this plant - 300 in the original like most of them, and a
+ * Recharge of thirty seconds, which is the slowest in the game along with the
+ * Wall-nut's and for a related reason: both are plants you put down once and
+ * count on, rather than one you put down repeatedly.
+ *
+ * The health matters more than it looks. A mine that has not armed yet is a plant
+ * standing in a Zombie's way, and the rule for a plant in a Zombie's way is that
+ * it gets eaten - so a Zombie that reaches a mine early eats it in three bites
+ * and takes it off the lawn having destroyed nothing. That is the punishment for
+ * planting a mine in the wrong place, and it costs the mine all of its health and
+ * the player all of their 25 Sun.
+ */
+export const POTATO_MINE_HEALTH = PEASHOOTER_HEALTH
+export const POTATO_MINE_RECHARGE = WALL_NUT_RECHARGE
+
+/**
  * What one bite takes off a plant. From memory, 100.
  *
  * The same bite on every plant, so that health is comparable across the roster:

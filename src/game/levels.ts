@@ -153,7 +153,16 @@ export const LEVEL_1_1: Level = {
  */
 export const LEVEL_TEST: Level = {
   name: 'test-bed',
-  plants: ['peashooter', 'snow-pea', 'repeater', 'puff-shroom', 'sunflower', 'wall-nut', 'tall-nut'],
+  plants: [
+    'peashooter',
+    'snow-pea',
+    'repeater',
+    'puff-shroom',
+    'sunflower',
+    'wall-nut',
+    'tall-nut',
+    'potato-mine',
+  ],
   waves: [
     { atStep: 45 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 0 }] },
     { atStep: 48 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 1 }] },

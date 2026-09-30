@@ -34,6 +34,10 @@ const SNOW_HEAD = '#7fb3cc'
 const SNOW_FACE = '#dcedf7'
 const SHROOM_CAP = '#a9a49b'
 const SHROOM_FACE = '#e6e2da'
+const MINE_SKIN = '#a1887f'
+const MINE_SKIN_EDGE = '#4e342e'
+const MINE_LIGHT = '#e53935'
+const MINE_LIGHT_EDGE = '#7f0000'
 const CHILLED_SKIN = '#8ea9c4'
 const CHILLED_SKIN_EDGE = '#4a5f7a'
 const PEA = '#b7e04b'
@@ -99,6 +103,11 @@ function drawPlant(
 
   if (plant.name === 'wall-nut' || plant.name === 'tall-nut') {
     drawNut(context, plant, board, centre, healthLeft)
+    return
+  }
+
+  if (plant.name === 'potato-mine') {
+    drawMine(context, plant, board, centre, healthLeft)
     return
   }
 
@@ -169,6 +178,83 @@ function drawPlant(
     context.fillStyle = lawnColour(square)
     context.beginPath()
     context.arc(centre.x + cap * 0.5, centre.y - cap * 0.1, bite, 0, Math.PI * 2)
+    context.fill()
+  }
+}
+
+/**
+ * A Potato Mine: a low brown lump sitting in the grass, with a light on it that is
+ * either lit or not.
+ *
+ * **The light is the whole of the drawing, and it is drawn from the same number the
+ * rules step.** `stepsUntilArmed` is read here exactly as `mines.ts` reads it, so the
+ * lamp on the screen and the trap on the lawn are one fact rather than two that can be
+ * a step apart - which is the same arrangement as a Recharge, a firing countdown and a
+ * Sunflower's interval, and for the same reason: the lawn and the rules have to be able
+ * to disagree about nothing.
+ *
+ * It is the one plant in the game whose whole rule is a *when*, so a drawing that showed
+ * the plant without showing the when would be showing half of it. Every other plant's
+ * difference is a colour or a shape and can be read at a glance; this one's is a light
+ * that is off for fifteen seconds and on for the rest of the level, and a player has to
+ * be able to tell which of those they are looking at before deciding where to put
+ * anything else.
+ *
+ * A lump low in the Square rather than a head on a stalk, because that is what a mine in
+ * the ground looks like and because it is the fourth thing on this board that stands on
+ * the grass rather than on a stalk - which is the point: a mine is a thing in the lawn,
+ * not a thing shooting out of it.
+ */
+function drawMine(
+  context: CanvasRenderingContext2D,
+  plant: Planted,
+  board: BoardLayout,
+  centre: { x: number; y: number },
+  healthLeft: number,
+): void {
+  const armed = plant.stepsUntilArmed === 0
+  const across = board.squareWidth * 0.3
+  const down = board.squareHeight * 0.19
+  // Sits low in its own Square, for the reason the Tall-nut's middle does: `ellipse`
+  // centres on the point it is given, so this is the middle of the lump and not its
+  // foot, and a mine drawn from the middle of its Square is a mine that spills into the
+  // Row below and can be read as being in the wrong Row.
+  const middleY = centre.y + board.squareHeight * 0.17
+
+  context.fillStyle = MINE_SKIN
+  context.beginPath()
+  context.ellipse(centre.x, middleY, across, down, 0, 0, Math.PI * 2)
+  context.fill()
+
+  context.strokeStyle = MINE_SKIN_EDGE
+  context.lineWidth = Math.max(1.5, 2.5 * board.scale)
+  context.stroke()
+
+  // The light. Drawn on top of the lump and only when the mine is armed, so that the
+  // thing a player has to look for - a red light on the lawn - is a thing that is either
+  // there or not, rather than a shade of a colour that is not there.
+  if (armed) {
+    const lightAcross = board.squareWidth * 0.09
+    const lightY = middleY - down * 0.85
+
+    context.fillStyle = MINE_LIGHT
+    context.beginPath()
+    context.arc(centre.x, lightY, lightAcross, 0, Math.PI * 2)
+    context.fill()
+
+    context.strokeStyle = MINE_LIGHT_EDGE
+    context.lineWidth = Math.max(1, 1.5 * board.scale)
+    context.stroke()
+  }
+
+  // The bite, out of the side the Zombie is standing, exactly as for every other plant -
+  // and a mine is a plant a Zombie eats more often than anything else on this board,
+  // because it is the one a player plants early and a Zombie gets to first.
+  const bite = across * 0.9 * (1 - healthLeft)
+  if (bite > 0) {
+    context.fillStyle = lawnColour(plant.square)
+    context.beginPath()
+    context.arc(centre.x + across * 0.45, middleY - down * 0.2, bite, 0, Math.PI * 2)
     context.fill()
   }
 }

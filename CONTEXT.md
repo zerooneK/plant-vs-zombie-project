@@ -23,7 +23,7 @@ _Avoid_: mower, lawnmower, sentinel, last line of defence
 ## Plants and sun
 
 **Plant**:
-A living thing standing in a Square with health of its own. Each one has a single job on the lawn — it shoots, it makes Sun, or it blocks a Row — and a Zombie that reaches it eats it. A plant is planted whole, so its health is also how long it is food for.
+A living thing standing in a Square with health of its own. Each one has a single job on the lawn — it shoots, it makes Sun, it blocks a Row, or it is a trap — and a Zombie that reaches it eats it, whatever its job is. A plant is planted whole, so its health is also how long it is food for.
 _Avoid_: seed (that is the packet), unit, card, defender (only some of them defend)
 
 **Sunflower**:
@@ -37,6 +37,14 @@ _Avoid_: nut, barrier, shield, wall, blocker, defence
 **Tall-nut**:
 A Wall-nut with twice the health for the same Sun. It is eaten in exactly the same way and behaves identically; it simply has more of itself to be eaten, so it is placed *in front of* a Wall-nut rather than instead of one.
 _Avoid_: big nut, super nut, taller wall-nut, upgraded wall-nut
+
+**Potato Mine**:
+A plant that does nothing for a while after it is planted, then arms itself, and then destroys the first Zombie to reach it and is gone. It is a one-shot trap, so where it is planted has to be decided before the Zombie that will set it off.
+_Avoid_: bomb, trap, landmine, one-shot, dud
+
+**Arming**:
+The wait between a Potato Mine being planted and being ready. A mine that has not finished arming does nothing at all — and a Zombie that reaches it in the meantime simply eats it, because a mine is a Plant like any other. The step the wait is up is the step it is ready, so a Zombie reaching a mine on that step is destroyed by it.
+_Avoid_: arm time, charge time, priming, build up
 
 **Sun**:
 The only resource. It falls from the sky over time and is made by some plants, and it is spent to plant everything else. Uncollected sun does not count.

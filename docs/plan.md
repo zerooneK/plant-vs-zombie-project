@@ -83,7 +83,7 @@ Each step is something you can actually play or click before the next one starts
 | 7 | Lawn mowers | A zombie at the left edge spends the row's mower and clears the row — **done** |
 | 8 | Win and lose | Waves end, then either a win or game over — **done at ticket 08** |
 | 9 | **Level 1-1** | A whole level, start to finish, playable — **the level plays start to finish at ticket 08, won and lost; the menu and level select are ticket 19** |
-| 10 | The other 9 plants | One at a time, each with its rule test — **Sunflower done at ticket 09, Wall-nut and Tall-nut done at ticket 10, Snow Pea, Repeater and Puff-shroom done at ticket 12** (six of the nine; Potato Mine, Chomper and Cherry Bomb to go), ahead of each other as ADR 0005 sets out |
+| 10 | The other 9 plants | One at a time, each with its rule test — **Sunflower done at ticket 09, Wall-nut and Tall-nut done at ticket 10, Snow Pea, Repeater and Puff-shroom done at ticket 12, Potato Mine done at ticket 13** (seven of the nine; Chomper and Cherry Bomb to go), ahead of each other as ADR 0005 sets out |
 | 11 | Level 1-1 balance pass | Level 1-1's pacing settled by playing it, not by reading it — **done, ticket 11** |
 | 12 | The other 4 zombies, levels 1-2 to 1-10 | Added as data |
 | 13 | Saved progress | Levels stay unlocked between sessions |

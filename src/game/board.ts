@@ -128,6 +128,22 @@ export interface Planted {
    * Zero for a plant that makes no Sun, which is harmless - nothing reads it.
    */
   readonly stepsUntilSun: number
+
+  /**
+   * Steps until this plant has armed itself, for a plant that arms at all.
+   *
+   * The same idea as `stepsUntilSun` for the same reason, and the number is read
+   * by the drawing as well as stepped by the rules: a mine that is drawn as not
+   * yet armed and a mine the rules say is not yet armed are the same claim about
+   * the same plant, because they are the same number.
+   *
+   * Zero means armed. That is the opposite way round from `stepsUntilSun`, and it
+   * is not a mistake: armed is the state a mine spends all of its life in except
+   * for the fifteen seconds at the start, so zero as "ready" is the reading that
+   * makes a mine standing on a lawn for the rest of the level need nothing said
+   * about it. Zero for a plant that does not arm, which is harmless.
+   */
+  readonly stepsUntilArmed: number
 }
 
 /** The middle of a Square across, in the board's own units rather than on the screen. */

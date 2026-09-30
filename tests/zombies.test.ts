@@ -7,6 +7,7 @@ import {
   centreX,
   occupantAt,
   plantIn,
+  squareAtX,
   type Square,
 } from '../src/game/board.ts'
 import { STEPS_PER_SECOND, advanceFrames, startClock } from '../src/game/clock.ts'
@@ -448,10 +449,16 @@ test('a Zombie that reaches a plant stops there and bites it', () => {
     'and the first bite has taken 100 off its 300 health',
   )
 
+  // The place it stopped at is the place it walked to on the step it arrived, which is
+  // the step after the one it walked in on. Comparing it to where the Zombie *walked
+  // in* used to be the same number, because the Zombie was reporting the step before
+  // the one it had arrived on - and that is the bug the check below this one is about.
+  // So it is compared to the step after, which is a claim about having stopped rather
+  // than a claim about a coincidence.
   const stopped = zombieIn(eating, 2)
   assert.equal(
     zombieX(stopped),
-    zombieX(zombieIn(arrived, 2)),
+    zombieX(zombieIn(untilTick(arrived, arrived.tick + 1), 2)),
     'the Zombie has stopped walking, rather than walking through the plant as it did before',
   )
 
@@ -466,6 +473,36 @@ test('a Zombie that reaches a plant stops there and bites it', () => {
     plantIn(aSecondOn.occupants, FOOD_SQUARE)?.health,
     FULL_HEALTH - 2 * BITE_DAMAGE,
     'having bitten again, once a second',
+  )
+})
+
+test('a Zombie eating a plant is standing in the Square the plant is in', () => {
+  const planted = withAPeashooterIn(FOOD_SQUARE, oneZombieIn(2))
+  const arrived = untilTick(planted, ZOMBIE_STEP)
+
+  const eating = until(
+    arrived,
+    (state) => (plantIn(state.occupants, FOOD_SQUARE)?.health ?? FULL_HEALTH) < FULL_HEALTH,
+    'a Zombie began eating the Peashooter',
+  )
+
+  // The check above holds that a Zombie stops walking when it reaches a plant, and
+  // the one before it holds that it stays put. Neither of them asks *where* it
+  // stopped, and a Zombie a whole step to the right of the plant it is chewing on is
+  // still stopped and still still - so the position was free to be wrong.
+  //
+  // It matters because two other things ask this exact question of the same lawn and
+  // expect the same answer. The drawing asks whether a Zombie is eating before it
+  // draws the Zombie reaching out (`src/draw/board.ts`), so a Zombie a Column off is
+  // drawn standing next to the plant it is eating with its arms down. And a Potato
+  // Mine asks it to decide whether it has been reached, and a mine whose Zombie is
+  // one Square to its right never fires - which is the bug that made the mine
+  // impossible, found here rather than there.
+  const stopped = zombieIn(eating, 2)
+  assert.deepEqual(
+    squareAtX(stopped.row, zombieX(stopped)),
+    FOOD_SQUARE,
+    'so the Square a Zombie reads as standing in is the Square the plant is in, and not the one before it',
   )
 })
 

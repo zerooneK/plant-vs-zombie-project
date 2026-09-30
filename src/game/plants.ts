@@ -7,6 +7,10 @@ import {
   PEASHOOTER_HEALTH,
   PEASHOOTER_RECHARGE,
   PEASHOOTER_SUN_COST,
+  POTATO_MINE_ARMING_DELAY,
+  POTATO_MINE_HEALTH,
+  POTATO_MINE_RECHARGE,
+  POTATO_MINE_SUN_COST,
   PUFF_SHROOM_HEALTH,
   PUFF_SHROOM_REACH,
   PUFF_SHROOM_RECHARGE,
@@ -51,6 +55,7 @@ export type PlantName =
   | 'sunflower'
   | 'wall-nut'
   | 'tall-nut'
+  | 'potato-mine'
 
 /** One plant, as the Seed Bank shows it and as the rules charge for it. */
 export interface Plant {
@@ -72,6 +77,40 @@ export interface Plant {
   readonly shooting: Shooting | null
   /** How this plant makes Sun, or null for a plant that makes none. */
   readonly producing: Producing | null
+  /** How this plant arms itself, or null for a plant that does not arm. */
+  readonly arming: Arming | null
+}
+
+/**
+ * What a plant that arms itself does, kept together for the same reason as
+ * `Shooting` and `Producing`: adding a plant that works like this is an edit to
+ * this, and not a new place in the rules.
+ *
+ * One of the four kinds of job a plant can have - shoot, make Sun, stand in the way, or
+ * trap - and named for the last of them.
+ *
+ * One number rather than four, because everything else about an arming plant is
+ * what the word means. What an armed plant does is not a choice to be made per
+ * plant - it takes the first Zombie that reaches it, destroys it, and is gone -
+ * so the only thing about a Potato Mine that is a fact about *this* mine rather
+ * than about arming plants in general is how long it takes to get there.
+ *
+ * A plant that blocks a Row has no description here at all, and that is deliberate
+ * rather than an oversight: a Wall-nut has nothing to add to what `health` already says,
+ * and its own entry says so. Arming earns a description because a trap has a delay and a
+ * delay is not derivable from anything else about the plant - so this is the shape a plant
+ * gets a description *for*, rather than the shape every plant gets one.
+ */
+export interface Arming {
+  /**
+   * Steps from being planted until this plant is armed.
+   *
+   * A countdown and not a firing time worked out from a clock, for the same
+   * reason the Seed Bank's Recharge and a Sunflower's interval are: the lawn, the
+   * Seed Bank and the rules then all read the same number and cannot disagree
+   * about whether the plant is ready.
+   */
+  readonly delay: number
 }
 
 /**
@@ -187,6 +226,7 @@ export const PEASHOOTER: Plant = {
   health: PEASHOOTER_HEALTH,
   shooting: { fireInterval: SHOOTER_FIRE_INTERVAL, projectiles: 1, shot: ONE_PEA },
   producing: null,
+  arming: null,
 }
 
 /**
@@ -215,6 +255,7 @@ export const SNOW_PEA: Plant = {
     shot: { ...ONE_PEA, slowSteps: SNOW_PEA_SLOW_STEPS, passesThrough: true },
   },
   producing: null,
+  arming: null,
 }
 
 /**
@@ -234,6 +275,7 @@ export const REPEATER: Plant = {
   health: REPEATER_HEALTH,
   shooting: { fireInterval: SHOOTER_FIRE_INTERVAL, projectiles: 2, shot: ONE_PEA },
   producing: null,
+  arming: null,
 }
 
 /**
@@ -258,6 +300,7 @@ export const PUFF_SHROOM: Plant = {
   health: PUFF_SHROOM_HEALTH,
   shooting: { fireInterval: SHOOTER_FIRE_INTERVAL, projectiles: 1, shot: { ...ONE_PEA, reachIn: PUFF_SHROOM_REACH } },
   producing: null,
+  arming: null,
 }
 
 /**
@@ -274,6 +317,7 @@ export const SUNFLOWER: Plant = {
   health: SUNFLOWER_HEALTH,
   shooting: null,
   producing: { interval: SUNFLOWER_PRODUCE_INTERVAL, amount: SUNFLOWER_SUN_AMOUNT },
+  arming: null,
 }
 
 /**
@@ -292,6 +336,7 @@ export const WALL_NUT: Plant = {
   health: WALL_NUT_HEALTH,
   shooting: null,
   producing: null,
+  arming: null,
 }
 
 /**
@@ -310,6 +355,48 @@ export const TALL_NUT: Plant = {
   health: TALL_NUT_HEALTH,
   shooting: null,
   producing: null,
+  arming: null,
+}
+
+/**
+ * A Potato Mine: the first plant in the game that does nothing when it is planted,
+ * and the first one whose whole job is about a Zombie that arrives rather than one
+ * that is standing at a distance.
+ *
+ * The first kind of plant the roster had no way to describe. A Peashooter shoots
+ * and a Sunflower makes Sun, and `shooting: null` and `producing: null` were the
+ * whole of "does neither" - but a mine does neither *temporarily*, and then does
+ * something that is neither, once, and is gone. A plant whose only property is
+ * which of the two it is would have had to be able to change its mind, and the
+ * roster is data: nothing in it changes after it is planted. So the third kind of
+ * thing is a third field, and `arming` is the name of it.
+ *
+ * `arming` on its own is the whole rule rather than one number out of several,
+ * because what an armed mine does is not a decision left open per plant: it takes
+ * the first Zombie that reaches it, destroys it, and leaves the lawn. Fifteen
+ * seconds is the only number in here that is about *this* mine.
+ *
+ * Which is what makes the delay the plant. A mine is the one thing a player can
+ * put down that is worse the later they put it down in a Row a Zombie is already
+ * walking down - and the reason is right here in the data: nothing fires, and
+ * nothing blows up, until the countdown is spent. A mine with no delay would be a
+ * third of a Peashooter's Sun for a dead Zombie, and the delay is what that is
+ * traded for.
+ *
+ * It is food while it waits, too, and that is not an extra rule but the one
+ * already here: a mine is a plant, and a Zombie that reaches a plant stops and
+ * eats it. So a Zombie that arrives before the fifteen seconds are up spends the
+ * delay chewing on a lump, and the player watches their 25 Sun and their Row's
+ * only trap go in three bites without anything having happened.
+ */
+export const POTATO_MINE: Plant = {
+  name: 'potato-mine',
+  sunCost: POTATO_MINE_SUN_COST,
+  recharge: POTATO_MINE_RECHARGE,
+  health: POTATO_MINE_HEALTH,
+  shooting: null,
+  producing: null,
+  arming: { delay: POTATO_MINE_ARMING_DELAY },
 }
 
 /**
@@ -327,4 +414,5 @@ export const PLANTS: Readonly<Record<PlantName, Plant>> = {
   sunflower: SUNFLOWER,
   'wall-nut': WALL_NUT,
   'tall-nut': TALL_NUT,
+  'potato-mine': POTATO_MINE,
 }

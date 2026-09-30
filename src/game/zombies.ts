@@ -285,12 +285,51 @@ export function walkAndEat(
     // one step walks half a step and then walks properly.
     const wasSlowed = zombie.stepsSlowed > 0
 
-    // A slow shortens the step rather than making the Zombie skip one. Skipping is
-    // the obvious way to slow something down and it cannot express a fraction: a
-    // Zombie that took a whole step every other step is walking at half speed
-    // exactly, and one slowed to anything else would either have to skip a step it
-    // did not have or drift. Half a step is a number the tally can hold, which is
-    // the whole reason `walked` is a tally of steps and not a place.
+    // **Where a Zombie has got to is asked before it walks, not after.** What is
+    // standing in the Square it is already in is the first question of its step, and
+    // the answer is either "I am chewing, so I do not move" or "nothing, so I walk".
+    //
+    // Asking afterwards, and then handing back the place it was standing at before the
+    // step so that it would stay put, looked equivalent and was not. It left a Zombie
+    // that had arrived standing in the Square *before* its plant's, so the plant it was
+    // chewing on was not the plant `plantBeingEaten` found for it afterwards. Nothing
+    // said so, because a Zombie that has arrived does not move on the next step either
+    // - so every check that asked where it stopped passed, and asked a position that
+    // was a quarter of a Column to the right of where the picture and the rules both
+    // said it was.
+    //
+    // Two things ask that second question, and both were getting the wrong answer. The
+    // drawing asks whether a Zombie is eating before it draws the Zombie reaching out,
+    // so every Zombie in this project has been drawn standing beside the plant it was
+    // eating with its arms down. A Potato Mine asks it to decide whether it has been
+    // reached, so a mine whose Zombie was a Square to its right never fired - which is
+    // how a mine came to be impossible to build. The fix is the order of two lines,
+    // and the order is the whole of the rule: **a Zombie is somewhere because it walked
+    // there, and a Zombie that is chewing is somewhere it walked to.**
+    const here = plantBeingEaten(zombie, occupants)
+    if (here !== undefined) {
+      // Chewing, so it does not walk. Its place is the place it walked to and the slow
+      // still counts down on it, so the only two things that change are the bite
+      // countdown and the slow.
+      const chewing: Zombie = { ...slowed, walked: zombie.walked }
+      const readyIn = Math.max(0, slowed.stepsUntilBite - 1)
+
+      if (readyIn > 0) {
+        return { ...chewing, stepsUntilBite: readyIn }
+      }
+
+      bites.set(here, (bites.get(here) ?? 0) + ZOMBIE_BITE_DAMAGE)
+
+      return { ...chewing, stepsUntilBite: ZOMBIE_BITE_INTERVAL }
+    }
+
+    // Nothing to eat where it is, so it takes a step. A slow shortens the step rather
+    // than making the Zombie skip one: skipping is the obvious way to slow something
+    // down and it cannot express a fraction - a Zombie that took a whole step every
+    // other step is walking at half speed exactly, and one slowed to anything else
+    // would either have to skip a step it did not have or drift. Half a step is a
+    // number the tally can hold, which is the whole reason `walked` is a tally of steps
+    // and not a place.
     const walked = { ...slowed, walked: slowed.walked + (wasSlowed ? SLOWED_WALK_FRACTION : 1) }
 
     // Past the left edge of the board is off the board, and a Row that had a mower
@@ -304,24 +343,20 @@ export function walkAndEat(
       return null
     }
 
-    // The plant in the Square it has just walked into, asked the same way the
-    // drawing asks it.
-    const food = plantBeingEaten(walked, occupants)
-    if (food === undefined) {
+    // The step has landed it in a plant's Square, so this is the step it arrives on and
+    // the step it bites on. It stops here - the Square it is standing in is the
+    // plant's, and walking on would be walking into it - and every step after this one
+    // is the *first* branch, which is how it stays here without remembering that it
+    // arrived: a Zombie chewing is one that is standing in a plant's Square, and that
+    // is worked out from the lawn rather than remembered.
+    const arrived = plantBeingEaten(walked, occupants)
+    if (arrived === undefined) {
       return { ...walked, stepsUntilBite: 0 }
     }
 
-    // It has reached the plant, so it stops where it is rather than taking
-    // another step: the plant is in the Square it is standing in, and walking on
-    // would be walking into it.
-    const readyIn = Math.max(0, slowed.stepsUntilBite - 1)
-    if (readyIn > 0) {
-      return { ...slowed, stepsUntilBite: readyIn }
-    }
+    bites.set(arrived, (bites.get(arrived) ?? 0) + ZOMBIE_BITE_DAMAGE)
 
-    bites.set(food, (bites.get(food) ?? 0) + ZOMBIE_BITE_DAMAGE)
-
-    return { ...slowed, stepsUntilBite: ZOMBIE_BITE_INTERVAL }
+    return { ...walked, stepsUntilBite: ZOMBIE_BITE_INTERVAL }
   })
 
   const bitten = occupants
