@@ -4,6 +4,22 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.21.0] - 2026-10-02
+
+### The knowledge graph's own skill, and a CLAUDE.md for the next instance
+
+Tooling rather than game work, and both of it is content the project now holds.
+
+- **The Graphify skill is installed** at `.agents/skills/graphify/`, with symlinks into
+  `.claude/skills/`, `.hermes/skills/` and `.kiro/skills/` like every other vendored
+  skill. Installed with `graphify install --project --platform agents` rather than the
+  plain `--project`, which would have written a real file into `.claude/skills/` and
+  quietly broken the rule below. It ships without an `agents/openai.yaml`, which is the
+  one thing every other skill here has.
+- **`CLAUDE.md`**, which merges this project's rules from `AGENTS.md` with the
+  architecture notes needed to work in the code. Where the two ever disagree, `AGENTS.md`
+  wins — it is the constitution and that file is the working copy.
+
 ## [0.20.0] - 2026-10-01
 
 ### A Potato Mine, and a bug that had been in the lawn for thirteen tickets
