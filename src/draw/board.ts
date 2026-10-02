@@ -38,6 +38,10 @@ const MINE_SKIN = '#a1887f'
 const MINE_SKIN_EDGE = '#4e342e'
 const MINE_LIGHT = '#e53935'
 const MINE_LIGHT_EDGE = '#7f0000'
+const CHERRY_SKIN = '#d32f2f'
+const CHERRY_SKIN_EDGE = '#7f0000'
+const CHERRY_STEM = '#2e7d32'
+const CHERRY_STEM_EDGE = '#1b5e20'
 const CHILLED_SKIN = '#8ea9c4'
 const CHILLED_SKIN_EDGE = '#4a5f7a'
 const PEA = '#b7e04b'
@@ -108,6 +112,11 @@ function drawPlant(
 
   if (plant.name === 'potato-mine') {
     drawMine(context, plant, board, centre, healthLeft)
+    return
+  }
+
+  if (plant.name === 'cherry-bomb') {
+    drawCherryBomb(context, board, centre)
     return
   }
 
@@ -256,6 +265,62 @@ function drawMine(
     context.beginPath()
     context.arc(centre.x + across * 0.45, middleY - down * 0.2, bite, 0, Math.PI * 2)
     context.fill()
+  }
+}
+
+/**
+ * A Cherry Bomb: two red berries on a stem, and the only thing on this lawn drawn as
+ * a pair rather than as one.
+ *
+ * **It is the same lump the Potato Mine is drawn from, in a different colour and in
+ * twos**, and that is deliberate rather than lazy. Both are plants that go off and are
+ * then gone, both stand on the grass rather than on a stalk, and they sit at the end of
+ * the Seed Bank shelf next to each other - so a player choosing between the two is
+ * asking *which of these do I put down, the one that waits or the one that does not*,
+ * and the picture is there to answer the first half of that. Two berries where the mine
+ * is one lump is the difference a player can see from across the lawn; a different shade
+ * of the same brown is not.
+ *
+ * **No health, no bite, and no light.** Every other plant on this board is drawn with
+ * all three of those and they are all about how long the plant is going to last, and a
+ * Cherry Bomb has none of them to show: it stands on the lawn for exactly one step, so
+ * there is no step after it at which a Zombie could have chewed on it, and a bomb drawn
+ * fading or being eaten would be drawing a plant that cannot be. It is also the only
+ * plant whose picture is not read from the state at all - there is no countdown on a
+ * bomb, and there is nothing for the rules and the drawing to disagree about.
+ */
+function drawCherryBomb(
+  context: CanvasRenderingContext2D,
+  board: BoardLayout,
+  centre: { x: number; y: number },
+): void {
+  const berry = board.squareWidth * 0.2
+  // Kept inside its own Square for the reason the nut's is: a plant that spills into
+  // the Row below is one a player can read as being in the wrong Row, and reading which
+  // Row each thing is in is most of what this board is for.
+  const top = centre.y - board.squareHeight * 0.12
+
+  context.strokeStyle = CHERRY_STEM_EDGE
+  context.lineWidth = Math.max(1.5, 2.5 * board.scale)
+  context.beginPath()
+  context.moveTo(centre.x, centre.y + board.squareHeight * 0.22)
+  context.lineTo(centre.x, top)
+  context.stroke()
+
+  context.fillStyle = CHERRY_STEM
+  context.fillRect(centre.x - board.squareWidth * 0.03, centre.y + board.squareHeight * 0.1, board.squareWidth * 0.06, board.squareHeight * 0.16)
+
+  for (const side of [-1, 1]) {
+    const x = centre.x + side * berry * 0.85
+
+    context.fillStyle = CHERRY_SKIN
+    context.beginPath()
+    context.arc(x, top, berry, 0, Math.PI * 2)
+    context.fill()
+
+    context.strokeStyle = CHERRY_SKIN_EDGE
+    context.lineWidth = Math.max(1.5, 2.5 * board.scale)
+    context.stroke()
   }
 }
 

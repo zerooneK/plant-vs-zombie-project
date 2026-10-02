@@ -23,7 +23,7 @@ _Avoid_: mower, lawnmower, sentinel, last line of defence
 ## Plants and sun
 
 **Plant**:
-A living thing standing in a Square with health of its own. Each one has a single job on the lawn — it shoots, it makes Sun, it blocks a Row, or it is a trap — and a Zombie that reaches it eats it, whatever its job is. A plant is planted whole, so its health is also how long it is food for.
+A living thing standing in a Square with health of its own. Each one has a single job on the lawn — it shoots, it makes Sun, it blocks a Row, it is a trap, or it goes off — and a Zombie that reaches it eats it, whatever its job is. A plant is planted whole, so its health is also how long it is food for.
 _Avoid_: seed (that is the packet), unit, card, defender (only some of them defend)
 
 **Sunflower**:
@@ -45,6 +45,14 @@ _Avoid_: bomb, trap, landmine, one-shot, dud
 **Arming**:
 The wait between a Potato Mine being planted and being ready. A mine that has not finished arming does nothing at all — and a Zombie that reaches it in the meantime simply eats it, because a mine is a Plant like any other. The step the wait is up is the step it is ready, so a Zombie reaching a mine on that step is destroyed by it.
 _Avoid_: arm time, charge time, priming, build up
+
+**Cherry Bomb**:
+A plant that goes off the moment it is planted, taking every Zombie standing in the small area around it off the lawn, and is then gone. It is the way out of a Row that has already been lost. Its blast takes Zombies and not Plants, so anything planted beside it survives. It is put down *because* the Zombies have arrived, where a Potato Mine is put down before they do.
+_Avoid_: bomb, firebomb, explosion, area attack, nuke
+
+**Detonating**:
+What a Cherry Bomb does the moment it goes down. There is no delay in it: a Cherry Bomb is not a plant that becomes a bomb, so unlike Arming it holds no waiting time. It holds how far the blast reaches, in Rows and in Columns from the bomb's own Square.
+_Avoid_: blast radius, explosion range, area of effect
 
 **Sun**:
 The only resource. It falls from the sky over time and is made by some plants, and it is spent to plant everything else. Uncollected sun does not count.

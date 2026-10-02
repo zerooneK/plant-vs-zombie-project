@@ -24,7 +24,7 @@ A Plants vs. Zombies prototype (React + TypeScript, built with Vite) **plus** 25
 
 Game code is in `src/` and `tests/`. The design work is in `docs/`: `docs/plan.md` is the build plan, `docs/specs/` holds specs, `docs/adr/` holds decisions already made, and `docs/agents/` holds the engineering-skill configuration. `CONTEXT.md` is the shared vocabulary. `VERSION` and `CHANGELOG.md` track the version. `.scratch/` is the issue tracker and is git-ignored.
 
-**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`. The build order is tracked as one ticket per step under `.scratch/lawn-defence-mvp/issues/` — steps 1, 2, 3, 4, 5, 6, 7, 8, 9 and 11 are done; step 10 has two plants still to go — the Chomper and the Cherry Bomb. Ticket 14 is next, the Cherry Bomb.
+**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`. The build order is tracked as one ticket per step under `.scratch/lawn-defence-mvp/issues/` — steps 1 through 14 are done (step 10's Wall-nut and Tall-nut included). **Ticket 15 is next: the Chomper.** Tickets 16–21 remain: conehead and buckethead, pole vaulter, levels 1-2 to 1-10, level select with saved progress, and original artwork.
 
 ## Commands
 

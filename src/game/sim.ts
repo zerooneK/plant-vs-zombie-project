@@ -8,6 +8,7 @@ import { LEVEL_1_1, waveZombies, type Level, type Wave } from './levels.ts'
 import { removeExhausted, walkAndEat, type Zombie } from './zombies.ts'
 import { runMowers } from './mowers.ts'
 import { detonateMines } from './mines.ts'
+import { detonateBombs } from './bombs.ts'
 import { fireFromPlants, flyRight, type Shot } from './shots.ts'
 
 /**
@@ -423,6 +424,19 @@ function advance(state: GameState): GameState {
   // Zombie is briefly seen arriving rather than always already having taken a
   // step.
   //
+  // A Cherry Bomb goes off before the Zombies move, which is the opposite of where
+  // the mines run and the whole of the difference between the two plants.
+  //
+  // A mine is set off by a Zombie *arriving* at it, so it has to be asked once the
+  // Zombies have taken their step and are standing where they have got to. A bomb
+  // is waiting for nothing: it went off because it was planted, so it can be asked
+  // here - and asking it here rather than after `walkAndEat` is what makes it a
+  // rescue rather than a very expensive mine. A bomb put down in front of a Zombie
+  // that is about to arrive on a plant kills it before it arrives; asked after the
+  // Zombies have walked, that Zombie would already have had its bite and the bomb
+  // would be saving a Row one bite too late.
+  const bombed = detonateBombs(state.zombies, state.occupants)
+
   // A Zombie with a plant in the Square it is standing in stops there and eats,
   // which is why this is the one Zombie's step that hands the lawn back as well:
   // a plant it ate this step is not standing there any more, and the plants that
@@ -435,7 +449,7 @@ function advance(state: GameState): GameState {
   // a Row the mower has just cleared - a pea whose Zombie was mown carries on
   // across the lawn and goes, as it does for any other Zombie that stops being
   // there.
-  const eating = walkAndEat(state.zombies, state.occupants)
+  const eating = walkAndEat(bombed.zombies, bombed.occupants)
   const mown = runMowers(eating.zombies, eating.occupants)
 
   // Mines go after the Zombies have walked and after the mowers, and for the same

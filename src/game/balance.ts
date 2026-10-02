@@ -406,6 +406,64 @@ export const POTATO_MINE_HEALTH = PEASHOOTER_HEALTH
 export const POTATO_MINE_RECHARGE = WALL_NUT_RECHARGE
 
 /**
+ * What a Cherry Bomb costs to plant. Believed to be the original's 150 - between
+ * a Sunflower and a Snow Pea, and the third most expensive thing in the game.
+ *
+ * Priced between a Peashooter and a Repeater rather than beside either, because
+ * what it buys is neither. A Peashooter's 100 Sun is a plant that keeps working for
+ * the rest of the level; a Cherry Bomb's 150 is 150 Sun that has already been
+ * spent by the time the picture of it appears. A bomb cheaper than a Peashooter
+ * would make the shooter - the thing that holds a Row rather than rescuing it once
+ * - the more expensive choice, which is the wrong order for the two.
+ */
+export const CHERRY_BOMB_SUN_COST = 150
+
+/**
+ * How far the Cherry Bomb's blast reaches, in Rows above and below it and in
+ * Columns either side of it. Believed to be the original's one Square each way, so
+ * the blast is three-by-three: its own Square and the eight touching it.
+ *
+ * **In Squares, because a blast is a patch of lawn and nothing else.** The unit
+ * could have been board units or Rows and Columns separately, and both would be
+ * worse - a bomb whose blast was 240 units wide would put the edge of it part-way
+ * through a Column and the answer to "is that Zombie in range" would depend on
+ * where in the Column it was standing. Asking the question in Squares is what lets
+ * the rules and the picture give the same answer, in the same way `squareAtX` does
+ * for a Zombie standing on a plant.
+ *
+ * One Square each way rather than more, and that is the number that decides what
+ * the plant is. The lawn is five Rows: a blast one Row either side of the middle
+ * takes three of them, which is most of a Row a player is trying to hold, and a
+ * blast that took four would clear so much of the board that there would be nothing
+ * left to defend afterwards. It is also why the bomb is a *rescue* rather than a
+ * weapon - it answers "this Row is already lost", and it cannot answer "this Row
+ * is under attack" at all.
+ */
+export const CHERRY_BOMB_BLAST_ROWS = 1
+export const CHERRY_BOMB_BLAST_COLUMNS = 1
+
+/**
+ * How much health a Cherry Bomb is planted with, and how long its Seed Packet takes
+ * to Recharge.
+ *
+ * The Peashooter's health and fifty seconds - slower than anything else in the
+ * game, and about twice the Wall-nut's. From memory like every number on this
+ * plant, and unlike the Potato Mine's thirty this one has a reason to be long: a
+ * Cherry Bomb is the most expensive thing a player can put down and it does nothing
+ * at all the rest of the time. A seven-and-a-half-second Recharge would give a
+ * player two bombs inside the time a single Zombie takes to cross the lawn, and the
+ * plant is only a decision because it is scarce.
+ *
+ * The health is close to nothing that could matter, and that is the rule rather
+ * than an oversight: a Cherry Bomb stands on the lawn for exactly one step, so
+ * there is no step after it at which a Zombie could have chewed on it. Three
+ * hundred is the Peashooter's number because it is the number every plant in the
+ * game has, not because anything can get through it.
+ */
+export const CHERRY_BOMB_HEALTH = PEASHOOTER_HEALTH
+export const CHERRY_BOMB_RECHARGE = 50 * STEPS_PER_SECOND
+
+/**
  * What one bite takes off a plant. From memory, 100.
  *
  * The same bite on every plant, so that health is comparable across the roster:

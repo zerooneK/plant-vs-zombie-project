@@ -4,6 +4,75 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.22.0] - 2026-10-02
+
+### A Cherry Bomb, and the gap found by asking what a check was not looking at
+
+Ticket 14. Eight of the nine remaining plants done, and the first one that goes off the
+moment it is planted rather than arming itself first. A Cherry Bomb clears every Zombie
+in a three-by-three patch of lawn and is gone, and it is the answer to "this Row is
+already lost" rather than to "this Row is under attack".
+
+- **It clears every Zombie in the area, not one of them.** That is the whole difference
+  from a Potato Mine, and it is why `bombs.ts` has no `find` in it. A mine spends itself
+  on one Zombie and the rest walk on; a bomb spends itself on the whole area.
+- **The blast removes Zombies and not Plants.** Nothing in this game takes a plant off
+  the lawn except a bite and the Shovel — a Lawn Mower clears a Row of Zombies and
+  leaves every plant in it standing — so a bomb blown up beside a Wall-nut leaves the
+  Wall-nut.
+- **It goes off *before* the Zombies walk, which the mines do not.** `detonateMines`
+  runs after `walkAndEat` because a mine is set off by a Zombie arriving at it. A bomb is
+  waiting for nothing, so it runs before, and that ordering is the plant: a bomb put down
+  in front of a Zombie about to reach a plant kills it *before it bites*. Asked after the
+  walk, it would be rescuing a Row one bite too late.
+- **A fourth optional description on the roster**, `detonating`, holding how far the
+  blast reaches in Rows and in Columns. No delay, and that is the decision rather than a
+  gap — `arming` holds the one number that varies between arming plants, and a Cherry
+  Bomb varies in nothing: it is not a plant that becomes a bomb. `docs/adr/0010`.
+- **Fifty seconds of Recharge, the slowest in the game.** A Cherry Bomb is the most
+  expensive thing a player can put down and does nothing at all the rest of the time, so
+  the scarcity is the plant.
+
+### The gap, found by breaking the rule that nothing was checking
+
+**Breaking the blast so that it also removed every plant passed all five other checks in
+the file.** Not one of them had a second plant on the lawn, so "clears an area" was being
+read as "leaves nothing standing there" without anything objecting — and that version
+would take a player's whole Row of Peashooters with it. The sixth check exists because of
+that, and fails when the rule is broken again. It is the same failure as the two-mines
+fixture at ticket 13, and it was found this time by asking what a check was *not* looking
+at rather than by a check going red.
+
+**And the same shape again, in the edge of the lawn.** Every other check plants the bomb
+in the *middle* of the board, deliberately — a blast that hung off the edge and cleared a
+full three-by-three regardless would not have been caught by anything. And the edge is
+where a player will actually put this plant: it goes in a Row they are losing, and a
+losing Row is as likely to be Row 1 as Row 3. A bomb in Row 0 has no Row above it, so its
+blast is two Rows tall rather than three. That is the answer rather than a special case,
+and there is now a check that says so.
+
+### Four fixture versions, all wrong in a different way
+
+The bomb costs 150 and a level begins with 50, so every check waits for Sun first and the
+Zombies have to be standing in the right Squares when it goes down. Zombies sent in at step
+0 had crossed the whole lawn by then; sent in *after* the bomb, they were not on the lawn
+for it to clear; scheduled at absolute steps from the start of the level, every one was in
+the past; and given one arrival step, the ones going to nearer Columns were still walking
+and ended up a Column short.
+
+The fix is to time each Wave backwards from the single step the bomb goes down, so every
+Zombie arrives together where it was asked to be. All four failures are written down where
+the timing is now worked out.
+
+### Not in this ticket
+
+**Whether any of these numbers are *these* numbers.** Cost 150, Recharge 50 seconds, health
+300, blast 3×3 — all from memory, and none played, as at tickets 12 and 13.
+
+**Armour.** A bomb removes Zombies rather than damaging them, so nothing here decides what
+a Cherry Bomb does to a Conehead or a Buckethead — the same refusal ADR 0009 records for
+the mine. Ticket 16 owns it.
+
 ## [0.21.0] - 2026-10-02
 
 ### The knowledge graph's own skill, and a CLAUDE.md for the next instance

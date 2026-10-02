@@ -2,6 +2,11 @@ import {
   BOARD_COLUMNS,
 } from './board.ts'
 import {
+  CHERRY_BOMB_BLAST_COLUMNS,
+  CHERRY_BOMB_BLAST_ROWS,
+  CHERRY_BOMB_HEALTH,
+  CHERRY_BOMB_RECHARGE,
+  CHERRY_BOMB_SUN_COST,
   PEA_DAMAGE,
   PEASHOOTER_FIRE_INTERVAL,
   PEASHOOTER_HEALTH,
@@ -56,6 +61,7 @@ export type PlantName =
   | 'wall-nut'
   | 'tall-nut'
   | 'potato-mine'
+  | 'cherry-bomb'
 
 /** One plant, as the Seed Bank shows it and as the rules charge for it. */
 export interface Plant {
@@ -79,6 +85,34 @@ export interface Plant {
   readonly producing: Producing | null
   /** How this plant arms itself, or null for a plant that does not arm. */
   readonly arming: Arming | null
+  /** What this plant does the moment it goes down, or null for a plant that does not. */
+  readonly detonating: Detonating | null
+}
+
+/**
+ * What a plant does the moment it is planted, kept together for the same reason as
+ * `Arming`, `Shooting` and `Producing`: adding a plant that does this is an edit to
+ * this, and not a new place in the rules.
+ *
+ * The fifth kind of job a plant can have, and the only one whose whole life is one
+ * step. **Nothing about it is a choice left open per plant** - it takes the Zombies
+ * standing near it off the lawn and leaves the lawn itself - so the only two things
+ * about a Cherry Bomb that are facts about *this* bomb rather than about detonating
+ * plants in general are how big the blast is and what it is worth.
+ *
+ * There is no delay in here, and the absence is the decision rather than an
+ * oversight. `Arming` holds the one number that differs between arming plants,
+ * which is how long they take to be ready; there is nothing equivalent here, because
+ * a Cherry Bomb is not a plant that *becomes* a bomb. It is the whole of its rule
+ * the moment it goes into the ground, which is what makes it a rescue rather than a
+ * trap - a Potato Mine has to be planted before the Zombie arrives and a Cherry Bomb
+ * is planted because the Zombie has already arrived. See `docs/adr/0010`.
+ */
+export interface Detonating {
+  /** How many Rows above and below its own Square the blast reaches. */
+  readonly rows: number
+  /** How many Columns either side of its own Square the blast reaches. */
+  readonly columns: number
 }
 
 /**
@@ -227,6 +261,7 @@ export const PEASHOOTER: Plant = {
   shooting: { fireInterval: SHOOTER_FIRE_INTERVAL, projectiles: 1, shot: ONE_PEA },
   producing: null,
   arming: null,
+  detonating: null,
 }
 
 /**
@@ -256,6 +291,7 @@ export const SNOW_PEA: Plant = {
   },
   producing: null,
   arming: null,
+  detonating: null,
 }
 
 /**
@@ -276,6 +312,7 @@ export const REPEATER: Plant = {
   shooting: { fireInterval: SHOOTER_FIRE_INTERVAL, projectiles: 2, shot: ONE_PEA },
   producing: null,
   arming: null,
+  detonating: null,
 }
 
 /**
@@ -301,6 +338,7 @@ export const PUFF_SHROOM: Plant = {
   shooting: { fireInterval: SHOOTER_FIRE_INTERVAL, projectiles: 1, shot: { ...ONE_PEA, reachIn: PUFF_SHROOM_REACH } },
   producing: null,
   arming: null,
+  detonating: null,
 }
 
 /**
@@ -318,6 +356,7 @@ export const SUNFLOWER: Plant = {
   shooting: null,
   producing: { interval: SUNFLOWER_PRODUCE_INTERVAL, amount: SUNFLOWER_SUN_AMOUNT },
   arming: null,
+  detonating: null,
 }
 
 /**
@@ -337,6 +376,7 @@ export const WALL_NUT: Plant = {
   shooting: null,
   producing: null,
   arming: null,
+  detonating: null,
 }
 
 /**
@@ -356,6 +396,7 @@ export const TALL_NUT: Plant = {
   shooting: null,
   producing: null,
   arming: null,
+  detonating: null,
 }
 
 /**
@@ -397,6 +438,52 @@ export const POTATO_MINE: Plant = {
   shooting: null,
   producing: null,
   arming: { delay: POTATO_MINE_ARMING_DELAY },
+  detonating: null,
+}
+
+/**
+ * A Cherry Bomb: the first plant in the game whose whole life is one step, and the
+ * first one that does not answer a Zombie arriving but a Zombie that has already
+ * arrived.
+ *
+ * **It is not an `arming` plant, and being told that early is what makes the shape
+ * obvious.** A Potato Mine's delay is the whole of it: fifteen seconds of being a
+ * lump in a Zombie's way, then it is ready. There is no number here for the delay,
+ * because a Cherry Bomb is not a bomb that becomes a bomb - it is the whole of its
+ * rule the moment it goes into the ground, which is what makes it the opposite of a
+ * trap. A mine is planted *before* the Zombie arrives and is useless if it was too
+ * early; a Cherry Bomb is planted *because* the Zombie has arrived and is too late
+ * for the plant to save anything. `Arming` could not hold this plant even with a
+ * delay of zero, because a zero delay would leave it standing on the lawn waiting
+ * for something to set it off, and there is nothing that sets it off. `docs/adr/0010`
+ * has the rest of why the two are not the same shape.
+ *
+ * **Two numbers, and they are the whole of this plant.** How far the blast reaches,
+ * and what the packet costs - every other fact about it is the same as every other
+ * plant's, and the roster holds them in the same place. A Cherry Bomb that cleared
+ * one Zombie would be a second Potato Mine that does not need arming, and one that
+ * cleared a whole Row would be a Lawn Mower that costs 150. What makes it neither is
+ * the three-by-three: enough that a player can put it *into* a bad Row and get that
+ * Row back, and small enough that the four Rows either side of it are still being
+ * fought over when the picture comes.
+ *
+ * **It is not destroyed by its own blast, and that is not an exception.** The rule
+ * everywhere else in this game is that a blast takes Zombies off the lawn: a mine
+ * takes the one that reached it, a mower takes the whole Row. Nothing in the game
+ * removes a *plant* except a bite and the Shovel, and this plant spends itself on
+ * the step it goes down rather than needing to be taken off the lawn - so there is
+ * no question of whether it survives its own explosion, only of when it is spent.
+ * See `bombs.ts`.
+ */
+export const CHERRY_BOMB: Plant = {
+  name: 'cherry-bomb',
+  sunCost: CHERRY_BOMB_SUN_COST,
+  recharge: CHERRY_BOMB_RECHARGE,
+  health: CHERRY_BOMB_HEALTH,
+  shooting: null,
+  producing: null,
+  arming: null,
+  detonating: { rows: CHERRY_BOMB_BLAST_ROWS, columns: CHERRY_BOMB_BLAST_COLUMNS },
 }
 
 /**
@@ -415,4 +502,5 @@ export const PLANTS: Readonly<Record<PlantName, Plant>> = {
   'wall-nut': WALL_NUT,
   'tall-nut': TALL_NUT,
   'potato-mine': POTATO_MINE,
+  'cherry-bomb': CHERRY_BOMB,
 }
