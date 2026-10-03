@@ -81,3 +81,12 @@ that question if it beats the Zombie to the bite.
   there is nothing for a Conehead's armour to be worth. If ticket 16 finds otherwise,
   this becomes a field on `Detonating` exactly as ADR 0009 describes for `Arming`, and
   nothing else about the bomb moves.
+
+## Superseded in part
+
+The note above on the Chomper is answered by
+[`0011-a-plants-sixth-job-is-devouring-and-its-countdown-runs-the-other-way.md`](./0011-a-plants-sixth-job-is-devouring-and-its-countdown-runs-the-other-way.md).
+Its prediction held: the Chomper needed a sixth description, it is not `detonating` and
+not `arming`, and the countdown runs the opposite way to `stepsUntilArmed` — zero means
+ready at one end of a Chomper's life and spent at the other. Ticket 15 owns that argument
+and ADR 0011 is it.

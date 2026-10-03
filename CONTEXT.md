@@ -23,7 +23,7 @@ _Avoid_: mower, lawnmower, sentinel, last line of defence
 ## Plants and sun
 
 **Plant**:
-A living thing standing in a Square with health of its own. Each one has a single job on the lawn — it shoots, it makes Sun, it blocks a Row, it is a trap, or it goes off — and a Zombie that reaches it eats it, whatever its job is. A plant is planted whole, so its health is also how long it is food for.
+A living thing standing in a Square with health of its own. Each one has a single job on the lawn — it shoots, it makes Sun, it blocks a Row, it is a trap, it goes off, or it eats a Zombie — and a Zombie that reaches it eats it, whatever its job is. A plant is planted whole, so its health is also how long it is food for.
 _Avoid_: seed (that is the packet), unit, card, defender (only some of them defend)
 
 **Sunflower**:
@@ -53,6 +53,14 @@ _Avoid_: bomb, firebomb, explosion, area attack, nuke
 **Detonating**:
 What a Cherry Bomb does the moment it goes down. There is no delay in it: a Cherry Bomb is not a plant that becomes a bomb, so unlike Arming it holds no waiting time. It holds how far the blast reaches, in Rows and in Columns from the bomb's own Square.
 _Avoid_: blast radius, explosion range, area of effect
+
+**Chomper**:
+A plant that eats the first Zombie that reaches it, whole, and then cannot eat for a long chew. It is a burst of power rather than a permanent answer: a Row held by one Chomper and nothing else can answer exactly one Zombie, because the second walks past a plant that is busy. It is food itself while it chews.
+_Avoid_: eater, devourer, trap, ambush, chomper plant
+
+**Chew**:
+The long wait after a Chomper eats, during which it cannot eat again. It counts the other way from Arming: an Arming says "how long until ready", a chew says "how long since last time", and zero means ready at one end of a Chomper's life and spent at the other.
+_Avoid_: recharge, cooldown, digest, stun, busy
 
 **Sun**:
 The only resource. It falls from the sky over time and is made by some plants, and it is spent to plant everything else. Uncollected sun does not count.

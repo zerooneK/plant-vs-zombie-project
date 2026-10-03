@@ -464,6 +464,67 @@ export const CHERRY_BOMB_HEALTH = PEASHOOTER_HEALTH
 export const CHERRY_BOMB_RECHARGE = 50 * STEPS_PER_SECOND
 
 /**
+ * What a Chomper costs to plant. Believed to be the original's 150 - the same as a
+ * Cherry Bomb, and for the same reason: each is 150 Sun that has already been spent
+ * by the time the picture of it appears. A Cherry Bomb spends all of it at once and
+ * is gone, and a Chomper spends all of it and then spends the next forty-two seconds
+ * being unable to do the one thing it was bought for.
+ *
+ * Priced against a Peashooter's 100 rather than beside it, which is what the Cherry
+ * Bomb's note argues and it does not need arguing twice: a Peashooter's 100 Sun is a
+ * plant that keeps working for the rest of the level, and neither of these two is
+ * that. What a player buys with 150 Sun is a plant that removes a Zombie outright
+ * wherever it is planted, and both of them are worse to have bought than a shooter
+ * would have been.
+ */
+export const CHOMPER_SUN_COST = 150
+
+/**
+ * How long a Chomper spends chewing, having eaten, before it can eat again. Believed
+ * to be the original's forty-two seconds.
+ *
+ * **This is the whole of the plant, and it is a lockout rather than a delay.** The
+ * Potato Mine's fifteen seconds is a wait before the plant becomes a trap, and a
+ * Chomper's forty-two is a wait after it has already been one - so the two numbers sit
+ * at opposite ends of the same idea and neither of them can be read as the other. Zero
+ * means ready in one and zero means spent in the other, which is the same thing written
+ * two ways and is why the count is a single `stepsUntilChewed` rather than two fields
+ * that could disagree.
+ *
+ * Forty-two is very nearly the time a Zombie spends crossing the whole lawn, and that
+ * is not a coincidence to tune away - it is what makes the Chomper a plant for the end
+ * of a Row rather than one for the middle of it. A Chomper eats one Zombie and then
+ * stands there unable to eat anything for as long as a Zombie takes to walk the board,
+ * so a Row defended by one Chomper and nothing else is defended against exactly one
+ * Zombie. Two, and the second walks straight past it.
+ */
+export const CHOMPER_CHEW_STEPS = 42 * STEPS_PER_SECOND
+
+/**
+ * How much health a Chomper is planted with, and how long its Seed Packet takes to
+ * Recharge.
+ *
+ * The Peashooter's health and the Wall-nut's Recharge, and both from memory like
+ * everything else on this plant.
+ *
+ * The health is load-bearing in a way the Cherry Bomb's is not, because a Chomper is
+ * on the lawn for the rest of the level rather than for one step: it is a plant in a
+ * Zombie's way like any other, and the rule for that is that the Zombie stops and eats
+ * it. So the Chomper spends the chew being chewed - three hundred is three bites and
+ * about two and a half seconds of a Zombie standing in front of it, which is a fifth
+ * of the chew. A Chomper that survives long enough to eat again has been through up
+ * to seventeen of those.
+ *
+ * And that is the trap in the plant, which the rules deliberately do not prevent: a
+ * Chomper left alone in a Row is a Chomper being eaten, and the player watching it die
+ * learns something the Sun cost. Which is why the chew is what it is - long enough
+ * that getting to the next Zombie and back is most of a lawn's width, so a Chomper
+ * that is being eaten stays eaten.
+ */
+export const CHOMPER_HEALTH = PEASHOOTER_HEALTH
+export const CHOMPER_RECHARGE = WALL_NUT_RECHARGE
+
+/**
  * What one bite takes off a plant. From memory, 100.
  *
  * The same bite on every plant, so that health is comparable across the roster:

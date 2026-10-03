@@ -42,6 +42,12 @@ const CHERRY_SKIN = '#d32f2f'
 const CHERRY_SKIN_EDGE = '#7f0000'
 const CHERRY_STEM = '#2e7d32'
 const CHERRY_STEM_EDGE = '#1b5e20'
+const CHOMPER_BODY = '#7cb342'
+const CHOMPER_BODY_EDGE = '#33691e'
+const CHOMPER_CHEWING = '#8d6e63'
+const CHOMPER_CHEWING_EDGE = '#4e342e'
+const CHOMPER_MOUTH = '#3e2723'
+const CHOMPER_TOOTH = '#f5f5f5'
 const CHILLED_SKIN = '#8ea9c4'
 const CHILLED_SKIN_EDGE = '#4a5f7a'
 const PEA = '#b7e04b'
@@ -117,6 +123,11 @@ function drawPlant(
 
   if (plant.name === 'cherry-bomb') {
     drawCherryBomb(context, board, centre)
+    return
+  }
+
+  if (plant.name === 'chomper') {
+    drawChomper(context, plant, board, centre, healthLeft)
     return
   }
 
@@ -321,6 +332,102 @@ function drawCherryBomb(
     context.strokeStyle = CHERRY_SKIN_EDGE
     context.lineWidth = Math.max(1.5, 2.5 * board.scale)
     context.stroke()
+  }
+}
+
+/**
+ * A Chomper: a wide green head on a stalk, with a mouth that opens towards the Zombies -
+ * and the only plant on the lawn that is drawn differently depending on a countdown.
+ *
+ * **The open and closed mouth is the whole of the drawing, and it is drawn from the same
+ * number the rules step.** `stepsUntilChewed` is read here exactly as `chompers.ts` reads
+ * it, so a Chomper drawn chewing and a Chomper the rules say is chewing are one fact
+ * rather than two that can be a step apart. Which is the same arrangement as the Potato
+ * Mine's light, a Recharge, and a Sunflower's interval, and for the same reason: the lawn
+ * and the rules have to be able to disagree about nothing.
+ *
+ * This plant needs it more than any other. Every other difference on this board is a
+ * colour or a shape and can be read at a glance, but a Chomper's whole rule is a *when* -
+ * and a Chomper that has just eaten looks identical to a Chomper that is ready if the
+ * mouth is drawn the same either way. A player who cannot tell those two apart cannot
+ * decide whether to put a Sunflower in front of it, and that is the decision the plant
+ * exists to create: a Chomper mid-chew is food for forty-two seconds.
+ *
+ * **Brown rather than green while it chews, and not just a closed mouth.** A mouth that was
+ * only shut would be a Chomper looking like it is sulking, and a player would have to know
+ * the plant to read it. The colour change says "this plant is busy and will be for a
+ * while" from across the lawn, which is the whole of what a player placing something behind
+ * it needs to know.
+ *
+ * Facing the Zombies - leftwards, along its Row - because a Chomper eats what reaches it
+ * and so its mouth points at whatever is about to. The stalk is short, unlike every other
+ * plant's, because a Chomper is a wide low thing rather than a head on a stem, and it is
+ * kept inside its own Square for the reason the nut's is.
+ */
+function drawChomper(
+  context: CanvasRenderingContext2D,
+  plant: Planted,
+  board: BoardLayout,
+  centre: { x: number; y: number },
+  healthLeft: number,
+): void {
+  const chewing = plant.stepsUntilChewed > 0
+  const across = board.squareWidth * 0.34
+  const down = board.squareHeight * 0.2
+  const middleY = centre.y - board.squareHeight * 0.06
+  const skin = chewing ? CHOMPER_CHEWING : CHOMPER_BODY
+  const edge = chewing ? CHOMPER_CHEWING_EDGE : CHOMPER_BODY_EDGE
+
+  context.fillStyle = PLANT_LEAF_EDGE
+  context.fillRect(
+    centre.x - board.squareWidth * 0.06,
+    middleY,
+    board.squareWidth * 0.12,
+    board.squareHeight * 0.28,
+  )
+
+  context.fillStyle = skin
+  context.beginPath()
+  context.ellipse(centre.x, middleY, across, down, 0, 0, Math.PI * 2)
+  context.fill()
+
+  context.strokeStyle = edge
+  context.lineWidth = Math.max(1.5, 2.5 * board.scale)
+  context.stroke()
+
+  // The mouth: a notch cut into the left of the head, open when the plant is ready and shut
+  // when it is chewing. Drawn in the head's own dark rather than as a separate shape, so a
+  // shut mouth is a closed outline rather than a mouth drawn over a face.
+  const reach = across * (chewing ? 0.3 : 0.62)
+  context.fillStyle = CHOMPER_MOUTH
+  context.beginPath()
+  context.moveTo(centre.x - across + reach * 0.1, middleY)
+  context.lineTo(centre.x - across - reach * 0.5, middleY - down * 0.55)
+  context.lineTo(centre.x - across - reach * 0.5, middleY + down * 0.55)
+  context.closePath()
+  context.fill()
+
+  // One tooth, on the ready Chomper only - the visible difference between a mouth that can
+  // bite and one that cannot, beyond the opening itself.
+  if (!chewing) {
+    context.fillStyle = CHOMPER_TOOTH
+    context.beginPath()
+    context.moveTo(centre.x - across + reach * 0.1, middleY - down * 0.12)
+    context.lineTo(centre.x - across + reach * 0.1, middleY + down * 0.2)
+    context.lineTo(centre.x - across - reach * 0.15, middleY + down * 0.05)
+    context.closePath()
+    context.fill()
+  }
+
+  // The bite, out of the side the Zombie is standing, exactly as for every other plant. And
+  // a Chomper is a plant a Zombie eats more often than a Wall-nut is, because it is the one
+  // a player puts in a Row alone and forgets about for the length of a chew.
+  const bite = across * 0.9 * (1 - healthLeft)
+  if (bite > 0) {
+    context.fillStyle = lawnColour(plant.square)
+    context.beginPath()
+    context.arc(centre.x + across * 0.45, middleY - down * 0.2, bite, 0, Math.PI * 2)
+    context.fill()
   }
 }
 

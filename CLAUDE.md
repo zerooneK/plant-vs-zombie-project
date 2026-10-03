@@ -28,7 +28,7 @@ A Plants vs. Zombies prototype (React + TypeScript, built with Vite) **plus** 26
 
 Game code is in `src/` and `tests/`. The design work is in `docs/`: `docs/plan.md` is the build plan, `docs/specs/` holds specs, `docs/adr/` holds decisions already made, and `docs/agents/` holds the engineering-skill configuration. `CONTEXT.md` is the shared vocabulary. `VERSION` and `CHANGELOG.md` track the version. `.scratch/` is the issue tracker and is git-ignored.
 
-**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`. The build order is tracked as one ticket per step under `.scratch/lawn-defence-mvp/issues/` — steps 1 through 14 are done (step 10's Wall-nut and Tall-nut included). **Ticket 15 is next: the Chomper.** Tickets 16–21 remain: conehead and buckethead, pole vaulter, levels 1-2 to 1-10, level select with saved progress, and original artwork.
+**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`. The build order is tracked as one ticket per step under `.scratch/lawn-defence-mvp/issues/` — steps 1 through 15 are done (step 10's Wall-nut and Tall-nut included), which is all ten plants. **Ticket 16 is next: conehead and buckethead.** Tickets 17–21 remain: pole vaulter, levels 1-2 to 1-10, level select with saved progress, and original artwork.
 
 ## Commands
 
@@ -40,7 +40,7 @@ Node 22 and npm. No linter is configured.
 | `npm run dev` | Work on the game at `localhost:5173` |
 | `npm run build` | Typecheck, then build the playable game into `dist/` |
 | `npm run preview` | Serve `dist/` over HTTP, to check the built game |
-| `npm test` | Run the rule checks (`node:test`, no test framework) — 119 checks |
+| `npm test` | Run the rule checks (`node:test`, no test framework) — 131 checks |
 | `npm run typecheck` | Typecheck only |
 
 Run a single file, or a single named check:
@@ -86,26 +86,30 @@ The game runs at a fixed **60 steps a second**, independent of frame rate.
 4. Zombies walk and eat (`walkAndEat`) — this both moves Zombies and bites plants
 5. Mowers run (`runMowers`)
 6. Mines detonate (`detonateMines`)
-7. Peas fly (`flyRight`)
-8. Exhausted Zombies are removed (`removeExhausted`)
-9. Plants fire (`fireFromPlants`)
-10. Win/loss is decided from the Waves left and the Zombies standing
-11. Sky Sun falls (`stepSun`), then plants make Sun (`stepProduction`)
+7. Chompers eat (`devourWithChompers`)
+8. Peas fly (`flyRight`)
+9. Exhausted Zombies are removed (`removeExhausted`)
+10. Plants fire (`fireFromPlants`)
+11. Win/loss is decided from the Waves left and the Zombies standing
+12. Sky Sun falls (`stepSun`), then plants make Sun (`stepProduction`)
 
-Three consequences worth internalising: production runs on the plants **still standing at the end of the step**, so a Sunflower eaten this step makes nothing; a Zombie is removed *after* it eats, so a Zombie killed by a pea on the same step it bit still got that bite in — but a Zombie killed by a bomb on that step did not, because the bomb goes off first; and moving a line changes behaviour. Read the comments in `advance` before reordering anything.
+Four consequences worth internalising: production runs on the plants **still standing at the end of the step**, so a Sunflower eaten this step makes nothing; a Zombie is removed *after* it eats, so a Zombie killed by a pea on the same step it bit still got that bite in — but a Zombie killed by a bomb on that step did not, because the bomb goes off first; a Chomper that eats a Zombie standing in its Square has already been bitten once by it, because both happen inside the one step; and moving a line changes behaviour. Read the comments in `advance` before reordering anything.
 
 ### The data-driven roster
 
-`src/game/plants.ts` is a **table**, not a hierarchy. Adding a plant is an entry in `PLANTS`, not a new branch in the rules. Each `Plant` has up to four independent capability fields, any of which may be `null`:
+`src/game/plants.ts` is a **table**, not a hierarchy. Adding a plant is an entry in `PLANTS`, not a new branch in the rules. Each `Plant` has up to five independent capability fields, any of which may be `null`:
 
 - `shooting` — `{ fireInterval, projectiles, shot }`
 - `producing` — `{ interval, amount }` (Sunflower)
 - `arming` — `{ delay }` (Potato Mine: does nothing until armed, then takes the first Zombie and is gone)
 - `detonating` — `{ rows, columns }` (Cherry Bomb: on the step after planting, clears every Zombie in that area and is gone)
+- `devouring` — `{ chew }` (Chomper: takes the first Zombie that reaches it, then cannot eat for `chew` steps)
 
-The five kinds of job a plant can have are: **shoot**, **make Sun**, **stand in the way** (Wall-nut — every field `null`, just high `health`), **trap**, and **go off**. A plant that only blocks is described by no capability at all, deliberately. Each description holds only what is a per-plant choice: `arming` holds the delay but not what an armed plant does, and `detonating` holds the size of the blast but not that a blast removes Zombies.
+The six kinds of job a plant can have are: **shoot**, **make Sun**, **stand in the way** (Wall-nut — every field `null`, just high `health`), **trap**, **go off**, and **eat**. A plant that only blocks is described by no capability at all, deliberately. Each description holds only what is a per-plant choice: `arming` holds the delay but not what an armed plant does, `detonating` holds the size of the blast but not that a blast removes Zombies, and `devouring` holds the chew but not that eating removes a Zombie.
 
-**The two "it goes off" plants run in different places in the step, and that is the whole of the difference between them.** `detonateMines` runs *after* `walkAndEat`, because a mine is set off by a Zombie *reaching* it and can only be asked once the Zombies have moved. `detonateBombs` runs *before* `walkAndEat`, because a bomb is waiting for nothing and can be asked at any point — which is what makes it a rescue: a bomb put down in front of a Zombie about to reach a plant kills it before it bites, where asked after the walk it would be saving a Row one bite too late. Moving it changes four of its checks.
+**The three plants that take a Zombie off the lawn whole run in three different places in the step, and that ordering is the design.** `detonateBombs` runs *before* `walkAndEat`, because a bomb is waiting for nothing — which is what makes it a rescue: a bomb put down in front of a Zombie about to reach a plant kills it before it bites, where asked after the walk it would be saving a Row one bite too late. `detonateMines` and `devourWithChompers` both run *after* it, because each is asked by a Zombie *reaching* it and can only be asked once the Zombies have moved. Chompers come after the mines so a Zombie a Chomper has just eaten is off the lawn rather than left for a mine in the same Square to find. Moving any of these lines changes its checks.
+
+**`stepsUntilChewed` is one field meaning two things, and that is deliberate.** A Chomper's life has two "ready" moments — before it has ever eaten, and after a chew — and zero means ready at one end and spent at the other, the same reading every other countdown in this game gives. Two fields would let a Chomper be "ready" and "chewing" at once. It is **not** `arming` with a negative delay: `arming` counts *down towards* a moment the plant has not reached, `devouring` counts *up from* one it has just passed, and one cannot be the same counter as the other. See `docs/adr/0011`.
 
 The shooter variants are the pattern to copy. `ONE_PEA` is defined once; Snow Pea, Repeater and Puff-shroom are each `{ ...ONE_PEA, <one field changed> }`. "A Snow Pea is a Peashooter with one thing changed" is true *in the data*, not just in a comment. A shot's effect — `damage`, `slowSteps`, `passesThrough`, `reachIn` — is settled when fired and carried by the projectile, so it cannot change in flight.
 

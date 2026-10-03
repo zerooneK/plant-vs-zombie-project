@@ -73,6 +73,7 @@ const COSTS: Record<PlantName, number> = {
   'tall-nut': 50,
   'potato-mine': 25,
   'cherry-bomb': 150,
+  chomper: 150,
 }
 
 /**
@@ -90,14 +91,19 @@ const COSTS: Record<PlantName, number> = {
  * together - the three variants beside the Peashooter they are variations of, so
  * the question a player is actually asking, *which of these four do I want in this
  * Row*, is answered by looking along one shelf - then the plant that makes Sun,
- * then the two blocks, then the two that go off. Nothing in the rules depends on
- * the order, so this check is the only place it is decided, which is the point of
- * deciding it here rather than in the level.
+ * then the two blocks, then the three that deal with Zombies directly. Nothing in
+ * the rules depends on the order, so this check is the only place it is decided,
+ * which is the point of deciding it here rather than in the level.
  *
- * The Cherry Bomb is after the Potato Mine and not beside it, and that is the
- * question a player asking *which of these two do I want* is really asking: one is
- * put down before the Zombies arrive and one is put down after. They go off in the
- * same place at the end of the shelf.
+ * The last three are the three plants that remove a Zombie rather than damaging
+ * one, and they are the three that are not shooters even though they answer a
+ * Zombie's approach the way a shooter does. Within them the order is a *when*, and
+ * it is the question a player asking *which of these three do I want* is really
+ * asking: the Potato Mine is put down before the Zombies arrive, the Cherry Bomb
+ * after they have, and the Chomper at any moment at all - because it eats the first
+ * one that reaches it and then cannot eat for forty-two seconds. Two of them cost
+ * exactly the same 150 Sun, so a player holding the two packets cannot tell them
+ * apart by price, and this order is the only thing that says which is which.
  */
 test('the test bed offers every plant the game has, in a readable order, at its own cost', () => {
   const bed = initialGameState(1, LEVEL_TEST).seedBank
@@ -114,8 +120,9 @@ test('the test bed offers every plant the game has, in a readable order, at its 
       'tall-nut',
       'potato-mine',
       'cherry-bomb',
+      'chomper',
     ],
-    'the test bed offers every plant there is: four shooters, the Sun maker, the two nuts, and the two that go off',
+    'the test bed offers every plant there is: four shooters, the Sun maker, the two nuts, and the three that take a Zombie off the lawn whole',
   )
 
   for (const [name, cost] of Object.entries(COSTS)) {

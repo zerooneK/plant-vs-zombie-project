@@ -144,6 +144,26 @@ export interface Planted {
    * about it. Zero for a plant that does not arm, which is harmless.
    */
   readonly stepsUntilArmed: number
+
+  /**
+   * Steps of chewing left on a plant that eats, for a plant that eats at all.
+   *
+   * **One field, and it means two things at the two ends of a Chomper's life - which is
+   * why it is one field and not two.** Zero is ready for a plant that has not eaten yet
+   * and spent for one that has, exactly as zero is "armed" for a mine and "ready to bite
+   * now" for a Zombie that has just arrived at a plant. A Chomper is the only plant in
+   * the game that has both readings in one life, and a Chomper that had a separate
+   * "ready" flag could have had that flag and this countdown disagree about whether it
+   * was eating.
+   *
+   * It is set to the whole chew on the step the Chomper eats, so the chew runs from the
+   * eating rather than from the planting - a timer that started at zero would be a
+   * Chomper that had finished chewing before it had chewed anything, which is what the
+   * plant's whole cost is not.
+   *
+   * Zero for a plant that never eats, which is harmless: nothing reads it.
+   */
+  readonly stepsUntilChewed: number
 }
 
 /** The middle of a Square across, in the board's own units rather than on the screen. */

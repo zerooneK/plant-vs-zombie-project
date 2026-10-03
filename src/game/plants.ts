@@ -16,6 +16,10 @@ import {
   POTATO_MINE_HEALTH,
   POTATO_MINE_RECHARGE,
   POTATO_MINE_SUN_COST,
+  CHOMPER_CHEW_STEPS,
+  CHOMPER_HEALTH,
+  CHOMPER_RECHARGE,
+  CHOMPER_SUN_COST,
   PUFF_SHROOM_HEALTH,
   PUFF_SHROOM_REACH,
   PUFF_SHROOM_RECHARGE,
@@ -62,6 +66,7 @@ export type PlantName =
   | 'tall-nut'
   | 'potato-mine'
   | 'cherry-bomb'
+  | 'chomper'
 
 /** One plant, as the Seed Bank shows it and as the rules charge for it. */
 export interface Plant {
@@ -87,6 +92,47 @@ export interface Plant {
   readonly arming: Arming | null
   /** What this plant does the moment it goes down, or null for a plant that does not. */
   readonly detonating: Detonating | null
+  /** What this plant does when it reaches a Zombie, or null for a plant that never does. */
+  readonly devouring: Devouring | null
+}
+
+/**
+ * What a plant does to the Zombie it reaches, kept together for the same reason as
+ * `Arming`, `Detonating`, `Shooting` and `Producing`: adding a plant that does this is
+ * an edit to this, and not a new place in the rules.
+ *
+ * **The sixth kind of job a plant can have, and the only one described by how long it
+ * afterwards cannot.** Shoot, make Sun, stand in the way, trap, go off, eat - and this
+ * is the last of the six, which ADR 0010 said would be needed and declined to guess
+ * at. `docs/adr/0011` is that argument.
+ *
+ * **One number, and it is a lockout rather than a delay, which is the whole of why this
+ * could not be `Arming`.** What a plant that devours *does* is not a per-plant choice:
+ * it takes the first Zombie that reaches it, removes that Zombie from the lawn, and
+ * stays standing - the same answer a Potato Mine gives about the Zombie and the
+ * opposite answer about the plant. So the only thing about a Chomper that is a fact
+ * about *this* Chomper is how long it then spends chewing. There is nothing here about
+ * when it becomes able to eat, because it is able to eat from the moment it is planted,
+ * exactly as it is able to shoot the moment it is planted.
+ *
+ * And that is what makes it the opposite end of `Arming` rather than a smaller version
+ * of it. `Arming` counts *down* to a moment: steps left before the plant can do its
+ * thing, zero meaning ready. This counts *up* from a moment: steps left before it can do
+ * its thing *again*, zero meaning spent. One field called `stepsUntilChewed`, holding
+ * both, because a Chomper is the only plant in the game that has both readings in its
+ * life and a Chomper that had two fields could have them disagree.
+ */
+export interface Devouring {
+  /**
+   * Steps after eating before this plant can eat again.
+   *
+   * A countdown rather than a chew time worked out from a clock, for the same reason
+   * a Potato Mine's arming is one and a Peashooter's firing is one: the lawn, the Seed
+   * Bank and the rules all read the same number and cannot disagree about whether the
+   * plant is ready. A Chomper drawn chewing and a Chomper the rules say is chewing are
+   * one fact rather than two, because they are read from one field.
+   */
+  readonly chew: number
 }
 
 /**
@@ -262,6 +308,7 @@ export const PEASHOOTER: Plant = {
   producing: null,
   arming: null,
   detonating: null,
+  devouring: null,
 }
 
 /**
@@ -292,6 +339,7 @@ export const SNOW_PEA: Plant = {
   producing: null,
   arming: null,
   detonating: null,
+  devouring: null,
 }
 
 /**
@@ -313,6 +361,7 @@ export const REPEATER: Plant = {
   producing: null,
   arming: null,
   detonating: null,
+  devouring: null,
 }
 
 /**
@@ -339,6 +388,7 @@ export const PUFF_SHROOM: Plant = {
   producing: null,
   arming: null,
   detonating: null,
+  devouring: null,
 }
 
 /**
@@ -357,6 +407,7 @@ export const SUNFLOWER: Plant = {
   producing: { interval: SUNFLOWER_PRODUCE_INTERVAL, amount: SUNFLOWER_SUN_AMOUNT },
   arming: null,
   detonating: null,
+  devouring: null,
 }
 
 /**
@@ -377,6 +428,7 @@ export const WALL_NUT: Plant = {
   producing: null,
   arming: null,
   detonating: null,
+  devouring: null,
 }
 
 /**
@@ -397,6 +449,7 @@ export const TALL_NUT: Plant = {
   producing: null,
   arming: null,
   detonating: null,
+  devouring: null,
 }
 
 /**
@@ -439,6 +492,7 @@ export const POTATO_MINE: Plant = {
   producing: null,
   arming: { delay: POTATO_MINE_ARMING_DELAY },
   detonating: null,
+  devouring: null,
 }
 
 /**
@@ -484,6 +538,59 @@ export const CHERRY_BOMB: Plant = {
   producing: null,
   arming: null,
   detonating: { rows: CHERRY_BOMB_BLAST_ROWS, columns: CHERRY_BOMB_BLAST_COLUMNS },
+  devouring: null,
+}
+
+/**
+ * A Chomper: the first plant in the game that stays on the lawn after doing its
+ * damage, and the first whose whole point is what it is doing *instead* of it.
+ *
+ * **It is not an `arming` plant, and being told that early is what makes the shape
+ * obvious.** A Potato Mine's fifteen seconds is a wait before it can do anything, and
+ * a Chomper's forty-two is a wait after it has already done everything. A Chomper is
+ * ready the moment it is planted - it eats the first Zombie that reaches it, and the
+ * next one after that, and the next - and what stops it is having just eaten. Zero
+ * here means ready, exactly as zero means ready for a mine, and the number counts the
+ * other way: `Arming` counts down towards a moment this plant has already passed,
+ * and `Devouring` counts up from a moment it is about to reach. `docs/adr/0011` has
+ * why that is a sixth description rather than a second reading of the fourth.
+ *
+ * **It is not a `shooting` plant either, which is the other half of why this is a
+ * field of its own.** A Peashooter's shot leaves the plant and travels; a Chomper's
+ * bite takes the Zombie *off the lawn*, whole, with no damage number on it - and that
+ * is the same answer a Potato Mine and a Cherry Bomb both give, for the same reason. A
+ * Chomper is the third plant in the game that removes a Zombie rather than damaging
+ * one, and so the first one whose "damage" is not a question about whether the plant
+ * was strong enough. There is nothing here for a Conehead's armour to turn out to be
+ * too small for, which is the same question ticket 16 has still to answer for the
+ * other two and which is left open here for the same reason.
+ *
+ * **And it is not a `detonating` plant, because it takes one Zombie and not an area.**
+ * A Cherry Bomb clears three-by-three and leaves; a Chomper clears exactly what is
+ * standing in its own Square and stays to be asked again. The two differ in every
+ * direction that matters - how many Zombies, what happens to the plant afterwards, and
+ * whether it can act twice - and a description holding "an area" could not tell them
+ * apart without also holding a rule about what happens next.
+ *
+ * **The chew is the plant, and it is the reason a Chomper is a plant for the end of a
+ * Row rather than one for the middle of it.** Forty-two seconds is very nearly the
+ * time a Zombie spends crossing the whole lawn: a Chomper eats one Zombie and then
+ * stands there unable to eat anything for as long as a Zombie takes to walk the board.
+ * So a Row held by one Chomper and nothing else is a Row that can answer exactly one
+ * Zombie, and the second walks straight past a plant that cannot touch it. What that
+ * buys is a plant that is unbeatable in the right place - it removes a Zombie the
+ * moment it arrives, in a Row that is already lost - and worthless in the wrong one.
+ */
+export const CHOMPER: Plant = {
+  name: 'chomper',
+  sunCost: CHOMPER_SUN_COST,
+  recharge: CHOMPER_RECHARGE,
+  health: CHOMPER_HEALTH,
+  shooting: null,
+  producing: null,
+  arming: null,
+  detonating: null,
+  devouring: { chew: CHOMPER_CHEW_STEPS },
 }
 
 /**
@@ -503,4 +610,5 @@ export const PLANTS: Readonly<Record<PlantName, Plant>> = {
   'tall-nut': TALL_NUT,
   'potato-mine': POTATO_MINE,
   'cherry-bomb': CHERRY_BOMB,
+  chomper: CHOMPER,
 }

@@ -4,6 +4,62 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.23.0] - 2026-10-03
+
+### A Chomper, and three broken countdowns that every check passed
+
+Ticket 15. The last of the ten plants. A Chomper eats the first Zombie that reaches it,
+whole, and then cannot eat for forty-two seconds — which makes it a burst of power rather
+than a permanent answer, and is the first plant in the game whose whole rule is a *when*.
+
+- **A sixth kind of plant job, `devouring`, holding one number.** Nothing about what eating
+  does is a per-plant choice — a Chomper removes the first Zombie that reaches it, exactly
+  as a Potato Mine does, and stays standing — so the only thing about it a designer could
+  choose differently is how long it is then out of action.
+- **One field, `stepsUntilChewed`, meaning two things at the two ends of a Chomper's life.**
+  Zero is ready before it has ever eaten and spent after a chew. Two fields would let a
+  Chomper be "ready" and "chewing" at once, which is the contradiction one field cannot
+  hold. It is not `arming` with a negative delay: `arming` counts *down towards* a moment
+  the plant has not reached, `devouring` counts *up from* one it has just passed.
+- **It runs after `walkAndEat`, like the mines, and the three plants that remove a Zombie
+  whole now run in three different places in the step.** Bombs before the walk because a
+  bomb is waiting for nothing; mines and Chompers after it because each is asked by a
+  Zombie *reaching* it. `advance` is twelve steps long and the order is the design.
+- **The first plant that must be *drawn* differently depending on a countdown.** Every other
+  difference on the board is a colour or a shape read at a glance, but a Chomper that has
+  just eaten looks identical to a ready one if the picture does not say otherwise. It reads
+  `stepsUntilChewed` for the same reason the Potato Mine's light reads `stepsUntilArmed`:
+  one number, two readers, so the lawn and the rules cannot be two claims about two things.
+- **A Chomper that eats something standing in its Square has already been bitten once by
+  it.** `walkAndEat` bites the plant a Zombie has reached and `devourWithChompers` takes
+  that same Zombie off the lawn a moment later, both inside one step. Not a rule about
+  Chompers — it is what "a Zombie that walks into a plant stops there" means — and
+  surprising enough that a check says so.
+- **A Chomper that has just eaten is food for the whole chew, and there is no way to avoid
+  it.** A Zombie reaching a chewing Chomper bites it on the step it arrives, so a Chomper
+  cannot decline a Zombie for forty-two seconds and then eat the next one: by the time the
+  chew is over, anything that arrived during it has eaten the plant three times over. That
+  is why the "eats again" check is written with two Zombies and not three — the shape a
+  check would want to write is a lawn that cannot exist.
+
+**Five checks, and three mutations that got through all of them.** Breaking the rule eight
+ways and watching which survive found that a Chomper which ate one Zombie and could *never*
+eat another for the rest of the level passed every check that existed at the time — as did a
+chew spent one step late, and a chew spent one step early. All three leave a chew that
+counts down, is forty-two seconds long, and that a Chomper comes out of, so nothing watching
+it on its way down can tell them apart. Only a check about the **step** the chew runs out on,
+with a Zombie standing in the Square at the time, catches them. That is the fifth check, and
+it is the reason there are five.
+
+**Numbers and visuals are both pending in-game playtesting.** The chew is believed to be the
+original's forty-two seconds and has never been played — like the three shooter variants at
+ticket 12, the only Level offering a Chomper is the test bed, which is somewhere to look at
+a plant rather than somewhere to balance one. It is load-bearing (it is what makes a Chomper
+a plant for the end of a Row rather than the middle of it) and nothing has asked whether it
+is *these* forty-two. `drawChomper` was verified in a browser in its ready state only; the
+chewing state — the brown colour and shut mouth, which is the state the drawing exists for —
+was not looked at.
+
 ## [0.22.0] - 2026-10-02
 
 ### A Cherry Bomb, and the gap found by asking what a check was not looking at
