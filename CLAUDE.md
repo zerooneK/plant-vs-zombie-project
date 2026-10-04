@@ -54,6 +54,10 @@ node --test --test-name-pattern="catches up" tests/clock.test.ts
 
 **To play the built game, open `dist/index.html` by double-clicking it.** It works from `file://` with no server and no internet. Do not "fix" this by going back to an ES-module build: browsers refuse to load modules over `file://`, and the stylesheet must not carry a `crossorigin` attribute. `vite.config.ts` works around both, and that plugin is load-bearing.
 
+**To drive the game in a real browser, call `cloakbrowser` through the MCP tool, not Playwright or Puppeteer.** It is already wired up and it installs nothing — which matters here, since the rule that this repo carries no packages beyond React and the build tool is a decision on the record (`docs/adr/0004-node-builtin-test-runner.md`), not a preference about this session. Do not read that rule as an argument for building a browser driver by hand, which is what the board was checked with before: a Node script talking the Chrome DevTools Protocol over Node 22's built-in `WebSocket`. It works, and it costs four bugs to stand up each time — creating a tab with a query string in the URL hangs, a `.ts` driver with a top-level `await` loads as CommonJS and silently never resolves, a screenshot needs `fromSurface`, and the device-metrics call hangs rather than resizing. `cloakbrowser` has a page snapshot, a console log and a network log; a raw CDP script has none of them, so every question about the page becomes a hand-written `Runtime.evaluate`.
+
+This is how you *look* at the drawing, and looking is not checking: the browser opens no new seam, and the rule boundary above is unchanged by any of it. Ticket 15 is the worked example — `drawChomper` was verified ready-state in a browser, and the chewing state is still unlooked-at because the run stopped short of it (`.scratch/lawn-defence-mvp/issues/15-chomper.md`).
+
 ## Architecture
 
 ### The rule boundary — protect this

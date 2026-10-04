@@ -4,6 +4,34 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.23.1] - 2026-10-04
+
+### How to drive the game in a browser: cloakbrowser, not a hand-written driver
+
+Docs only — no game code, no checks, no build change.
+
+- **`AGENTS.md` and `CLAUDE.md` now say to call `cloakbrowser` through the MCP tool** when
+  driving the game in a real browser, and not Playwright or Puppeteer. It is already wired up
+  and it installs nothing, which is what keeps ADR 0004's decision — no packages beyond React
+  and the build tool — a decision rather than an accident of one session.
+- **The rule is next to the note about playing the built game**, so the two ways to see the
+  board sit together: double-click `dist/index.html` to play it, `cloakbrowser` to drive it.
+- **`CLAUDE.md` records what the hand-written driver cost**, since the alternative looks
+  tempting exactly when it is most expensive: a Node script talking the Chrome DevTools
+  Protocol over Node 22's built-in `WebSocket` needs four fixes to stand up each time — a tab
+  created with a query string in the URL hangs, a `.ts` driver with a top-level `await` loads
+  as CommonJS and silently never resolves, a screenshot needs `fromSurface`, and
+  `Emulation.setDeviceMetricsOverride` hangs rather than resizing. It also has no page
+  snapshot, no console log and no network log, so every question about the page became a
+  hand-written `Runtime.evaluate`.
+- **Both files say plainly that looking is not checking.** A browser opens no new seam, and
+  the rule boundary is unchanged by any of it. Ticket 15 is the worked example: `drawChomper`
+  was verified ready-state in a browser and the chewing state is still unlooked-at.
+- **Still open, unchanged by this:** `drawChomper`'s chewing state — the brown colour and the
+  shut mouth — has never been looked at, and the Chomper's balance numbers have never been
+  play-tested. Both are recorded in ticket 15. The first is now cheap: it is one
+  `cloakbrowser` run further than the one that was already done.
+
 ## [0.23.0] - 2026-10-03
 
 ### A Chomper, and three broken countdowns that every check passed

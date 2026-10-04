@@ -41,6 +41,8 @@ Node 22 and npm. No linter is configured.
 
 **To play the built game, open `dist/index.html` by double-clicking it.** It works from `file://` with no server and no internet. Do not "fix" this by going back to an ES-module build: browsers refuse to load modules over `file://`, and the stylesheet must not carry a `crossorigin` attribute. `vite.config.ts` works around both.
 
+**To drive the game in a real browser, call `cloakbrowser` through the MCP tool — not Playwright, and not Puppeteer.** It is already wired up and it installs nothing, which is what keeps the decision that this repo carries no packages beyond React and the build tool a real decision rather than an accident of this session. Driving a browser is how you *look* at the drawing; it is not a new seam, and it does not move anything under `src/game/`.
+
 ## The rule boundary — protect this
 
 `src/game/` holds the rules. It draws nothing, imports nothing from React, and touches no DOM — not even `performance` or `requestAnimationFrame`. Everything above it — `src/draw/` (canvas) and `src/ui/` (React) — is presentation.
