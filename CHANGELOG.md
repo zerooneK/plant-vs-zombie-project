@@ -4,6 +4,34 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.23.3] - 2026-10-04
+
+### The Chomper's chewing state, looked at for the first time
+
+Verification only — no game code changed, no checks added, and the drawing was correct all
+along. This closes the one gap ticket 15 recorded about itself.
+
+- **Both states of `drawChomper` are now verified in a real browser**, driven with
+  `cloakbrowser` against the built game, reading the canvas pixels inside the Chomper's own
+  Square. Planted and ready: 11,950 pixels of the ready skin and 14 of tooth. The moment it
+  eats: 0 green, 2,022 of the chewing skin, no tooth. After the chew: 11,872 green and the
+  tooth back. The drawing does what ADR 0011 says — the head changes colour, the tooth goes,
+  and both return.
+- **Sampling the whole canvas is a trap, and it produced two false readings here.** The lawn
+  is green, so a whole-canvas count of the ready skin read 297,537 pixels on a lawn with
+  nothing planted, and a constant 2,024 "chewing" pixels on a Chomper that had never eaten.
+  Both were board furniture. A colour probe has to be clipped to the Square it is asking
+  about, or it is measuring the lawn.
+- **A level that ends cannot show a chew finishing — and that is the rules working.** The
+  first attempt put the Chomper in Row 1, where the first wave arrives. It chewed, the level
+  was then lost with the chew still running, and the head stayed brown across every later
+  poll, because `apply` refuses `advance` once a level is over (`src/game/sim.ts`) and the
+  countdown driving the drawing is frozen with it. Putting the Chomper in Row 4, whose wave
+  is the last, gave a level that outlives the chew and the whole cycle in one run.
+- **Still open, and it is a different question from the one now answered:** whether the brown
+  reads as *busy* rather than *sick* from across the lawn. That is a judgement about the
+  picture, not about pixels, and only a player can make it.
+
 ## [0.23.2] - 2026-10-04
 
 ### Say when something is stuck
