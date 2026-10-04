@@ -8,6 +8,8 @@ This merges the project's own rules from `AGENTS.md` with the architecture notes
 
 Always talk in **simple English**. Use normal, everyday words. Keep technical words to a minimum, and only when there is no simpler word. Short sentences. Explain what you did in plain terms, not jargon.
 
+**Say so when something is stuck.** If a problem will not go away, or a fix is taking far too long, stop and tell the user — what is wrong, what is causing the delay, and how they could help. Do not keep working a problem in silence and then report it as a finished task or a dead end. Two things this rule is aimed at: **silence looks like progress**, so a long stretch of retries reads from the outside as the job still moving, when nobody watching can see the wall or offer the thing that would clear it — a denied permission, a missing file, a decision only the user can make; and **being stuck is information worth having early**, since half a turn of debugging is worth more than five. It does not mean narrating ordinary dead ends: a check failing red because the feature does not exist yet is the work working, and a denied command with an obvious workaround is not a stop — take the workaround and say which one you took.
+
 ## Version, changelog and git
 
 This project has a version number. It lives in the `VERSION` file at the repo root. Do not repeat the number in prose anywhere — read it from that file, so it cannot go stale.

@@ -4,6 +4,12 @@
 
 Always talk in **simple English**. Use normal, everyday words. Keep technical words to a minimum, and only when there is no simpler word. Short sentences. Explain what you did in plain terms, not jargon.
 
+**Say so when something is stuck.** If a problem will not go away, or a fix is taking far too long, stop and tell the user — what is wrong, what is causing the delay, and how they could help. Do not keep working a problem in silence and then report it as a finished task or a dead end.
+
+Two things this rule is aimed at. **Silence looks like progress**, so a long stretch of retries reads from the outside as the job still moving, when in fact nobody watching can see the wall or offer the one thing that would clear it — a denied permission, a missing file, a decision only they can make. And **being stuck is information worth having early**: half a turn of debugging is worth more than five, because the person can answer in one line what no amount of retrying will.
+
+What it does not mean: do not narrate ordinary dead ends. A check failing red because the feature does not exist yet is the work working. A denied command that has an obvious workaround is not a stop — take the workaround and say which one you took. The rule is about the point where the next attempt is a guess rather than a step, and waiting stops being free.
+
 ## Version, changelog and git
 
 This project has a version number. It lives in the `VERSION` file at the repo root. Do not repeat the number in prose anywhere — read it from that file, so it cannot go stale.

@@ -4,6 +4,28 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.23.2] - 2026-10-04
+
+### Say when something is stuck
+
+Docs only — no game code, no checks, no build change.
+
+- **`AGENTS.md` and `CLAUDE.md` now carry a rule to say so when a problem will not resolve,
+  or when a fix is taking far too long** — what is wrong, what is causing the delay, and how
+  the user might help. Do not work a problem in silence and then report it as a finished task
+  or a dead end.
+- **Silence looks like progress.** That is the whole reason. A long stretch of retries reads
+  from the outside as the job still moving, so nobody watching can see the wall or supply the
+  one thing that clears it — a denied permission, a missing file, a decision only they can
+  make.
+- **Being stuck is information worth having early.** Half a turn of debugging is worth more
+  than five, because the user can answer in one line what no amount of retrying will.
+- **The rule is deliberately not about narrating dead ends.** A check failing red because the
+  feature does not exist yet is the work working, and a denied command with an obvious
+  workaround is not a stop — take the workaround and say which one you took. The trigger is
+  the point where the next attempt is a guess rather than a step, and waiting stops being
+  free.
+
 ## [0.23.1] - 2026-10-04
 
 ### How to drive the game in a browser: cloakbrowser, not a hand-written driver
