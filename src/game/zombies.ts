@@ -12,6 +12,8 @@ import {
   BASIC_ZOMBIE_HEALTH,
   BUCKETHEAD_ARMOUR,
   CONEHEAD_ARMOUR,
+  POLE_VAULTING_RUN_SPEED,
+  POLE_VAULTING_ZOMBIE_HEALTH,
   SLOWED_WALK_FRACTION,
   ZOMBIE_BITE_DAMAGE,
   ZOMBIE_BITE_INTERVAL,
@@ -25,7 +27,7 @@ import {
  * the roster is meant to be data, so the next Zombie is an entry rather than
  * another branch in the rules.
  */
-export type ZombieName = 'basic' | 'flag' | 'conehead' | 'buckethead'
+export type ZombieName = 'basic' | 'flag' | 'conehead' | 'buckethead' | 'pole-vaulting'
 
 /** One kind of Zombie, as the rules know it. */
 export interface ZombieKind {
@@ -37,12 +39,18 @@ export interface ZombieKind {
    * Zombies.
    */
   readonly armour: number
+  /**
+   * Whether this Zombie begins holding a pole to vault over the first plant
+   * it meets.
+   */
+  readonly hasPole: boolean
 }
 
 export const BASIC_ZOMBIE: ZombieKind = {
   name: 'basic',
   health: BASIC_ZOMBIE_HEALTH,
   armour: 0,
+  hasPole: false,
 }
 
 /**
@@ -60,6 +68,7 @@ export const FLAG_ZOMBIE: ZombieKind = {
   name: 'flag',
   health: BASIC_ZOMBIE_HEALTH,
   armour: 0,
+  hasPole: false,
 }
 
 /**
@@ -72,6 +81,7 @@ export const CONEHEAD_ZOMBIE: ZombieKind = {
   name: 'conehead',
   health: BASIC_ZOMBIE_HEALTH,
   armour: CONEHEAD_ARMOUR,
+  hasPole: false,
 }
 
 /**
@@ -84,6 +94,20 @@ export const BUCKETHEAD_ZOMBIE: ZombieKind = {
   name: 'buckethead',
   health: BASIC_ZOMBIE_HEALTH,
   armour: BUCKETHEAD_ARMOUR,
+  hasPole: false,
+}
+
+/**
+ * A Pole Vaulting Zombie: an athletic Zombie carrying a pole.
+ *
+ * Runs quickly while holding its pole (twice standard walking speed), and vaults
+ * over the first plant it encounters.
+ */
+export const POLE_VAULTING_ZOMBIE: ZombieKind = {
+  name: 'pole-vaulting',
+  health: POLE_VAULTING_ZOMBIE_HEALTH,
+  armour: 0,
+  hasPole: true,
 }
 
 /**
@@ -97,6 +121,7 @@ export const ZOMBIES: Readonly<Record<ZombieName, ZombieKind>> = {
   flag: FLAG_ZOMBIE,
   conehead: CONEHEAD_ZOMBIE,
   buckethead: BUCKETHEAD_ZOMBIE,
+  'pole-vaulting': POLE_VAULTING_ZOMBIE,
 }
 
 /**
@@ -154,6 +179,11 @@ export interface Zombie {
    * and undoing the plant does not undo the Zombie's legs.
    */
   readonly stepsSlowed: number
+  /**
+   * Whether this Zombie is still carrying its pole. True until it vaults its
+   * first obstacle (or hits a Tall-nut).
+   */
+  readonly hasPole: boolean
 }
 
 /**
@@ -174,7 +204,17 @@ export function zombieAtEdge(
   health: number,
   armour: number,
 ): Zombie {
-  return { id, name, row, walked: 0, health, armour, stepsUntilBite: 0, stepsSlowed: 0 }
+  return {
+    id,
+    name,
+    row,
+    walked: 0,
+    health,
+    armour,
+    stepsUntilBite: 0,
+    stepsSlowed: 0,
+    hasPole: ZOMBIES[name].hasPole,
+  }
 }
 
 /**
@@ -326,6 +366,41 @@ export interface ZombieStep {
  * and is kept in `mowers.ts` so that a Zombie's step is about walking and eating
  * and the mower's is about saving a Row.
  */
+/**
+ * Resolves a Zombie meeting a plant: a Zombie holding a pole vaults over it
+ * (unless it is a Tall-nut, which blocks the vault), while any other Zombie
+ * stops and bites.
+ */
+function vaultOrBite(
+  zombie: Zombie,
+  obstacle: Planted,
+  bites: Map<Planted, number>,
+  breached: Set<Row>,
+): Zombie | null {
+  if (!zombie.hasPole) {
+    bites.set(obstacle, (bites.get(obstacle) ?? 0) + ZOMBIE_BITE_DAMAGE)
+    return { ...zombie, stepsUntilBite: ZOMBIE_BITE_INTERVAL }
+  }
+
+  // A Tall-nut stands too high to be vaulted over: the Pole Vaulting Zombie
+  // hits it, loses its pole, and must eat through it like any other Zombie.
+  if (obstacle.name === 'tall-nut') {
+    bites.set(obstacle, (bites.get(obstacle) ?? 0) + ZOMBIE_BITE_DAMAGE)
+    return { ...zombie, hasPole: false, stepsUntilBite: ZOMBIE_BITE_INTERVAL }
+  }
+
+  // Vault over the plant to the Column immediately to its left without biting in mid-air.
+  const vaultedWalked = zombie.walked + ZOMBIE_STEPS_PER_COLUMN
+  const vaulted: Zombie = { ...zombie, walked: vaultedWalked, hasPole: false, stepsUntilBite: 0 }
+
+  if (zombieX(vaulted) < 0) {
+    breached.add(vaulted.row)
+    return null
+  }
+
+  return vaulted
+}
+
 export function walkAndEat(
   zombies: readonly Zombie[],
   occupants: readonly Occupant[],
@@ -373,6 +448,10 @@ export function walkAndEat(
     // there, and a Zombie that is chewing is somewhere it walked to.**
     const here = plantBeingEaten(zombie, occupants)
     if (here !== undefined) {
+      if (zombie.hasPole) {
+        return vaultOrBite(slowed, here, bites, breached)
+      }
+
       // Chewing, so it does not walk. Its place is the place it walked to and the slow
       // still counts down on it, so the only two things that change are the bite
       // countdown and the slow.
@@ -395,7 +474,10 @@ export function walkAndEat(
     // would either have to skip a step it did not have or drift. Half a step is a
     // number the tally can hold, which is the whole reason `walked` is a tally of steps
     // and not a place.
-    const walked = { ...slowed, walked: slowed.walked + (wasSlowed ? SLOWED_WALK_FRACTION : 1) }
+    //
+    // A Pole Vaulting Zombie runs twice as fast while holding its pole.
+    const speed = (zombie.hasPole ? POLE_VAULTING_RUN_SPEED : 1) * (wasSlowed ? SLOWED_WALK_FRACTION : 1)
+    const walked = { ...slowed, walked: slowed.walked + speed }
 
     // Past the left edge of the board is off the board, and a Row that had a mower
     // never gets a Zombie this far: the mower is set off on the mower Square, one
@@ -419,9 +501,7 @@ export function walkAndEat(
       return { ...walked, stepsUntilBite: 0 }
     }
 
-    bites.set(arrived, (bites.get(arrived) ?? 0) + ZOMBIE_BITE_DAMAGE)
-
-    return { ...walked, stepsUntilBite: ZOMBIE_BITE_INTERVAL }
+    return vaultOrBite(walked, arrived, bites, breached)
   })
 
   const bitten = occupants

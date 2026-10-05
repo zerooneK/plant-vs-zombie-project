@@ -166,6 +166,22 @@ export const CONEHEAD_ARMOUR = 370
 export const BUCKETHEAD_ARMOUR = 1100
 
 /**
+ * How much health a Pole Vaulting Zombie has. Believed to be the original's 500.
+ *
+ * Takes twenty-five peas at 20 damage each to fell, making it tougher than a
+ * Basic Zombie even without wearing armour.
+ */
+export const POLE_VAULTING_ZOMBIE_HEALTH = 500
+
+/**
+ * The speed multiplier of a Pole Vaulting Zombie while running with its pole.
+ *
+ * Twice standard walking speed, allowing it to cover ground quickly until it
+ * encounters its first obstacle.
+ */
+export const POLE_VAULTING_RUN_SPEED = 2
+
+/**
  * How much health a Peashooter is planted with. From memory, 300, which is three
  * bites.
  *

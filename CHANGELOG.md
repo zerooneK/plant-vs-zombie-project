@@ -4,6 +4,28 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.25.0] - 2026-10-06
+
+### Pole Vaulting Zombie (Ticket 17)
+
+The fifth and final early zombie: an athletic enemy that runs fast and vaults over the first plant it encounters.
+With this ticket, all five early zombies from the original Plants vs. Zombies are implemented.
+
+- **Roster & Stats:** `POLE_VAULTING_ZOMBIE` added with 500 health, 0 armour, and `hasPole: true`.
+- **Running speed:** Runs at twice standard walking speed (2 steps per tick; 1 step per tick when slowed by Snow Pea)
+  while holding its pole.
+- **Vaulting mechanics:** Vaults across the first plant obstacle met into the Column to its left, dealing zero
+  bite damage to the vaulted plant and dropping its pole (`hasPole = false`).
+- **Tall-nut blocking:** Tall-nut stands too high to clear: the Pole Vaulting Zombie crashes into it, loses its pole,
+  and must chew through the Tall-nut in place, keeping plants behind safe.
+- **Trap interactions:** An armed Potato Mine or ready Chomper vaulted over is not triggered; if landed upon, the
+  trap triggers normally.
+- **Visuals:** Canvas renders the carried vaulting pole extending forward in the zombie's hands while `hasPole` is
+  true, disappearing once vaulted or blocked.
+- **Flag Wave scaling:** 500 health is scaled by 1.25 to 625 in Flag Waves.
+- **8 new rule checks added:** Suite expands from 140 to 148 checks, all passing.
+- **ADR 0013 recorded:** Documents mechanics, running speed, vaulting geometry, and Tall-nut interaction.
+
 ## [0.24.0] - 2026-10-06
 
 ### Conehead and Buckethead Zombies, and Armour (Ticket 16)

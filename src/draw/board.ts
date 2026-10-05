@@ -65,6 +65,8 @@ const CONE_STRIPE = '#ffffff'
 const BUCKET_FILL = '#90a4ae'
 const BUCKET_EDGE = '#37474f'
 const BUCKET_RIM = '#b0bec5'
+const VAULT_POLE = '#e0b060'
+const VAULT_POLE_EDGE = '#795548'
 const ZOMBIE_WIDTH = 0.62
 const PEA_RADIUS = 8
 
@@ -643,13 +645,55 @@ function drawZombie(
   //
   // A Conehead's cone and a Buckethead's bucket are drawn only while armour remains;
   // once broken, the headwear is gone and the Zombie underneath looks like a Basic Zombie.
+  // A Pole Vaulting Zombie's pole is drawn while it is running and carrying it; once
+  // vaulted, the pole is gone.
   if (zombie.name === 'flag') {
     drawFlag(context, centre, board)
   } else if (zombie.name === 'conehead' && zombie.armour > 0) {
     drawCone(context, centre.x, headY, head, board)
   } else if (zombie.name === 'buckethead' && zombie.armour > 0) {
     drawBucket(context, centre.x, headY, head, board)
+  } else if (zombie.name === 'pole-vaulting' && zombie.hasPole) {
+    drawVaultPole(context, centre, board)
   }
+}
+
+/**
+ * The vaulting pole carried by a Pole Vaulting Zombie.
+ *
+ * Drawn held in the Zombie's hand and extending forward towards the left.
+ * Once the Zombie vaults over an obstacle (or hits a Tall-nut), the pole is
+ * discarded and no longer drawn.
+ */
+function drawVaultPole(
+  context: CanvasRenderingContext2D,
+  centre: { x: number; y: number },
+  board: BoardLayout,
+): void {
+  const width = board.squareWidth * ZOMBIE_WIDTH
+  const handY = centre.y + board.squareHeight * 0.06
+  const backX = centre.x + width * 0.4
+  const frontX = centre.x - width * 1.5
+  const frontY = handY + board.squareHeight * 0.06
+  const backY = handY - board.squareHeight * 0.04
+  const thickness = Math.max(2, board.squareWidth * 0.035)
+
+  context.save()
+  context.strokeStyle = VAULT_POLE_EDGE
+  context.lineWidth = thickness + Math.max(1, 1.5 * board.scale)
+  context.lineCap = 'round'
+  context.beginPath()
+  context.moveTo(backX, backY)
+  context.lineTo(frontX, frontY)
+  context.stroke()
+
+  context.strokeStyle = VAULT_POLE
+  context.lineWidth = thickness
+  context.beginPath()
+  context.moveTo(backX, backY)
+  context.lineTo(frontX, frontY)
+  context.stroke()
+  context.restore()
 }
 
 /**

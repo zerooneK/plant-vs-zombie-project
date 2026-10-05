@@ -845,3 +845,282 @@ test('an armed Potato Mine destroys a Buckethead Zombie in one hit', () => {
   assert.equal(cleared.zombies.length, 0, 'Buckethead was destroyed by the armed Potato Mine')
   assert.equal(plantIn(cleared.occupants, MINE_SQUARE), undefined, 'Potato Mine was spent')
 })
+
+test('a Pole Vaulting Zombie enters with 500 health, its pole, and runs twice as fast as a basic zombie', () => {
+  const POLE_VAULTING_HEALTH = 500
+  const level: Level = {
+    ...LEVEL_1_1,
+    waves: [{ atStep: 1, zombies: [{ name: 'pole-vaulting', row: 2 }] }],
+  }
+  const state = apply(initialGameState(DEFAULT_SEED, level), { kind: 'advance' })
+  assert.equal(state.zombies.length, 1, 'Pole Vaulting Zombie entered the lawn')
+  const zombie = state.zombies[0]
+  assert.ok(zombie, 'zombie is present')
+  assert.equal(zombie.name, 'pole-vaulting')
+  assert.equal(zombie.health, POLE_VAULTING_HEALTH, 'has 500 health')
+  assert.equal(zombie.armour, 0, 'has no armour')
+  assert.equal(zombie.hasPole, true, 'has its pole')
+
+  // In one step, it should move 2 walked steps rather than 1
+  const next = apply(state, { kind: 'advance' })
+  const nextZombie = next.zombies[0]
+  assert.ok(nextZombie)
+  assert.equal(nextZombie.walked, 2, 'ran 2 walked steps in one tick')
+})
+
+test('a Pole Vaulting Zombie vaults over the first plant it meets without damaging it, and eats the plant behind', () => {
+  const WALL_NUT_HEALTH = 4000
+  const SUNFLOWER_HEALTH = 300
+  const FIRST_PLANT: Square = { row: 2, column: 7 }
+  const SECOND_PLANT: Square = { row: 2, column: 6 }
+  const level: Level = {
+    name: 'test-vault',
+    plants: ['wall-nut', 'sunflower'],
+    waves: [{ atStep: ZOMBIE_STEP, zombies: [{ name: 'pole-vaulting', row: 2 }] }],
+  }
+
+  const start = withSunToPlant(initialGameState(DEFAULT_SEED, level), 100)
+  const chooseWall = apply(start, { kind: 'choose', choice: 'wall-nut' })
+  const plantWall = apply(chooseWall, { kind: 'place', square: FIRST_PLANT })
+  const chooseSun = apply(plantWall, { kind: 'choose', choice: 'sunflower' })
+  const planted = apply(chooseSun, { kind: 'place', square: SECOND_PLANT })
+
+  assert.equal(plantIn(planted.occupants, FIRST_PLANT)?.health, WALL_NUT_HEALTH)
+  assert.equal(plantIn(planted.occupants, SECOND_PLANT)?.health, SUNFLOWER_HEALTH)
+
+  // Run until the Pole Vaulting Zombie has reached and vaulted the first plant
+  const afterVault = until(
+    planted,
+    (state) => {
+      const z = state.zombies.find((z) => z.row === 2)
+      return z !== undefined && !z.hasPole
+    },
+    'Pole Vaulting Zombie vaulted over the Wall-nut',
+  )
+
+  const zombie = afterVault.zombies.find((z) => z.row === 2)
+  assert.ok(zombie, 'zombie is still alive')
+  assert.equal(zombie.hasPole, false, 'has lost its pole after vaulting')
+
+  // The vaulted Wall-nut in column 7 should be completely untouched
+  const firstPlant = plantIn(afterVault.occupants, FIRST_PLANT)
+  assert.ok(firstPlant, 'first plant is still standing')
+  assert.equal(firstPlant.health, WALL_NUT_HEALTH, 'first plant took zero damage from vaulting')
+
+  // The zombie landed in column 6 and begins biting the second plant
+  const bittenState = apply(afterVault, { kind: 'advance' })
+  const secondPlant = plantIn(bittenState.occupants, SECOND_PLANT)
+  assert.ok(secondPlant, 'second plant is still standing')
+  assert.ok(secondPlant.health < SUNFLOWER_HEALTH, 'second plant was bitten after landing')
+})
+
+test('after vaulting over a solitary plant into an empty square, a Pole Vaulting Zombie walks at normal speed', () => {
+  const PLANT_SQUARE: Square = { row: 2, column: 7 }
+  const level: Level = {
+    name: 'test-vault-empty',
+    plants: ['wall-nut'],
+    waves: [{ atStep: ZOMBIE_STEP, zombies: [{ name: 'pole-vaulting', row: 2 }] }],
+  }
+
+  const start = withSunToPlant(initialGameState(DEFAULT_SEED, level), 50)
+  const chooseWall = apply(start, { kind: 'choose', choice: 'wall-nut' })
+  const planted = apply(chooseWall, { kind: 'place', square: PLANT_SQUARE })
+
+  const afterVault = until(
+    planted,
+    (state) => {
+      const z = state.zombies.find((z) => z.row === 2)
+      return z !== undefined && !z.hasPole
+    },
+    'Pole Vaulting Zombie vaulted over the solitary Wall-nut',
+  )
+
+  const zombie = afterVault.zombies.find((z) => z.row === 2)
+  assert.ok(zombie)
+  assert.equal(zombie.hasPole, false)
+  assert.equal(zombie.stepsUntilBite, 0, 'no plant at landing square, so not biting')
+
+  const walkedBefore = zombie.walked
+  const oneTickLater = apply(afterVault, { kind: 'advance' })
+  const zombieNext = oneTickLater.zombies.find((z) => z.row === 2)
+  assert.ok(zombieNext)
+  assert.equal(zombieNext.walked - walkedBefore, 1, 'walks at normal speed (1 step per tick) without its pole')
+})
+
+test('a Tall-nut blocks a Pole Vaulting Zombie: it loses its pole and eats the Tall-nut in place', () => {
+  const TALL_NUT_HEALTH = 8000
+  const PEASHOOTER_HEALTH = 300
+  const TALL_SQUARE: Square = { row: 2, column: 7 }
+  const BEHIND_SQUARE: Square = { row: 2, column: 6 }
+  const level: Level = {
+    name: 'test-tall-nut-vault',
+    plants: ['tall-nut', 'peashooter'],
+    waves: [{ atStep: 50 * STEPS_PER_SECOND, zombies: [{ name: 'pole-vaulting', row: 2 }] }],
+  }
+
+  const start = withSunToPlant(initialGameState(DEFAULT_SEED, level), 150)
+  const chooseTall = apply(start, { kind: 'choose', choice: 'tall-nut' })
+  const plantTall = apply(chooseTall, { kind: 'place', square: TALL_SQUARE })
+  const choosePea = apply(plantTall, { kind: 'choose', choice: 'peashooter' })
+  const planted = apply(choosePea, { kind: 'place', square: BEHIND_SQUARE })
+
+  assert.equal(plantIn(planted.occupants, TALL_SQUARE)?.health, TALL_NUT_HEALTH)
+  assert.equal(plantIn(planted.occupants, BEHIND_SQUARE)?.health, PEASHOOTER_HEALTH)
+
+  // Run until the Pole Vaulting Zombie reaches the Tall-nut and loses its pole
+  const reached = until(
+    planted,
+    (state) => {
+      const z = state.zombies.find((z) => z.row === 2)
+      return z !== undefined && !z.hasPole
+    },
+    'Pole Vaulting Zombie reached Tall-nut and lost its pole',
+  )
+
+  const zombie = reached.zombies.find((z) => z.row === 2)
+  assert.ok(zombie)
+  assert.equal(zombie.hasPole, false, 'lost its pole')
+
+  // It should be standing at the Tall-nut in column 7 and biting it
+  const tallNut = plantIn(reached.occupants, TALL_SQUARE)
+  assert.ok(tallNut, 'Tall-nut is still in column 7')
+  assert.ok(tallNut.health < TALL_NUT_HEALTH, 'Tall-nut was bitten and took damage')
+
+  // The plant behind in column 6 must NOT have been reached or damaged
+  const behindPlant = plantIn(reached.occupants, BEHIND_SQUARE)
+  assert.ok(behindPlant, 'plant behind is still standing')
+  assert.equal(behindPlant.health, PEASHOOTER_HEALTH, 'plant behind is completely untouched')
+})
+
+test('a Pole Vaulting Zombie vaults over an armed Potato Mine without detonating it', () => {
+  const MINE_SQUARE: Square = { row: 2, column: 7 }
+  const level: Level = {
+    name: 'test-mine-vault',
+    plants: ['potato-mine'],
+    waves: [{ atStep: 30 * STEPS_PER_SECOND, zombies: [{ name: 'pole-vaulting', row: 2 }] }],
+  }
+
+  const start = initialGameState(DEFAULT_SEED, level)
+  const chosen = apply(start, { kind: 'choose', choice: 'potato-mine' })
+  const planted = apply(chosen, { kind: 'place', square: MINE_SQUARE })
+
+  const afterVault = until(
+    planted,
+    (state) => {
+      const z = state.zombies.find((z) => z.row === 2)
+      return z !== undefined && !z.hasPole
+    },
+    'Pole Vaulting Zombie vaulted over the armed Potato Mine',
+  )
+
+  const zombie = afterVault.zombies.find((z) => z.row === 2)
+  assert.ok(zombie, 'zombie is still alive after vaulting')
+  assert.equal(zombie.hasPole, false)
+
+  const mine = plantIn(afterVault.occupants, MINE_SQUARE)
+  assert.ok(mine, 'Potato Mine was not detonated')
+  assert.equal(mine.stepsUntilArmed, 0, 'Potato Mine remains armed')
+})
+
+test('a Pole Vaulting Zombie landing on an armed Potato Mine is destroyed by it', () => {
+  const WALL_SQUARE: Square = { row: 2, column: 7 }
+  const MINE_SQUARE: Square = { row: 2, column: 6 }
+  const level: Level = {
+    name: 'test-mine-landing',
+    plants: ['wall-nut', 'potato-mine'],
+    waves: [{ atStep: 30 * STEPS_PER_SECOND, zombies: [{ name: 'pole-vaulting', row: 2 }] }],
+  }
+
+  const start = withSunToPlant(initialGameState(DEFAULT_SEED, level), 75)
+  const chooseMine = apply(start, { kind: 'choose', choice: 'potato-mine' })
+  const plantMine = apply(chooseMine, { kind: 'place', square: MINE_SQUARE })
+  const chooseWall = apply(plantMine, { kind: 'choose', choice: 'wall-nut' })
+  const planted = apply(chooseWall, { kind: 'place', square: WALL_SQUARE })
+
+  const entered = until(planted, (s) => s.zombies.length > 0, 'Pole Vaulting Zombie entered')
+
+  const cleared = until(
+    entered,
+    (state) => state.zombies.length === 0,
+    'armed Potato Mine destroyed the vaulted Pole Vaulting Zombie',
+  )
+
+  assert.equal(cleared.zombies.length, 0, 'zombie was destroyed upon landing')
+  assert.equal(plantIn(cleared.occupants, MINE_SQUARE), undefined, 'Potato Mine was spent')
+  assert.ok(plantIn(cleared.occupants, WALL_SQUARE), 'Wall-nut in column 7 is still intact')
+})
+
+test('a ready Chomper devours a Pole Vaulting Zombie that lands in its Square', () => {
+  const WALL_SQUARE: Square = { row: 2, column: 7 }
+  const CHOMPER_SQUARE: Square = { row: 2, column: 6 }
+  const level: Level = {
+    name: 'test-chomper-vault',
+    plants: ['wall-nut', 'chomper'],
+    waves: [{ atStep: 80 * STEPS_PER_SECOND, zombies: [{ name: 'pole-vaulting', row: 2 }] }],
+  }
+
+  const start = withSunToPlant(initialGameState(DEFAULT_SEED, level), 200)
+  const chooseChomper = apply(start, { kind: 'choose', choice: 'chomper' })
+  const plantChomper = apply(chooseChomper, { kind: 'place', square: CHOMPER_SQUARE })
+  const chooseWall = apply(plantChomper, { kind: 'choose', choice: 'wall-nut' })
+  const planted = apply(chooseWall, { kind: 'place', square: WALL_SQUARE })
+
+  const entered = until(planted, (s) => s.zombies.length > 0, 'Pole Vaulting Zombie entered')
+
+  const devoured = until(
+    entered,
+    (state) => (plantIn(state.occupants, CHOMPER_SQUARE)?.stepsUntilChewed ?? 0) > 0,
+    'Chomper devoured the landed Pole Vaulting Zombie',
+  )
+
+  assert.equal(devoured.zombies.length, 0, 'Pole Vaulting Zombie was devoured whole')
+  assert.ok(plantIn(devoured.occupants, WALL_SQUARE), 'vaulted Wall-nut is still intact')
+})
+
+test('in a Flag Wave, a Pole Vaulting Zombie has its health scaled by the toughness factor', () => {
+  const POLE_VAULTING_HEALTH = 500
+  const FLAG_TOUGHNESS = 1.25
+  const EXPECTED_HEALTH = Math.round(POLE_VAULTING_HEALTH * FLAG_TOUGHNESS)
+
+  const level: Level = {
+    ...LEVEL_1_1,
+    waves: [{ atStep: 1, flagWave: true, zombies: [{ name: 'pole-vaulting', row: 2 }] }],
+  }
+  const state = apply(initialGameState(DEFAULT_SEED, level), { kind: 'advance' })
+  const zombie = state.zombies[0]
+  assert.ok(zombie)
+  assert.equal(zombie.health, EXPECTED_HEALTH, 'Flag Wave Pole Vaulting Zombie has 625 health')
+})
+
+test('a Snow Pea pea slows a running Pole Vaulting Zombie from speed 2 to speed 1', () => {
+  const level: Level = {
+    name: 'test-slow-runner',
+    plants: ['snow-pea'],
+    waves: [{ atStep: 60 * STEPS_PER_SECOND, zombies: [{ name: 'pole-vaulting', row: 2 }] }],
+  }
+
+  const start = withSunToPlant(initialGameState(101, level), 175)
+  const choose = apply(start, { kind: 'choose', choice: 'snow-pea' })
+  const planted = apply(choose, { kind: 'place', square: { row: 2, column: 1 } })
+
+  const hit = until(
+    planted,
+    (state) => {
+      const z = state.zombies.find((z) => z.row === 2)
+      return z !== undefined && z.stepsSlowed > 0
+    },
+    'Snow Pea hit the running Pole Vaulting Zombie',
+  )
+
+  const zombie = hit.zombies.find((z) => z.row === 2)
+  assert.ok(zombie)
+  assert.equal(zombie.hasPole, true, 'still running with pole')
+  assert.ok(zombie.stepsSlowed > 0, 'is slowed')
+
+  // While slowed and running, each step advances 1 walked unit (2 * 0.5)
+  const walkedBefore = zombie.walked
+  const next = apply(hit, { kind: 'advance' })
+  const nextZombie = next.zombies.find((z) => z.row === 2)
+  assert.ok(nextZombie)
+  assert.equal(nextZombie.walked - walkedBefore, 1, 'advanced 1 walked step per tick while slowed')
+})

@@ -1,6 +1,6 @@
 # Spec: Lawn Defence MVP
 
-Status: agreed, being built. Build order and progress are tracked in `docs/plan.md`; steps 1 to 9 and 11 are done; step 10 is done as of ticket 15, which was the Chomper; step 12 is underway with Conehead and Buckethead done as of ticket 16. Sits alongside `docs/plan.md` (build order) and the decision records in `docs/adr/`. Vocabulary follows `CONTEXT.md`.
+Status: agreed, being built. Build order and progress are tracked in `docs/plan.md`; steps 1 to 9 and 11 are done; step 10 is done as of ticket 15, which was the Chomper; step 12 is underway with Conehead, Buckethead (ticket 16) and Pole Vaulting (ticket 17) done (all five zombies built). Sits alongside `docs/plan.md` (build order) and the decision records in `docs/adr/`. Vocabulary follows `CONTEXT.md`.
 
 ## Problem Statement
 
