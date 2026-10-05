@@ -10,6 +10,10 @@ Two things this rule is aimed at. **Silence looks like progress**, so a long str
 
 What it does not mean: do not narrate ordinary dead ends. A check failing red because the feature does not exist yet is the work working. A denied command that has an obvious workaround is not a stop — take the workaround and say which one you took. The rule is about the point where the next attempt is a guess rather than a step, and waiting stops being free.
 
+## Decision-making
+
+From now on, use the connected MCP tools to assist in decision-making when faced with choices.
+
 ## Version, changelog and git
 
 This project has a version number. It lives in the `VERSION` file at the repo root. Do not repeat the number in prose anywhere — read it from that file, so it cannot go stale.

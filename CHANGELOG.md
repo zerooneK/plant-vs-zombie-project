@@ -4,6 +4,15 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.23.4] - 2026-10-06
+
+### Use connected MCP tools to assist in decision-making
+
+Docs only — no game code, no checks, no build change.
+
+- **`AGENTS.md` and `CLAUDE.md` now carry a rule to use connected MCP tools to assist in
+  decision-making when faced with choices.**
+
 ## [0.23.3] - 2026-10-04
 
 ### The Chomper's chewing state, looked at for the first time
