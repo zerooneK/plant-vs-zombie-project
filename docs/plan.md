@@ -85,7 +85,7 @@ Each step is something you can actually play or click before the next one starts
 | 9 | **Level 1-1** | A whole level, start to finish, playable — **the level plays start to finish at ticket 08, won and lost; the menu and level select are ticket 19** |
 | 10 | The other 9 plants | One at a time, each with its rule test — **all nine done**: Sunflower at ticket 09, Wall-nut and Tall-nut at ticket 10, Snow Pea, Repeater and Puff-shroom at ticket 12, Potato Mine at ticket 13, Cherry Bomb at ticket 14, Chomper at ticket 15. Ahead of each other as ADR 0005 sets out |
 | 11 | Level 1-1 balance pass | Level 1-1's pacing settled by playing it, not by reading it — **done, ticket 11** |
-| 12 | The other 4 zombies, levels 1-2 to 1-10 | Added as data |
+| 12 | The other 4 zombies, levels 1-2 to 1-10 | Added as data — **Conehead and Buckethead done at ticket 16** |
 | 13 | Saved progress | Levels stay unlocked between sessions |
 | 14 | Art pass | Placeholder shapes replaced with the real SVG art |
 

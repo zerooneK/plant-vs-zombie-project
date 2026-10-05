@@ -59,6 +59,12 @@ const ZOMBIE_LEG = '#37474f'
 const FLAG_CLOTH = '#e53935'
 const FLAG_EDGE = '#b71c1c'
 const FLAG_POLE = '#a1887f'
+const CONE_FILL = '#ff9800'
+const CONE_EDGE = '#e65100'
+const CONE_STRIPE = '#ffffff'
+const BUCKET_FILL = '#90a4ae'
+const BUCKET_EDGE = '#37474f'
+const BUCKET_RIM = '#b0bec5'
 const ZOMBIE_WIDTH = 0.62
 const PEA_RADIUS = 8
 
@@ -629,13 +635,114 @@ function drawZombie(
   context.lineWidth = Math.max(1, 2 * board.scale)
   context.stroke()
 
-  // The flag goes on last, over the body rather than behind it, and its pole
-  // overlaps the shirt. Drawn behind, the pole was hidden by the Zombie standing in
-  // front of it and the flag floated over the lawn on its own, which is a thing
-  // near a Zombie rather than a thing the Zombie is carrying.
+  // Head decoration (flag, cone, or bucket) goes on last, over the body rather than
+  // behind it, so that it reads as something worn or carried rather than an accessory
+  // floating nearby. Drawn behind, the flag's pole was hidden by the Zombie and floated
+  // disconnected, and a cone or bucket drawn behind a head circle would be mostly erased
+  // by the face.
+  //
+  // A Conehead's cone and a Buckethead's bucket are drawn only while armour remains;
+  // once broken, the headwear is gone and the Zombie underneath looks like a Basic Zombie.
   if (zombie.name === 'flag') {
     drawFlag(context, centre, board)
+  } else if (zombie.name === 'conehead' && zombie.armour > 0) {
+    drawCone(context, centre.x, headY, head, board)
+  } else if (zombie.name === 'buckethead' && zombie.armour > 0) {
+    drawBucket(context, centre.x, headY, head, board)
   }
+}
+
+/**
+ * A traffic cone worn on a Conehead Zombie's head.
+ *
+ * Drawn only while the Zombie still has armour left. Once the armour is broken,
+ * the cone is gone and the Zombie underneath looks like a Basic Zombie, making
+ * the two stages of the fight visible to the player.
+ */
+function drawCone(
+  context: CanvasRenderingContext2D,
+  headX: number,
+  headY: number,
+  headRadius: number,
+  board: BoardLayout,
+): void {
+  const baseY = headY - headRadius * 0.2
+  const tipY = headY - headRadius * 2.2
+  const baseHalfWidth = headRadius * 0.85
+
+  // Base rim
+  context.fillStyle = CONE_FILL
+  context.fillRect(headX - baseHalfWidth * 1.15, baseY - headRadius * 0.15, baseHalfWidth * 2.3, headRadius * 0.2)
+  context.strokeStyle = CONE_EDGE
+  context.lineWidth = Math.max(1, 1.5 * board.scale)
+  context.strokeRect(headX - baseHalfWidth * 1.15, baseY - headRadius * 0.15, baseHalfWidth * 2.3, headRadius * 0.2)
+
+  // Cone body
+  context.beginPath()
+  context.moveTo(headX - baseHalfWidth, baseY)
+  context.lineTo(headX, tipY)
+  context.lineTo(headX + baseHalfWidth, baseY)
+  context.closePath()
+  context.fillStyle = CONE_FILL
+  context.fill()
+  context.strokeStyle = CONE_EDGE
+  context.lineWidth = Math.max(1, 2 * board.scale)
+  context.stroke()
+
+  // White reflective stripe across middle of cone
+  const stripeBottomY = baseY - (baseY - tipY) * 0.35
+  const stripeTopY = baseY - (baseY - tipY) * 0.55
+  const stripeBottomHalfWidth = baseHalfWidth * 0.65
+  const stripeTopHalfWidth = baseHalfWidth * 0.45
+
+  context.beginPath()
+  context.moveTo(headX - stripeBottomHalfWidth, stripeBottomY)
+  context.lineTo(headX - stripeTopHalfWidth, stripeTopY)
+  context.lineTo(headX + stripeTopHalfWidth, stripeTopY)
+  context.lineTo(headX + stripeBottomHalfWidth, stripeBottomY)
+  context.closePath()
+  context.fillStyle = CONE_STRIPE
+  context.fill()
+}
+
+/**
+ * A metal bucket worn on a Buckethead Zombie's head.
+ *
+ * An inverted bucket covering the top of the head. Drawn only while armour > 0;
+ * once the bucket is knocked off, the Zombie underneath is an ordinary Zombie.
+ */
+function drawBucket(
+  context: CanvasRenderingContext2D,
+  headX: number,
+  headY: number,
+  headRadius: number,
+  board: BoardLayout,
+): void {
+  const bottomY = headY + headRadius * 0.15
+  const topY = headY - headRadius * 1.8
+  const bottomHalfWidth = headRadius * 0.85
+  const topHalfWidth = headRadius * 1.05
+
+  // Bucket trapezoid
+  context.beginPath()
+  context.moveTo(headX - bottomHalfWidth, bottomY)
+  context.lineTo(headX - topHalfWidth, topY)
+  context.lineTo(headX + topHalfWidth, topY)
+  context.lineTo(headX + bottomHalfWidth, bottomY)
+  context.closePath()
+
+  context.fillStyle = BUCKET_FILL
+  context.fill()
+  context.strokeStyle = BUCKET_EDGE
+  context.lineWidth = Math.max(1, 2 * board.scale)
+  context.stroke()
+
+  // Bucket rim at the bottom
+  context.fillStyle = BUCKET_RIM
+  context.fillRect(headX - bottomHalfWidth * 1.1, bottomY - headRadius * 0.15, bottomHalfWidth * 2.2, headRadius * 0.2)
+  context.strokeStyle = BUCKET_EDGE
+  context.lineWidth = Math.max(1, 1.5 * board.scale)
+  context.strokeRect(headX - bottomHalfWidth * 1.1, bottomY - headRadius * 0.15, bottomHalfWidth * 2.2, headRadius * 0.2)
 }
 
 /**

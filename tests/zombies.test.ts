@@ -29,6 +29,12 @@ const PEA_DAMAGE = 20
 /** The health a Basic Zombie walks in with, likewise written out. */
 const BASIC_HEALTH = 270
 
+/** The armour a Conehead Zombie walks in with. */
+const CONEHEAD_ARMOUR = 370
+
+/** The armour a Buckethead Zombie walks in with. */
+const BUCKETHEAD_ARMOUR = 1100
+
 /** The health a Peashooter is planted with. */
 const FULL_HEALTH = 300
 
@@ -670,4 +676,172 @@ test('a Zombie that walks past the left of the board leaves the lawn', () => {
 
   const gone = until(nearlyOff, (state) => state.zombies.length === 0)
   assert.equal(gone.zombies.length, 0, 'and it leaves the lawn')
+})
+
+test('a Conehead Zombie walks in with armour, and peas damage the armour before the Zombie', () => {
+  const planted = withAPeashooterIn(
+    PEA_SQUARE,
+    levelWith(
+      { atStep: ZOMBIE_STEP, zombies: [{ name: 'conehead', row: 2 }] },
+      { atStep: 5 * 60 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 1 }] },
+    ),
+  )
+  const arrived = untilTick(planted, ZOMBIE_STEP)
+  const conehead = zombieIn(arrived, 2)
+  assert.equal(conehead.health, BASIC_HEALTH, 'body health is 270')
+  assert.equal(conehead.armour, CONEHEAD_ARMOUR, 'conehead walks in with 370 armour')
+
+  const hit = until(arrived, (state) => (state.zombies[0]?.armour ?? CONEHEAD_ARMOUR) < CONEHEAD_ARMOUR)
+  assert.equal(zombieIn(hit, 2).armour, CONEHEAD_ARMOUR - PEA_DAMAGE, 'pea takes 20 off armour')
+  assert.equal(zombieIn(hit, 2).health, BASIC_HEALTH, 'body health remains untouched')
+})
+
+test('a Buckethead Zombie walks in with more armour than a Conehead, and peas damage the armour first', () => {
+  const planted = withAPeashooterIn(
+    PEA_SQUARE,
+    levelWith(
+      { atStep: ZOMBIE_STEP, zombies: [{ name: 'buckethead', row: 2 }] },
+      { atStep: 5 * 60 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 1 }] },
+    ),
+  )
+  const arrived = untilTick(planted, ZOMBIE_STEP)
+  const buckethead = zombieIn(arrived, 2)
+  assert.equal(buckethead.health, BASIC_HEALTH, 'body health is 270')
+  assert.equal(buckethead.armour, BUCKETHEAD_ARMOUR, 'buckethead walks in with 1100 armour')
+
+  const hit = until(arrived, (state) => (state.zombies[0]?.armour ?? BUCKETHEAD_ARMOUR) < BUCKETHEAD_ARMOUR)
+  assert.equal(zombieIn(hit, 2).armour, BUCKETHEAD_ARMOUR - PEA_DAMAGE, 'pea takes 20 off armour')
+  assert.equal(zombieIn(hit, 2).health, BASIC_HEALTH, 'body health remains untouched')
+})
+
+test('armour absorbs damage first, excess damage carries over to health, and subsequent peas hit health', () => {
+  const planted = withAPeashooterIn(
+    PEA_SQUARE,
+    levelWith(
+      { atStep: ZOMBIE_STEP, zombies: [{ name: 'conehead', row: 2 }] },
+      { atStep: 5 * 60 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 1 }] },
+    ),
+  )
+  const arrived = untilTick(planted, ZOMBIE_STEP)
+  assert.equal(zombieIn(arrived, 2).armour, CONEHEAD_ARMOUR)
+  assert.equal(zombieIn(arrived, 2).health, BASIC_HEALTH)
+
+  // 19 peas hit (18 * 20 = 360, 19th pea breaks the remaining 10 armour and deals 10 to health)
+  const coneBroken = until(
+    arrived,
+    (state) => zombieIn(state, 2).armour === 0,
+    'the cone was broken by shooting',
+  )
+  const brokenZombie = zombieIn(coneBroken, 2)
+  assert.equal(brokenZombie.armour, 0, 'armour is completely broken')
+  assert.equal(brokenZombie.health, BASIC_HEALTH - 10, 'excess 10 damage carried over to body health')
+
+  // Next pea lands on the unarmoured zombie
+  const nextHit = until(
+    coneBroken,
+    (state) => zombieIn(state, 2).health < brokenZombie.health,
+    'next pea hit the unarmoured zombie',
+  )
+  assert.equal(zombieIn(nextHit, 2).armour, 0, 'armour stays at 0')
+  assert.equal(zombieIn(nextHit, 2).health, BASIC_HEALTH - 30, 'subsequent pea deals full 20 damage to body health')
+
+  // Eventually, when all body health is taken, the zombie is removed from the lawn
+  const defeated = until(
+    nextHit,
+    (state) => state.zombies.filter((z) => z.row === 2).length === 0,
+    'the Conehead Zombie was defeated and removed',
+  )
+  assert.equal(defeated.zombies.filter((z) => z.row === 2).length, 0, 'exhausted zombie is removed from the lawn')
+})
+
+test('in a Flag Wave, an armoured Zombie has both its armour and health multiplied by the toughness factor', () => {
+  const level = levelWith({
+    atStep: 10,
+    flagWave: true,
+    zombies: [{ name: 'conehead', row: 2 }],
+  })
+  const arrived = untilTick(initialGameState(DEFAULT_SEED, level), 10)
+  const conehead = zombieIn(arrived, 2)
+  assert.equal(conehead.health, 338, 'health is 270 * 1.25 = 338')
+  assert.equal(conehead.armour, 463, 'armour is 370 * 1.25 = 463')
+})
+
+test('a Lawn Mower clears a Buckethead Zombie on contact, ignoring its armour', () => {
+  const level = levelWith({ atStep: 1, zombies: [{ name: 'buckethead', row: 2 }] })
+  const arrived = untilTick(initialGameState(DEFAULT_SEED, level), 1)
+  assert.equal(arrived.zombies.length, 1)
+
+  const cleared = until(arrived, (state) => state.zombies.length === 0, 'mower cleared the buckethead')
+  assert.equal(cleared.zombies.length, 0, 'the Buckethead Zombie and its armour were cleared by the mower')
+})
+
+test('a Cherry Bomb blast destroys an armoured Zombie and its armour in one hit', () => {
+  const BOMB_COST = 150
+  const BOMB_SQUARE: Square = { row: 2, column: 6 }
+  const level: Level = {
+    ...LEVEL_1_1,
+    plants: ['cherry-bomb'],
+    waves: [{ atStep: 30 * STEPS_PER_SECOND, zombies: [{ name: 'buckethead', row: 2 }] }],
+  }
+  const ready = withSunToPlant(initialGameState(DEFAULT_SEED, level), BOMB_COST)
+  // 283 steps from edge to column 7
+  const arrivedAtSquare = untilTick(ready, 30 * STEPS_PER_SECOND + 283)
+  assert.equal(squareAtX(2, zombieX(zombieIn(arrivedAtSquare, 2)))?.column, 7, 'Buckethead reached Column 7')
+
+  const chosen = apply(arrivedAtSquare, { kind: 'choose', choice: 'cherry-bomb' })
+  assert.equal(chosen.chosen, 'cherry-bomb', 'Cherry Bomb was chosen')
+  const planted = apply(chosen, { kind: 'place', square: BOMB_SQUARE })
+  assert.equal(plantIn(planted.occupants, BOMB_SQUARE)?.name, 'cherry-bomb', 'Cherry Bomb was planted')
+  const detonated = apply(planted, { kind: 'advance' })
+  assert.equal(detonated.zombies.length, 0, 'Cherry Bomb completely removes the Buckethead Zombie')
+})
+
+test('a Chomper devours an armoured Zombie whole in a single bite', () => {
+  const CHOMPER_COST = 150
+  const CHOMPER_SQUARE: Square = { row: 2, column: 7 }
+  const level: Level = {
+    ...LEVEL_1_1,
+    plants: ['chomper'],
+    waves: [
+      { atStep: 30 * STEPS_PER_SECOND, zombies: [{ name: 'buckethead', row: 2 }] },
+      { atStep: 5 * 60 * STEPS_PER_SECOND, zombies: [{ name: 'basic', row: 1 }] },
+    ],
+  }
+  const ready = withSunToPlant(initialGameState(DEFAULT_SEED, level), CHOMPER_COST)
+  const chosen = apply(ready, { kind: 'choose', choice: 'chomper' })
+  assert.equal(chosen.chosen, 'chomper')
+  const planted = apply(chosen, { kind: 'place', square: CHOMPER_SQUARE })
+  assert.equal(plantIn(planted.occupants, CHOMPER_SQUARE)?.name, 'chomper')
+
+  const eaten = until(
+    planted,
+    (state) => (plantIn(state.occupants, CHOMPER_SQUARE)?.stepsUntilChewed ?? 0) > 0,
+    'Chomper ate the buckethead',
+  )
+  assert.equal(eaten.zombies.filter((z) => z.row === 2).length, 0, 'Buckethead was devoured')
+  assert.ok((plantIn(eaten.occupants, CHOMPER_SQUARE)?.stepsUntilChewed ?? 0) > 0, 'Chomper is now chewing')
+})
+
+test('an armed Potato Mine destroys a Buckethead Zombie in one hit', () => {
+  const MINE_SQUARE: Square = { row: 2, column: 5 }
+  const level: Level = {
+    ...LEVEL_1_1,
+    plants: ['potato-mine'],
+    waves: [{ atStep: 1, zombies: [{ name: 'buckethead', row: 2 }] }],
+  }
+  const start = initialGameState(DEFAULT_SEED, level)
+  const chosen = apply(start, { kind: 'choose', choice: 'potato-mine' })
+  const planted = apply(chosen, { kind: 'place', square: MINE_SQUARE })
+  assert.equal(plantIn(planted.occupants, MINE_SQUARE)?.name, 'potato-mine')
+
+  const arrived = untilTick(planted, 1)
+  assert.equal(arrived.zombies.length, 1, 'Buckethead walked in')
+
+  const cleared = until(
+    arrived,
+    (state) => state.zombies.length === 0,
+    'Potato Mine destroyed the Buckethead',
+  )
+  assert.equal(cleared.zombies.length, 0, 'Buckethead was destroyed by the armed Potato Mine')
+  assert.equal(plantIn(cleared.occupants, MINE_SQUARE), undefined, 'Potato Mine was spent')
 })

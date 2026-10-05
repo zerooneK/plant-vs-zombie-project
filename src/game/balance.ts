@@ -150,6 +150,22 @@ export const PEA_DAMAGE = 20
 export const BASIC_ZOMBIE_HEALTH = 270
 
 /**
+ * How much armour a Conehead Zombie has. Believed to be the original's 370.
+ *
+ * Takes eighteen and a half peas at 20 damage each, so nineteen peas to knock
+ * the cone off, followed by the fourteen peas needed to fell the Zombie underneath.
+ */
+export const CONEHEAD_ARMOUR = 370
+
+/**
+ * How much armour a Buckethead Zombie has. Believed to be the original's 1100.
+ *
+ * Takes fifty-five peas at 20 damage each to knock the bucket off, followed by
+ * the fourteen peas needed to fell the Zombie underneath.
+ */
+export const BUCKETHEAD_ARMOUR = 1100
+
+/**
  * How much health a Peashooter is planted with. From memory, 300, which is three
  * bites.
  *

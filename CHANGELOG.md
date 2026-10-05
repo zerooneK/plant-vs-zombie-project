@@ -4,6 +4,28 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.24.0] - 2026-10-06
+
+### Conehead and Buckethead Zombies, and Armour (Ticket 16)
+
+The first enemies with Armour: a traffic cone (370 armour) and a metal bucket (1100 armour).
+Armour absorbs pea hits before body health (270) takes damage. When armour breaks, excess
+damage carries over directly to health, and subsequent hits damage the Zombie underneath.
+One-hit removals (Potato Mine, Cherry Bomb, Chomper, Lawn Mower) destroy an armoured Zombie
+whole, ignoring armour.
+
+- **Armour on ZombieKind and Zombie:** `armour` field added to the roster and live state.
+  Conehead has 370 armour; Buckethead has 1100 armour; Basic and Flag have 0.
+- **Damage absorption and carryover:** `takeDamage` deducts damage from armour first,
+  with any excess spilling over into health.
+- **Visual two-stage combat:** A traffic cone or metal bucket is drawn on the Zombie's head
+  only while `armour > 0`. When armour breaks, the headwear disappears, leaving an ordinary
+  Basic Zombie picture.
+- **Flag Wave toughness scaling:** Flag Wave multiplier (1.25) scales both health and armour,
+  so Flag Wave armoured enemies are sturdier in both layers.
+- **9 new rule checks added:** Suite expands from 131 to 140 checks, all passing.
+- **ADR 0012 recorded:** Settle open questions from ADR 0009-0011 regarding armour mechanics.
+
 ## [0.23.4] - 2026-10-06
 
 ### Use connected MCP tools to assist in decision-making

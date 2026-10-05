@@ -10,6 +10,8 @@ import {
 } from './board.ts'
 import {
   BASIC_ZOMBIE_HEALTH,
+  BUCKETHEAD_ARMOUR,
+  CONEHEAD_ARMOUR,
   SLOWED_WALK_FRACTION,
   ZOMBIE_BITE_DAMAGE,
   ZOMBIE_BITE_INTERVAL,
@@ -23,18 +25,24 @@ import {
  * the roster is meant to be data, so the next Zombie is an entry rather than
  * another branch in the rules.
  */
-export type ZombieName = 'basic' | 'flag'
+export type ZombieName = 'basic' | 'flag' | 'conehead' | 'buckethead'
 
 /** One kind of Zombie, as the rules know it. */
 export interface ZombieKind {
   readonly name: ZombieName
   /** How much a pea has to take off before it stops. */
   readonly health: number
+  /**
+   * How much armour takes hits before health is damaged. Zero for unarmoured
+   * Zombies.
+   */
+  readonly armour: number
 }
 
 export const BASIC_ZOMBIE: ZombieKind = {
   name: 'basic',
   health: BASIC_ZOMBIE_HEALTH,
+  armour: 0,
 }
 
 /**
@@ -51,6 +59,31 @@ export const BASIC_ZOMBIE: ZombieKind = {
 export const FLAG_ZOMBIE: ZombieKind = {
   name: 'flag',
   health: BASIC_ZOMBIE_HEALTH,
+  armour: 0,
+}
+
+/**
+ * A Conehead Zombie: a Basic Zombie wearing a traffic cone as armour.
+ *
+ * The cone absorbs hits before the Zombie's body takes damage. When destroyed,
+ * the cone comes off and the Zombie beneath is finished like any other.
+ */
+export const CONEHEAD_ZOMBIE: ZombieKind = {
+  name: 'conehead',
+  health: BASIC_ZOMBIE_HEALTH,
+  armour: CONEHEAD_ARMOUR,
+}
+
+/**
+ * A Buckethead Zombie: a Basic Zombie wearing a metal bucket as armour.
+ *
+ * The bucket provides heavy protection, absorbing 1100 damage (fifty-five peas)
+ * before coming off, leaving an ordinary Zombie underneath.
+ */
+export const BUCKETHEAD_ZOMBIE: ZombieKind = {
+  name: 'buckethead',
+  health: BASIC_ZOMBIE_HEALTH,
+  armour: BUCKETHEAD_ARMOUR,
 }
 
 /**
@@ -62,6 +95,8 @@ export const FLAG_ZOMBIE: ZombieKind = {
 export const ZOMBIES: Readonly<Record<ZombieName, ZombieKind>> = {
   basic: BASIC_ZOMBIE,
   flag: FLAG_ZOMBIE,
+  conehead: CONEHEAD_ZOMBIE,
+  buckethead: BUCKETHEAD_ZOMBIE,
 }
 
 /**
@@ -87,6 +122,11 @@ export interface Zombie {
   readonly walked: number
   /** What is left of it. At zero it is taken off the lawn. */
   readonly health: number
+  /**
+   * What is left of its armour. Zero when unarmoured or once armour is destroyed.
+   * Hits damage armour before health.
+   */
+  readonly armour: number
   /**
    * Steps until this Zombie bites again. Zero means it will bite on the next
    * step it has something to bite.
@@ -127,13 +167,35 @@ export interface Zombie {
  * Wave would have to be a different roster rather than the same Zombies in a
  * different Wave.
  */
-export function zombieAtEdge(id: number, name: ZombieName, row: Row, health: number): Zombie {
-  return { id, name, row, walked: 0, health, stepsUntilBite: 0, stepsSlowed: 0 }
+export function zombieAtEdge(
+  id: number,
+  name: ZombieName,
+  row: Row,
+  health: number,
+  armour: number,
+): Zombie {
+  return { id, name, row, walked: 0, health, armour, stepsUntilBite: 0, stepsSlowed: 0 }
 }
 
-/** A Zombie with that much damage taken off it. */
+/**
+ * A Zombie with that much damage taken off it.
+ *
+ * Armour absorbs damage before health is touched. When damage exceeds what is
+ * left of the armour, the remaining damage carries over directly to health.
+ * Discarding excess damage would mean a pea that destroys one remaining point
+ * of armour vanishes the remaining nineteen into thin air, which would make
+ * breaking armour an artificial damage sink rather than the protective layer
+ * it is designed to be.
+ */
 export function takeDamage(zombie: Zombie, damage: number): Zombie {
-  return { ...zombie, health: zombie.health - damage }
+  const damageToArmour = Math.min(zombie.armour, damage)
+  const damageToHealth = damage - damageToArmour
+
+  return {
+    ...zombie,
+    armour: zombie.armour - damageToArmour,
+    health: zombie.health - damageToHealth,
+  }
 }
 
 /**
@@ -151,12 +213,15 @@ export function takeSlow(zombie: Zombie, steps: number): Zombie {
 /**
  * The Zombies still on the lawn: one with nothing left of it is taken off.
  *
- * Zero and below rather than below zero, so that the pea which finishes a Zombie
- * removes it outright instead of leaving one standing there at minus ten for
- * the plants to go on shooting.
+ * A Zombie is exhausted when both its body health and its armour are gone.
+ * Checking both rather than health alone ensures an armoured enemy cannot be
+ * cleared while armour remains, and matches the spec's rule that finishing
+ * an armoured Zombie is a two-stage act. Zero and below rather than below zero,
+ * so that the pea which finishes a Zombie removes it outright instead of
+ * leaving one standing there at minus ten for the plants to go on shooting.
  */
 export function removeExhausted(zombies: readonly Zombie[]): readonly Zombie[] {
-  return zombies.filter((zombie) => zombie.health > 0)
+  return zombies.filter((zombie) => zombie.health > 0 || zombie.armour > 0)
 }
 
 /** How far every Zombie walks in one step, in board units. */

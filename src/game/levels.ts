@@ -57,17 +57,21 @@ export interface Wave {
  * why the Flag Zombie is in the roster as a name with no health of its own - it is
  * an ordinary Zombie carrying a flag, and the Wave is what makes it hard.
  */
-export function waveZombies(wave: Wave, firstId: number): Zombie[] {
-  return wave.zombies.map((entry, index) =>
-    zombieAtEdge(firstId + index, entry.name, entry.row, healthInThisWave(entry.name, wave)),
-  )
+/** Scale a stat by Flag Wave toughness if this Wave is the Flag Wave. */
+function scaleForWave(stat: number, wave: Wave): number {
+  return wave.flagWave === true ? Math.round(stat * FLAG_WAVE_TOUGHNESS) : stat
 }
 
-/** How much health a Zombie of that name walks in with, in that Wave. */
-function healthInThisWave(name: ZombieName, wave: Wave): number {
-  const health = ZOMBIES[name].health
-
-  return wave.flagWave === true ? Math.round(health * FLAG_WAVE_TOUGHNESS) : health
+export function waveZombies(wave: Wave, firstId: number): Zombie[] {
+  return wave.zombies.map((entry, index) =>
+    zombieAtEdge(
+      firstId + index,
+      entry.name,
+      entry.row,
+      scaleForWave(ZOMBIES[entry.name].health, wave),
+      scaleForWave(ZOMBIES[entry.name].armour, wave),
+    ),
+  )
 }
 
 /** One day of play: what it lets you plant, and what it sends at you. */
