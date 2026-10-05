@@ -4,6 +4,37 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.26.0] - 2026-10-06
+
+### Levels 1-2 to 1-10 (Ticket 18)
+
+Completes the 10-level campaign data for Adventure mode, defining `LEVEL_1_2` through `LEVEL_1_10` in `src/game/levels.ts`.
+
+- **Levels 1-2 through 1-10 defined:** Defined as pure data with plant offerings and wave schedules.
+- **Sequential plant unlocks:** Plants expand by level across the campaign:
+  - 1-1: Peashooter, Sunflower
+  - 1-2: adds Cherry Bomb
+  - 1-3: adds Wall-nut
+  - 1-4: adds Potato Mine
+  - 1-5: adds Snow Pea
+  - 1-6: adds Chomper
+  - 1-7: adds Repeater
+  - 1-8: adds Puff-shroom
+  - 1-9: adds Tall-nut
+  - 1-10: all 10 plants offered
+- **Canonical zombie debuts:**
+  - Conehead Zombie debuts at Level 1-3
+  - Pole Vaulting Zombie debuts at Level 1-6
+  - Buckethead Zombie debuts at Level 1-8
+  - All 5 zombies appear in Level 1-10
+- **Schedule invariants:**
+  - Every level begins with an initial breather (at least 20 seconds) before the first wave arrives.
+  - Every level ends in exactly one Flag Wave carrying a Flag Zombie.
+  - Every level is losable if the player takes no action.
+- **Level progression helpers:** Added `LEVEL_ORDER` and `nextLevel(levelName)` to `src/game/levels.ts`. All levels registered in `LEVELS` for addressable loading via `?level=`.
+- **9 new rule checks added:** Suite expands from 148 to 157 checks in `tests/levels.test.ts`, all passing.
+- **ADR 0014 recorded:** Documents level progression, plant unlocks, and zombie pacing.
+
 ## [0.25.0] - 2026-10-06
 
 ### Pole Vaulting Zombie (Ticket 17)
