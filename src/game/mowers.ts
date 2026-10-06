@@ -11,6 +11,7 @@ import { zombieX, type Zombie } from './zombies.ts'
 export interface MowerStep {
   readonly zombies: readonly Zombie[]
   readonly occupants: readonly Occupant[]
+  readonly spentMowers: readonly Row[]
 }
 
 /**
@@ -46,18 +47,22 @@ export interface MowerStep {
 export function runMowers(
   zombies: readonly Zombie[],
   occupants: readonly Occupant[],
+  spentMowers: readonly Row[] = [],
 ): MowerStep {
   const running = rowsWithAMowerReached(zombies, occupants)
 
   if (running.size === 0) {
-    return { zombies, occupants }
+    return { zombies, occupants, spentMowers }
   }
+
+  const updatedSpent = [...new Set([...spentMowers, ...running])].sort((a, b) => a - b)
 
   return {
     zombies: zombies.filter((zombie) => !running.has(zombie.row)),
     occupants: occupants.filter(
       (occupant) => occupant.kind !== 'lawnMower' || !running.has(occupant.square.row),
     ),
+    spentMowers: updatedSpent,
   }
 }
 

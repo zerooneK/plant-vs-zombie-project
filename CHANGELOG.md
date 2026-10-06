@@ -4,6 +4,20 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.32.0] - 2026-10-06
+
+### Deepen Lawn Mower Defense Across UI Seam (Architecture Refactor)
+
+Eliminates presentation deduction of spent Lawn Mowers by introducing explicit defense state and deepening `src/game/mowers.ts`, following Candidate 3 of the architecture review and recorded in ADR-0020:
+
+- **Explicit State on `GameState`**: Added `spentMowers: readonly Row[]` to `GameState`, initialized as `[]` in `initialGameState()`.
+- **Deep Mower Management (`src/game/mowers.ts`)**:
+  - `runMowers(zombies, occupants, spentMowers)` now manages the accumulation of `spentMowers` sorted by row index, clears zombies in breached rows, and frees Column 0 squares for planting.
+- **Clean UI & Canvas Seam**:
+  - `src/ui/Lawn.tsx`: Deleted `rowsWithoutAMower`. UI report reads `state.spentMowers` directly.
+  - `src/draw/board.ts`: Renders spent footprints by directly iterating `state.spentMowers`, eliminating row-by-row occupancy scans.
+- **Verification**: Added unit tests in `tests/mowers.test.ts` verifying initial state, single trigger, and sorted accumulation across multiple rows. All 175 rule tests pass.
+
 ## [0.31.0] - 2026-10-06
 
 ### Deepen Sun Economy Module (Architecture Refactor)

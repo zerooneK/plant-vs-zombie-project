@@ -1,4 +1,12 @@
-import { occupantAt, plantIn, startingOccupants, type Occupant, type Point, type Square } from './board.ts'
+import {
+  occupantAt,
+  plantIn,
+  startingOccupants,
+  type Occupant,
+  type Point,
+  type Row,
+  type Square,
+} from './board.ts'
 import { collectSun, stepSun, type SunToken } from './sun.ts'
 import { seededRandom, type Random } from './random.ts'
 import { FIRST_SUN_DELAY, FLAG_WAVE_WARNING, STARTING_SUN } from './balance.ts'
@@ -68,6 +76,8 @@ export interface GameState {
   readonly seedBank: readonly SeedPacket[]
   /** Everything standing on the lawn: the plants, and the Lawn Mowers. */
   readonly occupants: readonly Occupant[]
+  /** The Rows that have spent their Lawn Mower, in sorted order. */
+  readonly spentMowers: readonly Row[]
   /** The Seed Packet or Shovel chosen and waiting for a Square. */
   readonly chosen: Choice | null
   /** Every Zombie on the lawn, walking leftwards along their own Rows. */
@@ -170,6 +180,7 @@ export function initialGameState(
       stepsUntilReady: 0,
     })),
     occupants: startingOccupants(),
+    spentMowers: [],
     chosen: null,
     zombies: [],
     pendingWaves: level.waves,
@@ -383,7 +394,7 @@ function advance(state: GameState): GameState {
   // across the lawn and goes, as it does for any other Zombie that stops being
   // there.
   const eating = walkAndEat(instant.zombies, instant.occupants)
-  const mown = runMowers(eating.zombies, eating.occupants)
+  const mown = runMowers(eating.zombies, eating.occupants, state.spentMowers)
 
   // Contact plant actions (armed Potato Mines detonating upon arrival, and ready
   // Chompers devouring reached Zombies) resolve after Zombies have walked and
@@ -455,6 +466,7 @@ function advance(state: GameState): GameState {
     shots: fired.shots,
     nextShotId: fired.nextShotId,
     occupants: grown.occupants,
+    spentMowers: mown.spentMowers,
     outcome,
     flagWaveWarning,
   }

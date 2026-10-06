@@ -11,6 +11,7 @@ import {
 import { STEPS_PER_SECOND } from '../src/game/clock.ts'
 import { DEFAULT_SEED, apply, initialGameState, type GameState } from '../src/game/sim.ts'
 import { zombieX, type Zombie } from '../src/game/zombies.ts'
+import { runMowers } from '../src/game/mowers.ts'
 import {
   ZOMBIE_STEPS_PER_COLUMN,
   levelWith,
@@ -247,3 +248,52 @@ test('a Row that has spent its Lawn Mower can be planted in the Square it left',
   )
   assert.equal(planted.sun, affordable.sun - 100, 'and it costs Sun, as it does in any other Square')
 })
+
+test('initialGameState starts with zero spent lawn mowers', () => {
+  const state = initialGameState()
+  assert.deepEqual(state.spentMowers, [], 'a fresh lawn has spent no lawn mowers')
+})
+
+test('a triggered Lawn Mower records its Row in state.spentMowers', () => {
+  const arrived = untilTick(
+    initialGameState(DEFAULT_SEED, levelWith(oneZombieIn(ROW, 1))),
+    1 + STEPS_TO_THE_MOWER,
+    'reached mower',
+  )
+  assert.deepEqual(arrived.spentMowers, [])
+  const setOff = apply(arrived, { kind: 'advance' })
+  assert.deepEqual(setOff.spentMowers, [ROW], 'triggered row is explicitly tracked')
+})
+
+test('runMowers encapsulates spentMowers accumulation in sorted order', () => {
+  const mower0 = { kind: 'lawnMower' as const, square: { row: 0, column: MOWER_COLUMN } }
+  const mower3 = { kind: 'lawnMower' as const, square: { row: 3, column: MOWER_COLUMN } }
+  const zombieAt0: Zombie = {
+    id: 1,
+    name: 'basic',
+    row: 0,
+    walked: 8 * ZOMBIE_STEPS_PER_COLUMN + 1,
+    health: 200,
+    armour: 0,
+    stepsUntilBite: 0,
+    stepsSlowed: 0,
+    hasPole: false,
+  }
+  const zombieAt3: Zombie = {
+    id: 2,
+    name: 'basic',
+    row: 3,
+    walked: 8 * ZOMBIE_STEPS_PER_COLUMN + 1,
+    health: 200,
+    armour: 0,
+    stepsUntilBite: 0,
+    stepsSlowed: 0,
+    hasPole: false,
+  }
+
+  const result = runMowers([zombieAt0, zombieAt3], [mower0, mower3], [2])
+  assert.deepEqual(result.spentMowers, [0, 2, 3], 'accumulates existing spent rows with newly triggered rows sorted')
+  assert.equal(result.zombies.length, 0, 'clears zombies in triggered rows')
+  assert.equal(result.occupants.length, 0, 'removes mowers from occupants')
+})
+

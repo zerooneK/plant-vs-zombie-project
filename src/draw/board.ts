@@ -1,4 +1,4 @@
-import { BOARD_ROWS, MOWER_COLUMN, everySquare, hasLawnMower } from '../game/board.ts'
+import { MOWER_COLUMN, everySquare } from '../game/board.ts'
 import type { Square } from '../game/board.ts'
 import { plantBeingEaten } from '../game/zombies.ts'
 import type { GameState } from '../game/sim.ts'
@@ -57,11 +57,8 @@ export function drawBoard(
   }
 
   // Every Row that has spent its mower marks where it stood with a dashed footprint
-  for (let row = 0; row < BOARD_ROWS; row++) {
-    const square: Square = { row, column: MOWER_COLUMN }
-    if (!hasLawnMower(state.occupants, square)) {
-      drawSpentMowerArt(context, square, board)
-    }
+  for (const row of state.spentMowers) {
+    drawSpentMowerArt(context, { row, column: MOWER_COLUMN }, board)
   }
 
   // Selected square highlight
