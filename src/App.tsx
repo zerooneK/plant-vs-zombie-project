@@ -436,8 +436,8 @@ function SeedBank({
 }
 
 /**
- * Level selection menu allowing players to choose any unlocked Adventure level,
- * view completion status and best times, or resume the current match.
+ * Menu presenting the ten Adventure levels, their win state, and personal best
+ * times, allowing players to navigate freely between levels without reloading.
  */
 function LevelSelect({
   progress,
@@ -452,11 +452,34 @@ function LevelSelect({
   onSelectLevel: (level: Level) => void
   onResume: () => void
 }) {
+  const nextUpName = LEVEL_ORDER.find(
+    (name) => isLevelUnlocked(progress, name) && !progress.completed.includes(name),
+  )
+  const nextUpLevel = nextUpName ? LEVELS[nextUpName] : null
+
   return (
     <div className="level-select">
       <div className="level-select__header">
-        <h2>Adventure Levels</h2>
-        <p>Choose an unlocked Level to defend. Progress saves automatically in your browser.</p>
+        <div className="level-select__title-group">
+          <h2>Adventure Levels</h2>
+          <p>Choose an unlocked Level to defend. Progress saves automatically in your browser.</p>
+        </div>
+        <div className="level-select__actions">
+          {nextUpLevel && (
+            <button
+              className="action-button action-button--primary"
+              onClick={() => onSelectLevel(nextUpLevel)}
+              type="button"
+            >
+              Continue Adventure (Level {nextUpLevel.name})
+            </button>
+          )}
+          <button className="action-button" onClick={onResume} type="button">
+            {isPlaying
+              ? `Resume ${currentLevel.name === 'test-bed' ? 'Test Bed' : `Level ${currentLevel.name}`}`
+              : 'Back to Lawn'}
+          </button>
+        </div>
       </div>
 
       <div className="level-select__grid">
@@ -466,39 +489,59 @@ function LevelSelect({
             return null
           }
           const unlocked = isLevelUnlocked(progress, levelName)
-          const completed = progress.completed.includes(levelName)
-          const bestTime = progress.bestTimes[levelName]
+          const won = progress.completed.includes(levelName)
           const isCurrent = levelName === currentLevel.name
+          const isNextUp = levelName === nextUpName
+          const bestTime = progress.bestTimes[levelName]
+
+          const classes = ['level-card']
+          if (!unlocked) {
+            classes.push('level-card--locked')
+          }
+          if (won) {
+            classes.push('level-card--won')
+          }
+          if (isCurrent) {
+            classes.push('level-card--current')
+          }
+          if (isNextUp) {
+            classes.push('level-card--next')
+          }
+
+          const badge = !unlocked ? '🔒 Locked' : won ? '✓ Won' : isNextUp ? 'Next Up' : 'Unlocked'
+          const timeNote = bestTime !== undefined ? `, Best time ${formatCompletionTime(bestTime)}` : ''
 
           return (
             <button
               key={levelName}
-              className={`level-card${completed ? ' level-card--completed' : ''}${
-                !unlocked ? ' level-card--locked' : ''
-              }${isCurrent ? ' level-card--current' : ''}`}
+              aria-label={`Level ${levelName}: ${badge}${timeNote}`}
+              className={classes.join(' ')}
               disabled={!unlocked}
               onClick={() => onSelectLevel(level)}
               type="button"
             >
-              <span className="level-card__title">Level {levelName}</span>
-              <span className="level-card__status">
-                {completed ? 'Completed' : unlocked ? 'Unlocked' : 'Locked'}
-              </span>
-              {bestTime !== undefined && (
-                <span className="level-card__time">Best: {formatCompletionTime(bestTime)}</span>
+              <div className="level-card__header">
+                <span className="level-card__title">Level {levelName}</span>
+                <span className="level-card__badge">{badge}</span>
+              </div>
+
+              {unlocked ? (
+                <div className="level-card__stats">
+                  {bestTime !== undefined ? (
+                    <span className="level-card__time">
+                      Best: <strong>{formatCompletionTime(bestTime)}</strong>
+                    </span>
+                  ) : (
+                    <span className="level-card__note">Ready to play</span>
+                  )}
+                </div>
+              ) : (
+                <div className="level-card__locked-hint">Locked</div>
               )}
             </button>
           )
         })}
       </div>
-
-      {isPlaying && (
-        <div className="level-select__footer">
-          <button className="action-button action-button--primary" onClick={onResume} type="button">
-            Resume {currentLevel.name === 'test-bed' ? 'Test Bed' : `Level ${currentLevel.name}`}
-          </button>
-        </div>
-      )}
     </div>
   )
 }

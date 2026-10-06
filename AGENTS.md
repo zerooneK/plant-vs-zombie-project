@@ -34,7 +34,7 @@ A Plants vs. Zombies prototype (React + TypeScript, built with Vite) **plus** 25
 
 Game code is in `src/` and `tests/`. The design work is in `docs/`: `docs/plan.md` is the build plan, `docs/specs/` holds specs, `docs/adr/` holds decisions already made, and `docs/agents/` holds the engineering-skill configuration. `CONTEXT.md` is the shared vocabulary. `VERSION` and `CHANGELOG.md` track the version. `.scratch/` is the issue tracker and is git-ignored.
 
-**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`. The build order is tracked as one ticket per step under `.scratch/lawn-defence-mvp/issues/` — steps 1 through 15 are done (step 10's Wall-nut and Tall-nut included), which is all ten plants; step 16 is done: conehead and buckethead; step 17 is done: Pole Vaulting Zombie (all five zombies complete); step 18 is done: levels 1-2 to 1-10; step 19 is done: level select with saved progress. **Ticket 20 is next: level select polish.** Ticket 21 remains: original artwork.
+**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`. The build order is tracked as one ticket per step under `.scratch/lawn-defence-mvp/issues/` — steps 1 through 15 are done (step 10's Wall-nut and Tall-nut included), which is all ten plants; step 16 is done: conehead and buckethead; step 17 is done: Pole Vaulting Zombie (all five zombies complete); step 18 is done: levels 1-2 to 1-10; step 19 is done: level select with saved progress; step 20 is done: level select polish. **Ticket 21 is next: original artwork.**
 
 ## Commands
 

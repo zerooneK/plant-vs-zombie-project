@@ -94,18 +94,33 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
   margin: 0;
   padding: 0 1rem;
   border: 2px solid;
   border-radius: 0.35rem;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   opacity: 1;
 }
 
 .app__banner-text {
   flex: 1 1 auto;
+  min-width: 0;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.app__banner-timing {
+  margin-left: 0.35rem;
+  white-space: nowrap;
+}
+
+.app__banner-record {
+  margin-left: 0.35rem;
+  color: #fff59d;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .app__banner-actions {
@@ -254,80 +269,168 @@ body {
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   width: 100%;
-  max-width: 900px;
+  max-width: 960px;
   margin: 0 auto;
-  padding: 1.5rem 1rem;
+  padding: 1.25rem 1rem;
 }
 
-.level-select__header h2 {
+.level-select__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.level-select__title-group h2 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.4rem;
+  color: #f4faee;
   letter-spacing: 0.02em;
 }
 
-.level-select__header p {
+.level-select__title-group p {
   margin: 0.35rem 0 0;
-  font-size: 0.9rem;
-  opacity: 0.75;
+  font-size: 0.85rem;
+  color: #a4be9c;
+}
+
+.level-select__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .level-select__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: 0.85rem;
 }
 
 .level-card {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  padding: 1rem 0.5rem;
-  border: 2px solid #557a46;
-  border-radius: 0.45rem;
-  background: #2b4026;
+  align-items: stretch;
+  text-align: left;
+  gap: 0.5rem;
+  padding: 0.85rem;
+  border: 2px solid #3e5936;
+  border-radius: 0.5rem;
+  background: #22351f;
   color: #e8f0e2;
   font: inherit;
   cursor: pointer;
-  text-align: center;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .level-card:hover:not(:disabled) {
-  border-color: #7cb342;
-  background: #385732;
+  transform: translateY(-2px);
+  border-color: #8bc34a;
+  background: #2c4628;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 
-.level-card--completed {
+.level-card:focus-visible {
+  outline: 2px solid #fdd835;
+  outline-offset: 2px;
+}
+
+.level-card--won {
+  border-color: #558b2f;
+  background: #1c301a;
+}
+
+.level-card--won:hover:not(:disabled) {
   border-color: #7cb342;
-  background: #233e1f;
+  background: #243d21;
 }
 
 .level-card--current {
-  box-shadow: 0 0 0 2px #fdd835;
+  box-shadow: 0 0 0 2px #fbc02d;
+}
+
+.level-card--next {
+  border-color: #fbc02d;
 }
 
 .level-card--locked {
-  border-color: #3e443c;
-  background: #20241f;
-  color: #757d72;
+  border-color: #2e342c;
+  background: #181c17;
+  color: #5b6458;
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.55;
+}
+
+.level-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.level-card__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f1f8ed;
+}
+
+.level-card--locked .level-card__title {
+  color: #6d786a;
+}
+
+.level-card__badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: #33691e;
+  color: #f1f8e9;
+  white-space: nowrap;
+}
+
+.level-card--won .level-card__badge {
+  background: #2e7d32;
+  color: #e8f5e9;
+}
+
+.level-card--next .level-card__badge {
+  background: #f57f17;
+  color: #fffde7;
+}
+
+.level-card--locked .level-card__badge {
+  background: #2c322b;
+  color: #859082;
+}
+
+.level-card__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.75rem;
+  color: #a4be9c;
 }
 
 .level-card__time {
-  font-size: 0.75rem;
-  color: #fff9c4;
+  color: #fff59d;
+  font-weight: 600;
 }
 
-.level-select__footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: auto;
-  padding-top: 1rem;
+.level-card__note {
+  font-size: 0.75rem;
+  color: #9ab492;
+}
+
+.level-card__locked-hint {
+  font-size: 0.72rem;
+  color: #637060;
+  font-style: italic;
 }
 
 .action-button {

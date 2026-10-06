@@ -4,6 +4,25 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.28.0] - 2026-10-06
+
+### Level Select Polish (Ticket 20)
+
+Polishes the level select screen, building on the saved progress foundation established in Ticket 19.
+
+- **Visual polish & cards layout (`src/App.tsx`, `src/ui/app.css`):**
+  - Responsive level select grid with refined card styling, hover elevation, focus-visible outlines, and smooth transitions.
+  - Clear status badges (`✓ Won`, `Next Up`, `Unlocked`, `🔒 Locked`).
+  - Personal best completion times prominently shown for won levels (`Best: 1m 24s`).
+  - Active level highlighted with distinct accent border.
+  - Locked levels clearly indicate locked status without spoiling future level design.
+- **Fast navigation:**
+  - Contextual "Resume Level X" or "Back to Lawn" button ensures the player is never trapped in the menu.
+  - "Continue Adventure (Level X)" button allows continuing directly to the next uncompleted unlocked Level.
+- **Strict presentation boundary:**
+  - All visual improvements remain in the React presentation layer (`src/App.tsx`, `src/ui/app.css`), leaving the headless rulebook and progression engine completely intact.
+- **ADR 0016 recorded:** Documents level select polish and design decisions.
+
 ## [0.27.0] - 2026-10-06
 
 ### Level Select with Saved Progress (Ticket 19)
