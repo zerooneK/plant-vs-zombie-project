@@ -1,15 +1,19 @@
 import { occupantAt, plantIn, startingOccupants, type Occupant, type Point, type Square } from './board.ts'
-import { fallSun, isResting, isSpent, spendLife, spawnSun, sunFrom, sunUnderPoint } from './sun.ts'
+import { fallSun, isResting, isSpent, spendLife, spawnSun, sunUnderPoint } from './sun.ts'
 import type { SunToken } from './sun.ts'
 import { seededRandom, type Random } from './random.ts'
 import { FIRST_SUN_DELAY, FLAG_WAVE_WARNING, STARTING_SUN, SUN_INTERVAL } from './balance.ts'
-import { PLANTS, type PlantName } from './plants.ts'
+import {
+  PLANTS,
+  createPlanted,
+  producePlantSun,
+  resolveContactPlantActions,
+  resolveInstantPlantActions,
+  type PlantName,
+} from './plants.ts'
 import { LEVEL_1_1, waveZombies, type Level, type Wave } from './levels.ts'
 import { removeExhausted, walkAndEat, type Zombie } from './zombies.ts'
 import { runMowers } from './mowers.ts'
-import { detonateMines } from './mines.ts'
-import { detonateBombs } from './bombs.ts'
-import { devourWithChompers } from './chompers.ts'
 import { fireFromPlants, flyRight, type Shot } from './shots.ts'
 
 /**
@@ -291,83 +295,14 @@ function place(state: GameState, square: Square): GameState {
     ...state,
     sun: state.sun - packet.cost,
     chosen: null,
-    // A plant is planted whole, so it starts with all the health it has - and a
-    // plant that shoots is ready the moment it is planted, so it fires on its
-    // next step if there is something to shoot, rather than sitting out a whole
-    // firing interval first.
+    // A plant is planted whole, initialized via the Plant module factory so
+    // countdown invariants (firing, producing, arming, chewing) remain encapsulated.
     occupants: [
       ...state.occupants,
-      {
-        kind: 'plant',
-        square,
-        name,
-        health: PLANTS[name].health,
-        stepsUntilShot: 0,
-        // A plant that makes Sun starts a whole interval from being planted. A
-        // countdown of zero would mean it makes Sun on the step it goes in, and
-        // the Sun a plant makes is the slowest thing in the game - starting it
-        // at the beginning of its own interval would take that away.
-        stepsUntilSun: PLANTS[name].producing?.interval ?? 0,
-        // A plant that arms itself starts a whole delay from being planted, and
-        // for the same reason: a countdown already spent would be a mine that is
-        // armed before it has been planted, and the whole of the plant is that it
-        // is not ready yet. A plant that does not arm is left at zero, which is
-        // "armed" and is nothing, because nothing reads it.
-        stepsUntilArmed: PLANTS[name].arming?.delay ?? 0,
-        // A plant that eats a Zombie starts at zero, which is "ready to eat now". A
-        // Chomper is not a plant that becomes a trap, so there is nothing here to wait
-        // for: it eats the first Zombie that reaches it and then begins the chew, and
-        // the chew is what `chompers.ts` sets. A plant that does not eat is left at
-        // zero, which is harmless.
-        stepsUntilChewed: 0,
-      },
+      createPlanted(name, square),
     ],
     seedBank: startRecharge(state.seedBank, name),
   }
-}
-
-/**
- * One step of the Sun that plants make, asked of each plant on the lawn.
- *
- * It runs on the plants standing at the *end* of the step, not the ones standing
- * at the start, and that is the rule rather than a detail: a Sunflower makes Sun
- * while it is on the lawn. A Zombie that finishes eating one this step has taken
- * it off the lawn before this runs, so a plant that was due and was eaten makes
- * nothing at all — the Sun it would have made is part of what was lost, and is
- * lost the same way the Peashooter that died mid-shot is lost.
- *
- * Every plant is asked the same single question, is it due, and answers it from
- * its own countdown. A plant that makes no Sun is left exactly as it was, so
- * there is one place that knows about production and it is this one.
- */
-function stepProduction(
-  occupants: readonly Occupant[],
-  firstId: number,
-): { occupants: readonly Occupant[]; tokens: readonly SunToken[]; nextId: number } {
-  let nextId = firstId
-  const made: SunToken[] = []
-
-  const stepped = occupants.map((occupant) => {
-    if (occupant.kind !== 'plant') {
-      return occupant
-    }
-
-    const producing = PLANTS[occupant.name].producing
-    if (producing === null) {
-      return occupant
-    }
-
-    if (occupant.stepsUntilSun > 1) {
-      return { ...occupant, stepsUntilSun: occupant.stepsUntilSun - 1 }
-    }
-
-    made.push(sunFrom(occupant.square, nextId, producing.amount))
-    nextId += 1
-
-    return { ...occupant, stepsUntilSun: producing.interval }
-  })
-
-  return { occupants: stepped, tokens: made, nextId }
 }
 
 /**
@@ -431,18 +366,10 @@ function advance(state: GameState): GameState {
   // Zombie is briefly seen arriving rather than always already having taken a
   // step.
   //
-  // A Cherry Bomb goes off before the Zombies move, which is the opposite of where
-  // the mines run and the whole of the difference between the two plants.
-  //
-  // A mine is set off by a Zombie *arriving* at it, so it has to be asked once the
-  // Zombies have taken their step and are standing where they have got to. A bomb
-  // is waiting for nothing: it went off because it was planted, so it can be asked
-  // here - and asking it here rather than after `walkAndEat` is what makes it a
-  // rescue rather than a very expensive mine. A bomb put down in front of a Zombie
-  // that is about to arrive on a plant kills it before it arrives; asked after the
-  // Zombies have walked, that Zombie would already have had its bite and the bomb
-  // would be saving a Row one bite too late.
-  const bombed = detonateBombs(state.zombies, state.occupants)
+  // Instant plant actions (e.g. Cherry Bomb detonating) occur before Zombies move.
+  // A bomb put down in front of an approaching Zombie kills it before it can bite;
+  // asking it after the Zombies walked would be saving a Row one bite too late.
+  const instant = resolveInstantPlantActions(state.zombies, state.occupants)
 
   // A Zombie with a plant in the Square it is standing in stops there and eats,
   // which is why this is the one Zombie's step that hands the lawn back as well:
@@ -456,35 +383,13 @@ function advance(state: GameState): GameState {
   // a Row the mower has just cleared - a pea whose Zombie was mown carries on
   // across the lawn and goes, as it does for any other Zombie that stops being
   // there.
-  const eating = walkAndEat(bombed.zombies, bombed.occupants)
+  const eating = walkAndEat(instant.zombies, instant.occupants)
   const mown = runMowers(eating.zombies, eating.occupants)
 
-  // Mines go after the Zombies have walked and after the mowers, and for the same
-  // reason the mowers do: a mine is set off by a Zombie *arriving* at it, so it can
-  // only be asked once the Zombies have taken their step and are standing where they
-  // have got to. A mine reached while it is still asleep is not spared the bite it
-  // would get from any other plant - it is a plant in a Zombie's way, and the rule
-  // for that is that the Zombie eats it.
-  //
-  // It comes after the mowers so that a Row a mower has just cleared holds no Zombie
-  // for a mine to be spent on, and before the peas fly so that a pea aimed at a Zombie
-  // a mine has just taken finds nothing and crosses the lawn and goes - which is what
-  // a pea whose Zombie died any other way already does.
-  const mined = detonateMines(mown.zombies, mown.occupants)
-
-  // Chompers go after the Zombies have walked and after the mines, and the walk is the
-  // reason they cannot go anywhere earlier: a Chomper eats the Zombie that has *reached*
-  // it, so it can only be asked once the Zombies have taken their step and are standing
-  // where they have got to. Same argument as the mines, and the same question asked of
-  // the same lawn.
-  //
-  // It comes after the mines because a mine needs a Zombie still standing to be spent
-  // on: a Zombie that a Chomper has just eaten is off the lawn, and a Chomper standing
-  // in the same Square as a mine would otherwise be chewing a Zombie the mine has
-  // already spent on. It comes before the peas fly for the same reason the mines do - a
-  // pea aimed at a Zombie a Chomper has just eaten finds nothing and crosses the lawn
-  // and goes.
-  const chewed = devourWithChompers(mined.zombies, mined.occupants)
+  // Contact plant actions (armed Potato Mines detonating upon arrival, and ready
+  // Chompers devouring reached Zombies) resolve after Zombies have walked and
+  // mowers have run, clearing reachable enemies and advancing countdowns.
+  const contact = resolveContactPlantActions(mown.zombies, mown.occupants)
 
   // A Zombie that walked off the left edge of the board has got in, and the level
   // is lost there and then. It is read off the Zombies' own step rather than found
@@ -497,14 +402,14 @@ function advance(state: GameState): GameState {
   // arrival for the same reason: a pea leaves a plant and starts moving on the
   // step after that, and a Peashooter shoots at the Zombies already walking rather
   // than at one still standing at the edge of the board.
-  const landing = flyRight(state.shots, chewed.zombies)
+  const landing = flyRight(state.shots, contact.zombies)
   // A Zombie with nothing left of it leaves before anything can shoot at it, so
   // that a Peashooter never fires at a corpse standing on the lawn. It leaves
   // after eating rather than before, so that a Zombie killed by a pea on the same
   // step it bit still got that bite in - everything a Zombie does on a step happens,
   // and then the dead are cleared.
   const standing = removeExhausted(landing.zombies)
-  const fired = fireFromPlants(chewed.occupants, standing, landing.shots, state.nextShotId)
+  const fired = fireFromPlants(contact.occupants, standing, landing.shots, state.nextShotId)
 
   // Won and lost are read off this one step as well, and from the same two
   // questions: what is still on the lawn, and what is still to come. Clearing the
@@ -536,7 +441,7 @@ function advance(state: GameState): GameState {
   // everything else in the step has happened. That is the whole of its rule: a
   // Sunflower makes Sun while it is on the lawn.
   const sky = stepSun(state)
-  const grown = stepProduction(fired.occupants, sky.nextSunId)
+  const grown = producePlantSun(fired.occupants, sky.nextSunId)
 
   return {
     ...state,

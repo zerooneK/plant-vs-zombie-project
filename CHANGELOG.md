@@ -4,6 +4,20 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.30.0] - 2026-10-06
+
+### Deepen Plant Action Pipeline (Architecture Refactor)
+
+Consolidates the plant action pipeline into a deep module in `src/game/plants.ts`, following Candidate 1 of the architecture review and recorded in ADR-0018:
+
+- **Deleted Shallow Modules**: Removed `src/game/mines.ts`, `src/game/bombs.ts`, and `src/game/chompers.ts`.
+- **Deep Plant Interface**:
+  - `createPlanted(name, square)`: Encapsulates plant creation and countdown initialization away from `sim.ts`.
+  - `resolveInstantPlantActions(zombies, occupants)`: Resolves pre-movement explosive plants (Cherry Bomb) before Zombies step.
+  - `resolveContactPlantActions(zombies, occupants)`: Resolves post-movement contact plants (Potato Mine arming/detonating, Chomper chewing/devouring).
+  - `producePlantSun(occupants, firstId)`: Manages Sun-producing plants at step completion.
+- **Verification**: Added `tests/plants.test.ts`. All 168 rule tests pass.
+
 ## [0.29.0] - 2026-10-06
 
 ### Original Artwork Pass (Ticket 21)
