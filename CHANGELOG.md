@@ -4,6 +4,26 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.27.0] - 2026-10-06
+
+### Level Select with Saved Progress (Ticket 19)
+
+Builds saved progression and the Level Select menu, satisfying User Stories 4, 5, 62, 67, and 68.
+
+- **Pure progression model (`src/game/progress.ts`):**
+  - `INITIAL_PROGRESS`: Level 1-1 unlocked by default.
+  - `isLevelUnlocked`: Automatically unlocks subsequent Adventure levels sequentially upon beating earlier levels; completed levels remain unlocked and replayable.
+  - `recordWin`: Pure function recording completions and personal best completion times without duplicates.
+  - `serializeProgress` / `deserializeProgress`: JSON serialization with graceful fallback to `INITIAL_PROGRESS` on corrupt or missing storage data.
+- **Level Select Screen (`src/App.tsx`):**
+  - Full Adventure mode grid displaying Levels 1-1 through 1-10 with their completion status and best completion times.
+  - "Level Select" navigation buttons in the header and in outcome banners allow moving between the lawn and the menu at any time.
+  - "Restart" button restarts the active Level without reloading the page.
+  - Winning a level provides an immediate "Next Level" action button and persists progress to browser local storage (`lawn-defence:progress`).
+- **Layout stability:** Action buttons are integrated within banners without shifting the height of the header/help container, preventing lawn canvas jump.
+- **7 new rule checks in `tests/progress.test.ts`:** Full test suite expands to 164 checks, all passing.
+- **ADR 0015 recorded:** Documents saved progress and level select architecture.
+
 ## [0.26.0] - 2026-10-06
 
 ### Levels 1-2 to 1-10 (Ticket 18)
