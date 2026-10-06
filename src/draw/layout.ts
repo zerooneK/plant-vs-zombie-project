@@ -81,6 +81,11 @@ export function centreOf(square: Square, board: BoardLayout): Point {
   }
 }
 
+/** How far down its Row something is, in the board's own logical units. */
+export function middleOfRow(row: number): number {
+  return (row + 0.5) * SQUARE_HEIGHT
+}
+
 /**
  * Which Square a click on the canvas lands on, or null when it lands on the
  * empty space around the board. Clicking the board is the only way a Square

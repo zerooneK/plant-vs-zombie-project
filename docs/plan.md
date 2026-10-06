@@ -87,7 +87,7 @@ Each step is something you can actually play or click before the next one starts
 | 11 | Level 1-1 balance pass | Level 1-1's pacing settled by playing it, not by reading it — **done, ticket 11** |
 | 12 | The other 4 zombies, levels 1-2 to 1-10 | Added as data — **Conehead and Buckethead done at ticket 16, Pole Vaulting done at ticket 17 (all five zombies built), Levels 1-2 to 1-10 done at ticket 18** |
 | 13 | Saved progress | Levels stay unlocked between sessions — **done at ticket 19** |
-| 14 | Art pass | Placeholder shapes replaced with the real SVG art |
+| 14 | Art pass | Placeholder shapes replaced with the real SVG art — **done at ticket 21** |
 
 
 Steps 1-11 use plain coloured shapes. That is not laziness — it means the rules get right before any pixel does. The art is a swap at the end, and it is the first thing you would want changed anyway.

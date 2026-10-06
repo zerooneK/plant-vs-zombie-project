@@ -14,6 +14,7 @@ import {
   type Progress,
 } from './game/progress.ts'
 import type { PlantName } from './game/plants.ts'
+import { PlantIcon, ShovelIcon } from './ui/icons.tsx'
 
 const STORAGE_KEY = 'lawn-defence:progress'
 
@@ -377,6 +378,7 @@ function Packet({
       onClick={() => onChoose(name)}
       type="button"
     >
+      <PlantIcon name={name} size={30} />
       <span className="packet__name">{PLANT_NAMES[name]}</span>
       <span className="packet__cost">{packet.cost}</span>
       {!packet.ready && <span className="packet__note">Recharging</span>}
@@ -428,6 +430,7 @@ function SeedBank({
         onClick={() => onChoose(SHOVEL)}
         type="button"
       >
+        <ShovelIcon size={30} />
         <span className="packet__name">Shovel</span>
         <span className="packet__note">Clears a plant</span>
       </button>

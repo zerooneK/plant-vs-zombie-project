@@ -4,6 +4,42 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.29.0] - 2026-10-06
+
+### Original Artwork Pass (Ticket 21)
+
+Replaces all placeholder shapes across the lawn with original, expressive flat vector artwork, satisfying User Stories 64–66 in `docs/specs/001-lawn-defence-mvp.md` and Step 14 in `docs/plan.md`.
+
+- **All 10 Plants (`src/draw/art/plants.ts`):**
+  - **Peashooter**: Leafy base, stem, green head with tubular snout pointing right, leaf crest at back, expressive eye, and dynamic bite cutout.
+  - **Sunflower**: Golden radiating petals, friendly face disk with smile and eyes.
+  - **Wall-nut**: Wide textured walnut shell, friendly eyes, stress cracks, and bite cutout.
+  - **Tall-nut**: Towering oblong shell, heavy brow ridge, deep vertical grooves, resolute expression.
+  - **Potato Mine**: Soil mound, potato body, sleepy eyes, antenna with glowing red beacon halo when armed.
+  - **Snow Pea**: Crystalline frost-blue head, sharp icicle back crest, chilled eyes, and icy snout.
+  - **Chomper**: Purple carnivorous plant with gaping jaws and sharp white teeth when ready; clamped jaws with chewing curve when digesting.
+  - **Repeater**: Double-leaf crest, dual firing snouts, and focused warrior brow.
+  - **Cherry Bomb**: Twin glossy red cherries with 3D specular shine, angry determined eyes, linked by Y-stem with leaf.
+  - **Puff-shroom**: Low-profile stem, violet spotted mushroom cap, and petite spore snout.
+- **All 5 Zombies (`src/draw/art/zombies.ts`):**
+  - **Basic Zombie**: Ragged brown suit jacket, white collared shirt, red necktie, blue-grey trousers, shoes, mismatched goofy eyes, and slack mouth with crooked tooth. Outstretched arms when shambling or eating.
+  - **Conehead Zombie**: Vibrant safety traffic cone on head while armour remains; cone falls off once armour is broken.
+  - **Buckethead Zombie**: Galvanized metallic bucket with highlight rim on head while armour remains; falls off when broken.
+  - **Flag Zombie**: Wooden staff carrying a waving red cloth banner with skull emblem.
+  - **Pole Vaulting Zombie**: Athletic singlet with stripe, running forward pose while carrying long vaulting pole.
+  - **Chilled effect**: Icy cyan skin and jacket tint with frost sparkles on slowed zombies.
+- **Lawn Mowers & Field Elements (`src/draw/art/mowers.ts`, `src/draw/art/sun.ts`, `src/draw/art/projectiles.ts`):**
+  - **Lawn Mower**: Red chassis with silver motor block, cooling vents, wheels, and pull handle.
+  - **Spent Mower**: Dashed outline footprint marking where a spent mower stood on the grass.
+  - **Sun Token**: Radiant golden rays, warm yellow disc, strictly preserving the `#fff9c4` core colour.
+  - **Projectiles**: Vibrant green peas with 3D specular highlights, and ice-blue crystalline Snow Pea shots.
+- **Seed Bank Vector Icons (`src/ui/icons.tsx`, `src/App.tsx`, `src/ui/app.css`):**
+  - Crisp inline SVG icons for all ten seed packets and the Shovel.
+- **Modular Presentation Architecture:**
+  - Separated monolithic drawing code from `src/draw/board.ts` into clean domain modules in `src/draw/art/`.
+  - Added pure `middleOfRow` helper to `src/draw/layout.ts`.
+- **ADR 0017 recorded:** Documents original vector artwork pass.
+
 ## [0.28.0] - 2026-10-06
 
 ### Level Select Polish (Ticket 20)
