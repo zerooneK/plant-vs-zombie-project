@@ -1,8 +1,7 @@
 import { occupantAt, plantIn, startingOccupants, type Occupant, type Point, type Square } from './board.ts'
-import { fallSun, isResting, isSpent, spendLife, spawnSun, sunUnderPoint } from './sun.ts'
-import type { SunToken } from './sun.ts'
+import { collectSun, stepSun, type SunToken } from './sun.ts'
 import { seededRandom, type Random } from './random.ts'
-import { FIRST_SUN_DELAY, FLAG_WAVE_WARNING, STARTING_SUN, SUN_INTERVAL } from './balance.ts'
+import { FIRST_SUN_DELAY, FLAG_WAVE_WARNING, STARTING_SUN } from './balance.ts'
 import {
   PLANTS,
   createPlanted,
@@ -317,16 +316,16 @@ function startRecharge(bank: readonly SeedPacket[], name: PlantName): readonly S
 }
 
 function collect(state: GameState, point: Point): GameState {
-  const token = sunUnderPoint(state.tokens, point)
+  const result = collectSun(state.tokens, point)
 
-  if (token === null) {
+  if (result.collected === 0) {
     return { ...state }
   }
 
   return {
     ...state,
-    sun: state.sun + token.amount,
-    tokens: state.tokens.filter((candidate) => candidate !== token),
+    sun: state.sun + result.collected,
+    tokens: result.tokens,
   }
 }
 
@@ -458,39 +457,6 @@ function advance(state: GameState): GameState {
     occupants: grown.occupants,
     outcome,
     flagWaveWarning,
-  }
-}
-
-/** What one step of play does to the Sun on the lawn. */
-interface SunStep {
-  readonly random: Random
-  readonly tokens: readonly SunToken[]
-  readonly stepsUntilSkySun: number
-  readonly nextSunId: number
-}
-
-/** One step of Sun: what is still on the lawn, and when the next piece falls. */
-function stepSun(state: GameState): SunStep {
-  const living = state.tokens
-    .map((token) => (isResting(token) ? spendLife(token) : fallSun(token)))
-    .filter((token) => !isSpent(token))
-
-  if (state.stepsUntilSkySun > 1) {
-    return {
-      random: state.random,
-      tokens: living,
-      stepsUntilSkySun: state.stepsUntilSkySun - 1,
-      nextSunId: state.nextSunId,
-    }
-  }
-
-  const spawn = spawnSun(state.nextSunId, state.random)
-
-  return {
-    random: spawn.random,
-    tokens: [...living, spawn.token],
-    stepsUntilSkySun: SUN_INTERVAL,
-    nextSunId: state.nextSunId + 1,
   }
 }
 

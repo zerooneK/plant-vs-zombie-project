@@ -3,8 +3,10 @@ import assert from 'node:assert/strict'
 import { LOGICAL_HEIGHT, LOGICAL_WIDTH, SQUARE_HEIGHT } from '../src/game/board.ts'
 import { apply, initialGameState } from '../src/game/sim.ts'
 import type { GameState } from '../src/game/sim.ts'
-import type { SunToken } from '../src/game/sun.ts'
+import { collectSun, stepSun, type SunToken } from '../src/game/sun.ts'
 import { STEPS_PER_SECOND } from '../src/game/clock.ts'
+import { SUN_FALL_PER_STEP, SUN_INTERVAL } from '../src/game/balance.ts'
+import { seededRandom } from '../src/game/random.ts'
 
 /** Plays the game forward by running the one step command over and over. */
 function afterSeconds(state: GameState, seconds: number): GameState {
@@ -151,3 +153,64 @@ test('Sun comes down onto the lawn rather than appearing where it will lie', () 
     )
   }
 })
+
+test('collectSun collects token under click point and returns remaining tokens with amount', () => {
+  const token1: SunToken = { id: 1, x: 100, y: 100, restingY: 200, amount: 25, life: 300 }
+  const token2: SunToken = { id: 2, x: 300, y: 300, restingY: 300, amount: 25, life: 300 }
+  const tokens = [token1, token2]
+
+  const hit = collectSun(tokens, { x: 105, y: 102 })
+  assert.equal(hit.collected, 25)
+  assert.deepEqual(hit.tokens, [token2])
+
+  const miss = collectSun(tokens, { x: 0, y: 0 })
+  assert.equal(miss.collected, 0)
+  assert.equal(miss.tokens.length, 2)
+})
+
+test('collectSun collects the topmost (latest) token when multiple overlap', () => {
+  const bottom: SunToken = { id: 1, x: 100, y: 100, restingY: 200, amount: 25, life: 300 }
+  const top: SunToken = { id: 2, x: 105, y: 102, restingY: 200, amount: 50, life: 300 }
+  const hit = collectSun([bottom, top], { x: 102, y: 101 })
+
+  assert.equal(hit.collected, 50)
+  assert.deepEqual(hit.tokens, [bottom])
+})
+
+test('stepSun drops falling tokens and ages/removes landed tokens', () => {
+  const falling: SunToken = { id: 1, x: 100, y: 50, restingY: 200, amount: 25, life: 300 }
+  const landed: SunToken = { id: 2, x: 200, y: 200, restingY: 200, amount: 25, life: 2 }
+  const dying: SunToken = { id: 3, x: 300, y: 200, restingY: 200, amount: 25, life: 1 }
+
+  const next = stepSun({
+    tokens: [falling, landed, dying],
+    stepsUntilSkySun: 100,
+    nextSunId: 4,
+    random: seededRandom(123),
+  })
+
+  assert.equal(next.stepsUntilSkySun, 99)
+  assert.equal(next.nextSunId, 4)
+  assert.equal(next.tokens.length, 2, 'spent token (life 1 -> 0) is discarded')
+  const [nextFalling, nextLanded] = next.tokens
+  assert.ok(nextFalling && nextLanded)
+  assert.equal(nextFalling.y, 50 + SUN_FALL_PER_STEP, 'falling token descends')
+  assert.equal(nextLanded.life, 1, 'landed token spends life')
+})
+
+test('stepSun spawns new sky Sun when timer matures and resets countdown', () => {
+  const result = stepSun({
+    tokens: [],
+    stepsUntilSkySun: 1,
+    nextSunId: 10,
+    random: seededRandom(999),
+  })
+
+  assert.equal(result.stepsUntilSkySun, SUN_INTERVAL)
+  assert.equal(result.nextSunId, 11)
+  assert.equal(result.tokens.length, 1)
+  const [spawned] = result.tokens
+  assert.ok(spawned)
+  assert.equal(spawned.id, 10)
+})
+

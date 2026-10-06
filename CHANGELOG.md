@@ -4,6 +4,20 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.31.0] - 2026-10-06
+
+### Deepen Sun Economy Module (Architecture Refactor)
+
+Consolidates Sun token lifecycle, physics, and collection behind a deep module in `src/game/sun.ts`, following Candidate 2 of the architecture review and recorded in ADR-0019:
+
+- **Private Token Mechanics**: Made `fallSun`, `spendLife`, `isResting`, `isSpent`, `spawnSun`, and `sunUnderPoint` private internal functions in `src/game/sun.ts`.
+- **Deep Sun Interface**:
+  - `stepSun(input: StepSunInput): StepSunResult`: Accepts a state slice (`tokens`, `stepsUntilSkySun`, `nextSunId`, `random`), advances falling and resting tokens, discards expired tokens, advances the sky countdown, and spawns new sky Sun when due.
+  - `collectSun(tokens, point): CollectSunResult`: Encapsulates hit detection and token removal, returning the remaining tokens and amount collected.
+  - `sunFrom(square, id, amount): SunToken`: Preserved for plant-generated Sun tokens at Sunflower positions.
+- **Streamlined Simulation**: Removed token lifecycle loops, helper interfaces, and `SUN_INTERVAL` coupling from `src/game/sim.ts`.
+- **Verification**: Added direct unit tests for `stepSun` and `collectSun` in `tests/sun.test.ts`. All 172 rule tests pass.
+
 ## [0.30.0] - 2026-10-06
 
 ### Deepen Plant Action Pipeline (Architecture Refactor)

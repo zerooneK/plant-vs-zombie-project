@@ -92,16 +92,15 @@ The game runs at a fixed **60 steps a second**, independent of frame rate.
 
 1. Seed Packet Recharge ticks down
 2. Due Waves walk in at the right edge
-3. Cherry Bombs go off (`detonateBombs`)
+3. Instant plant actions: Cherry Bombs go off (`resolveInstantPlantActions`)
 4. Zombies walk and eat (`walkAndEat`) — this both moves Zombies and bites plants
 5. Mowers run (`runMowers`)
-6. Mines detonate (`detonateMines`)
-7. Chompers eat (`devourWithChompers`)
-8. Peas fly (`flyRight`)
-9. Exhausted Zombies are removed (`removeExhausted`)
-10. Plants fire (`fireFromPlants`)
-11. Win/loss is decided from the Waves left and the Zombies standing
-12. Sky Sun falls (`stepSun`), then plants make Sun (`stepProduction`)
+6. Contact plant actions: Mines detonate and Chompers eat (`resolveContactPlantActions`)
+7. Peas fly (`flyRight`)
+8. Exhausted Zombies are removed (`removeExhausted`)
+9. Plants fire (`fireFromPlants`)
+10. Win/loss is decided from the Waves left and the Zombies standing
+11. Sky Sun falls and advances (`stepSun`), then plants make Sun (`producePlantSun`)
 
 Four consequences worth internalising: production runs on the plants **still standing at the end of the step**, so a Sunflower eaten this step makes nothing; a Zombie is removed *after* it eats, so a Zombie killed by a pea on the same step it bit still got that bite in — but a Zombie killed by a bomb on that step did not, because the bomb goes off first; a Chomper that eats a Zombie standing in its Square has already been bitten once by it, because both happen inside the one step; and moving a line changes behaviour. Read the comments in `advance` before reordering anything.
 
