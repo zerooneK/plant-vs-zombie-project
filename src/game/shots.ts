@@ -1,7 +1,7 @@
 import { centreX, LOGICAL_WIDTH, SQUARE_WIDTH, type Occupant, type Row, type Square } from './board.ts'
 import { SHOT_STEPS_PER_COLUMN } from './balance.ts'
 import { PLANTS, type ShotEffect } from './plants.ts'
-import { nearestAheadOf, takeDamage, takeSlow, zombieX, type Zombie } from './zombies.ts'
+import { nearestAheadOf, removeExhausted, takeDamage, takeSlow, zombieX, type Zombie } from './zombies.ts'
 
 /**
  * One pea in flight.
@@ -50,8 +50,24 @@ export interface Shot {
   readonly reachX: number
 }
 
+/** State slice required to resolve one step of projectile combat. */
+export interface CombatInput {
+  readonly shots: readonly Shot[]
+  readonly zombies: readonly Zombie[]
+  readonly occupants: readonly Occupant[]
+  readonly nextShotId: number
+}
+
+/** Result of resolving one step of projectile combat. */
+export interface CombatResult {
+  readonly shots: readonly Shot[]
+  readonly zombies: readonly Zombie[]
+  readonly occupants: readonly Occupant[]
+  readonly nextShotId: number
+}
+
 /** What one step of the peas on the lawn did. */
-export interface ShotStep {
+interface ShotStep {
   /** The peas still in flight; the ones that landed are spent. */
   readonly shots: readonly Shot[]
   /** The Zombies, with a Zombie's health taken off where a pea arrived. */
@@ -62,13 +78,32 @@ export interface ShotStep {
 export const SHOT_MOVE_PER_STEP = SQUARE_WIDTH / SHOT_STEPS_PER_COLUMN
 
 /**
+ * Resolves one step of projectile combat:
+ * 1. Peas in flight advance, collide with targets, and deal damage/slowness.
+ * 2. Casualties (zero or negative health) are removed from the lawn.
+ * 3. Readied plants target living survivors and discharge new shots.
+ */
+export function resolveCombat(input: CombatInput): CombatResult {
+  const landing = flyRight(input.shots, input.zombies)
+  const standing = removeExhausted(landing.zombies)
+  const fired = fireFromPlants(input.occupants, standing, landing.shots, input.nextShotId)
+
+  return {
+    shots: fired.shots,
+    zombies: standing,
+    occupants: fired.occupants,
+    nextShotId: fired.nextShotId,
+  }
+}
+
+/**
  * A pea leaving a plant, on its way to a particular Zombie.
  *
  * The pea is built here from what the plant shoots, so the plant's own description
  * of its shot is turned into the travelling thing once and the flight never has to
  * ask what plant this came from.
  */
-export function fireShot(id: number, square: Square, target: Zombie, effect: ShotEffect): Shot {
+function fireShot(id: number, square: Square, target: Zombie, effect: ShotEffect): Shot {
   const x = centreX(square)
 
   return {
@@ -100,7 +135,7 @@ export function fireShot(id: number, square: Square, target: Zombie, effect: Sho
  * three the ordinary way and behaves exactly as it did before any of them existed,
  * which is the point of the Peashooter being the plain one.
  */
-export function flyRight(shots: readonly Shot[], zombies: readonly Zombie[]): ShotStep {
+function flyRight(shots: readonly Shot[], zombies: readonly Zombie[]): ShotStep {
   const damage = new Map<number, number>()
   const slowed = new Map<number, number>()
 
@@ -213,7 +248,7 @@ function everyZombieItHasReached(shot: Shot, zombies: readonly Zombie[]): readon
  * ready and waiting fires the moment there is a target - which is what a plant
  * waiting with nothing to shoot is doing anyway.
  */
-export function fireFromPlants(
+function fireFromPlants(
   occupants: readonly Occupant[],
   zombies: readonly Zombie[],
   shots: readonly Shot[],

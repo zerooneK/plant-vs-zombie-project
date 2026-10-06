@@ -19,9 +19,9 @@ import {
   type PlantName,
 } from './plants.ts'
 import { LEVEL_1_1, waveZombies, type Level, type Wave } from './levels.ts'
-import { removeExhausted, walkAndEat, type Zombie } from './zombies.ts'
+import { walkAndEat, type Zombie } from './zombies.ts'
 import { runMowers } from './mowers.ts'
-import { fireFromPlants, flyRight, type Shot } from './shots.ts'
+import { resolveCombat, type Shot } from './shots.ts'
 
 /**
  * The seed used when nobody chooses one. Fixed, so that a check written
@@ -408,18 +408,14 @@ function advance(state: GameState): GameState {
   // with a mower is answered by the mower and a Row without one by this.
   const breached = eating.breached.size > 0
 
-  // Peas travel, and only then do plants fire. Both are one step behind their own
-  // arrival for the same reason: a pea leaves a plant and starts moving on the
-  // step after that, and a Peashooter shoots at the Zombies already walking rather
-  // than at one still standing at the edge of the board.
-  const landing = flyRight(state.shots, contact.zombies)
-  // A Zombie with nothing left of it leaves before anything can shoot at it, so
-  // that a Peashooter never fires at a corpse standing on the lawn. It leaves
-  // after eating rather than before, so that a Zombie killed by a pea on the same
-  // step it bit still got that bite in - everything a Zombie does on a step happens,
-  // and then the dead are cleared.
-  const standing = removeExhausted(landing.zombies)
-  const fired = fireFromPlants(contact.occupants, standing, landing.shots, state.nextShotId)
+  // Combat: in-flight peas advance and deal damage, exhausted casualties leave
+  // the lawn, and readied plants fire at remaining survivors ahead of them.
+  const combat = resolveCombat({
+    shots: state.shots,
+    zombies: contact.zombies,
+    occupants: contact.occupants,
+    nextShotId: state.nextShotId,
+  })
 
   // Won and lost are read off this one step as well, and from the same two
   // questions: what is still on the lawn, and what is still to come. Clearing the
@@ -439,7 +435,7 @@ function advance(state: GameState): GameState {
   // A Level with no Waves at all is therefore won on its first step, which is true
   // rather than surprising - a level with nothing to send has nothing left to send,
   // and a lawn with nothing on it is clear.
-  const onTheLawn = [...standing, ...sent.zombies]
+  const onTheLawn = [...combat.zombies, ...sent.zombies]
   const outcome: Outcome = breached
     ? 'lost'
     : sent.pendingWaves.length === 0 && onTheLawn.length === 0
@@ -451,7 +447,7 @@ function advance(state: GameState): GameState {
   // everything else in the step has happened. That is the whole of its rule: a
   // Sunflower makes Sun while it is on the lawn.
   const sky = stepSun(state)
-  const grown = producePlantSun(fired.occupants, sky.nextSunId)
+  const grown = producePlantSun(combat.occupants, sky.nextSunId)
 
   return {
     ...state,
@@ -463,8 +459,8 @@ function advance(state: GameState): GameState {
     pendingWaves: sent.pendingWaves,
     zombies: onTheLawn,
     nextZombieId: sent.nextZombieId,
-    shots: fired.shots,
-    nextShotId: fired.nextShotId,
+    shots: combat.shots,
+    nextShotId: combat.nextShotId,
     occupants: grown.occupants,
     spentMowers: mown.spentMowers,
     outcome,

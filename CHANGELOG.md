@@ -4,6 +4,19 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.33.0] - 2026-10-06
+
+### Collapse Combat Resolution Sequence (Architecture Refactor)
+
+Consolidates projectile flight, casualty purging, and plant firing into a deep combat module in `src/game/shots.ts`, following Candidate 4 of the architecture review and recorded in ADR-0021:
+
+- **Unified Combat Seam**:
+  - `resolveCombat(input: CombatInput): CombatResult`: Advances flying projectiles, calculates impact damage and chill, removes dead casualties, and commands ready plants to fire at surviving targets ahead.
+- **Private Micro-Steps**: Made `flyRight`, `fireFromPlants`, `fireShot`, and `ShotStep` private internal implementation details in `src/game/shots.ts`.
+- **Encapsulated Casualty Purging**: `resolveCombat` calls `removeExhausted` internally, ensuring corpses never leak into plant targeting or the win/loss condition.
+- **Streamlined Simulation Loop**: `src/game/sim.ts: advance` calls `resolveCombat` directly, eliminating intermediate plumbing of corpses and partial lists.
+- **Verification**: Added unit tests in `tests/shooters.test.ts` testing flight impacts, casualty removal, plant firing, and corpse target exclusion. All 178 rule tests pass.
+
 ## [0.32.0] - 2026-10-06
 
 ### Deepen Lawn Mower Defense Across UI Seam (Architecture Refactor)

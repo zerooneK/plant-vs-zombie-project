@@ -4,8 +4,9 @@ import { STEPS_PER_SECOND } from '../src/game/clock.ts'
 import { SHOVEL, apply, initialGameState, type GameState } from '../src/game/sim.ts'
 import { centreX, plantIn, SQUARE_WIDTH, type Square } from '../src/game/board.ts'
 import { LEVEL_TEST } from '../src/game/levels.ts'
-import { zombieX } from '../src/game/zombies.ts'
-import type { PlantName } from '../src/game/plants.ts'
+import { zombieX, type Zombie } from '../src/game/zombies.ts'
+import { createPlanted, type PlantName } from '../src/game/plants.ts'
+import { resolveCombat, type Shot } from '../src/game/shots.ts'
 import { levelOffering, oneZombieIn, untilTick, withSunToPlant } from './helpers.ts'
 
 /**
@@ -969,3 +970,110 @@ test('a pea whose Zombie is killed by something else leaves the lawn', () => {
   assert.equal(cleared.shots.length, 0, 'and five seconds later the lawn is clear of them')
   assert.equal(cleared.zombies.length, 0, 'with nothing left on it to shoot at either')
 })
+
+test('resolveCombat advances flying shots, applies damage, and purges casualties in one step', () => {
+  const zombie: Zombie = {
+    id: 1,
+    name: 'basic',
+    row: 1,
+    walked: 100,
+    health: 20,
+    armour: 0,
+    stepsUntilBite: 0,
+    stepsSlowed: 0,
+    hasPole: false,
+  }
+  const x = zombieX(zombie)
+  const shot: Shot = {
+    id: 1,
+    row: 1,
+    x: x - 1,
+    targetId: zombie.id,
+    damage: 20,
+    slowSteps: 0,
+    passesThrough: false,
+    reachX: 1000,
+  }
+
+  const result = resolveCombat({
+    shots: [shot],
+    zombies: [zombie],
+    occupants: [],
+    nextShotId: 2,
+  })
+
+  assert.equal(result.zombies.length, 0, 'exhausted zombie is purged from the lawn')
+  assert.equal(result.shots.length, 0, 'spent non-piercing pea leaves the lawn')
+})
+
+test('resolveCombat triggers plant firing only at surviving targets ahead and increments nextShotId', () => {
+  const plant = {
+    ...createPlanted('peashooter', { row: 1, column: 1 }),
+    stepsUntilShot: 0,
+  }
+  const zombie: Zombie = {
+    id: 2,
+    name: 'basic',
+    row: 1,
+    walked: 100,
+    health: 200,
+    armour: 0,
+    stepsUntilBite: 0,
+    stepsSlowed: 0,
+    hasPole: false,
+  }
+
+  const result = resolveCombat({
+    shots: [],
+    zombies: [zombie],
+    occupants: [plant],
+    nextShotId: 10,
+  })
+
+  assert.equal(result.shots.length, 1, 'fires one shot at the zombie')
+  assert.equal(result.shots[0]?.id, 10)
+  assert.equal(result.shots[0]?.targetId, 2)
+  assert.equal(result.nextShotId, 11)
+  assert.equal(result.zombies.length, 1)
+})
+
+test('resolveCombat does not fire at a zombie killed by a projectile in the same step', () => {
+  const plant = {
+    ...createPlanted('peashooter', { row: 1, column: 1 }),
+    stepsUntilShot: 0,
+  }
+  const zombie: Zombie = {
+    id: 3,
+    name: 'basic',
+    row: 1,
+    walked: 100,
+    health: 20,
+    armour: 0,
+    stepsUntilBite: 0,
+    stepsSlowed: 0,
+    hasPole: false,
+  }
+  const x = zombieX(zombie)
+  const incomingShot: Shot = {
+    id: 1,
+    row: 1,
+    x: x - 1,
+    targetId: zombie.id,
+    damage: 20,
+    slowSteps: 0,
+    passesThrough: false,
+    reachX: 1000,
+  }
+
+  const result = resolveCombat({
+    shots: [incomingShot],
+    zombies: [zombie],
+    occupants: [plant],
+    nextShotId: 5,
+  })
+
+  assert.equal(result.zombies.length, 0, 'zombie dies from incoming shot')
+  assert.equal(result.shots.length, 0, 'incoming shot spent, and plant does NOT fire at dead corpse')
+  assert.equal(result.nextShotId, 5, 'nextShotId remains unchanged because no new shot was fired')
+})
+
