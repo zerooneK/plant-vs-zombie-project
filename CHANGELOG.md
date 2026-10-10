@@ -4,6 +4,19 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.36.0] - 2026-10-10
+
+### Sunflower From the User's Full-Size Picture, at 48 x 48
+
+Replaces the 33 x 31 Sunflower read off the small character sheet (0.35.0) with a 48 x 48 one made from the user's own 1254 x 1254 front-view picture. Presentation only: nothing in `src/game/` changed.
+
+- **The picture**: a PNG, but 1254 x 1254 rather than the 192 x 192 expected, with a white background rather than a transparent one. It is 48 x 48 pixel art enlarged about 26 times, with soft edges from the enlarging.
+- **How it was shrunk**: the middle of each 26-pixel cell was read, so the soft edges between cells never mix into a colour, with the grid placed where the cells came out most even. The white background and the grey ground shadow were cleared (the lawn is the ground here), the colours were grouped into the 17 the drawing uses, and the eye shines and the tongue were set back to white and red where grouping had merged them into their neighbours.
+- **The new design** keeps what the picture has and the old one did not: eyebrows, an open mouth with a red tongue, and highlights on the petals and leaves.
+- **Sizing**: placed and sized by the drawn part, not the empty margin round it, so the flower is as wide on the lawn as before.
+- **Faces**: *happy* is the picture as it is; *glowing* and *hurt* repaint only its eyes and mouth. Bite, bob, shudder and glow are unchanged.
+- **Verification**: typecheck and build pass, all 178 rule tests pass, and all three faces were checked in Chrome on the test bed.
+
 ## [0.35.0] - 2026-10-10
 
 ### Sunflower Matched to the Character Sheet's Front View

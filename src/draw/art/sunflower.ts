@@ -2,17 +2,20 @@ import type { Planted } from '../../game/board.ts'
 import type { BoardLayout } from '../layout.ts'
 
 /**
- * The Sunflower, pixel for pixel from the front view on the user's character
- * sheet.
+ * The Sunflower, from the user's 1254 x 1254 front-view picture, shrunk to
+ * the 48 x 48 it was drawn at.
  *
- * Written out as a grid of letters rather than built from shapes, because the
- * point is to match one particular drawing: shapes can only approximate it,
- * and a grid is the drawing. The sheet is AI-made art scaled down to about
- * four screen pixels per art pixel, so the grid was read off it cell by cell -
- * sampled, cleaned of the blur round its edges, and finished by hand where the
- * blur had eaten detail (the smile, the eye shine). It is 33 by 31 and not the
- * 48 by 48 the sheet's caption says, because 33 by 31 is what the picture
- * actually holds.
+ * The picture is pixel art enlarged about 26 times, with its edges softened by
+ * the enlarging. It was shrunk by reading the middle of each 26-pixel cell, so
+ * the soft edges between cells never mix into a colour, with the grid lined up
+ * where the cells came out most even. The white background and the grey
+ * shadow on the ground were cleared, since the lawn is the ground here; the
+ * colours were grouped into the handful the drawing really uses; the eye
+ * shines were set back to white and the tongue back to red, where grouping had
+ * merged them into their neighbours.
+ *
+ * Written out as letters rather than kept as an image file, so the faces
+ * below can repaint single cells and the game still opens from `file://`.
  *
  * Every picture the Sunflower can show is built once and kept, so a lawn full
  * of Sunflowers costs one image copy each per frame.
@@ -20,58 +23,77 @@ import type { BoardLayout } from '../layout.ts'
 
 /** The front view, as drawn. `.` is empty; every other letter is in `INK`. */
 const FRONT: readonly string[] = [
-  '.................................',
-  '.................KKKKK...........',
-  '............KKK.KYYYYYK..........',
-  '...........KYYYKYYYYYYKK.........',
-  '..........KYYYORYYYYYYYK.........',
-  '..........KYYYOOYYYYYYYK.........',
-  '....KKKKKKRYYYOOYYOYYYORKKKKK....',
-  '...KOYYYYYROYYOOYYOYYYORYYYYOK...',
-  '...KOYYYYYOOOYOOOOOOOORRYYYYYOK..',
-  '...KOYYYYYORRROBBBBBRRRYYYYYYOK..',
-  '...KOYYYYYORbbbbbbbbbBRYYYYYYOK..',
-  '....KOYYYOObbBBBBBBBBBBbYYYYRKK..',
-  '...KOOOOOOOBBBBBBBBBBBBbYYOORK...',
-  '..KKOOOOOObBBBBBBBBBBBBbOOORRRK..',
-  '.KRYYYYYRbbBBKWBBBBBBKWBBBORYYYK.',
-  '.KRYYYYOObbBKKWBBBBBKKWBBOOYYYYK.',
-  '.KRYYYOORbbBKKWBBBBBKKWBBOOOYYYK.',
-  '.KRROOOORbbBKKWBBBBBKKWBBOOOOOOK.',
-  '..KKRRRRRRBPPPBBDBBDBPPPBRRRRKK..',
-  '....KOOOOOPPPPBBBDDBBPPPPOOOK....',
-  '....KYYYYYOBBBBBBBBBBBOYYYYYK....',
-  '....KYYYYYObbbbbbbbbbbYYYYYYK....',
-  '....KOOOOORbbbbbbbbbbOOOOOOK.....',
-  '....KRRRRRRRRRbbbbbbOOOOOOK......',
-  '...KggggggggggOYYYOggggggK.......',
-  '....KggGGGGGGGggGGGGGGGggK.......',
-  '.....KGGGggGGGGgGGggGGGGGK.......',
-  '......KKKgGGGGgGGGggGGGGK........',
-  '.......KKGGGGGgKKKgGGGGGK........',
-  '.......KKGGGggK...KGGGGKK........',
-  '........KKKKKKK..KKKKKKK.........',
+  '................................................',
+  '................................................',
+  '................................................',
+  '................................................',
+  '................................................',
+  '................................................',
+  '......................aaaa......................',
+  '.....................accccgja...................',
+  '....................acnnncfla...................',
+  '....................acncccclfa..................',
+  '..............aaaa..jcccccccfa.jaa..............',
+  '..............acccaaecccccccfaaeeba.............',
+  '...........aa.gcncpbicccccoclacccciaa...........',
+  '..........accgmccccogcffccfeifcccfbcca..........',
+  '..........acnccfccccgefffffegcccfeecca..........',
+  '..........apccclccofeeffffegfccffecncoa.........',
+  '...........bccccecffejjjjjaaeeffeccccoa.........',
+  '........aaaafcfffffajjbbbbbmjmfiiccccfa.........',
+  '.......afccceffffjmggbbbbbbibgmffoccffa.........',
+  '.......acccpfifffgiiibbbbbbibbbgfpcofg..........',
+  '.......afnccpligagiiibbbbbbbbbbajfffmmma........',
+  '.......afcccccfeabbbbbbbbbbjabbgaiegfccpa.......',
+  '.......accccpfebgbbaabbbbbbbaabbgagffccnfa......',
+  '........afccfffagbbaabbbbbbaWabbgaefccccfa......',
+  '.........gfffffabbaWagbbbbbaaabbgaeeeccfea......',
+  '........apfflijagbaaagbbbbbaaakkgaiefffeg.......',
+  '.......afcffeeeagbjaammarabbbkkkgageffeim.......',
+  '.......apcccffeagkkjjbbrrjbbbbkkgaegbiea........',
+  '.......apcccccfeakkkbbbaabbbbbbgalffmjg.........',
+  '........jlcccffgagbbbbbbbbbbbbgaelfcfa..........',
+  '.........aefegeeeeagggbbbbbbjjalfccccfa.........',
+  '..........aaafcefceaaajjjjjjjffifccfcla.........',
+  '............accfccejeeffejeeffclafffga..........',
+  '............aeccceaaefccfaefccclaaaaa...........',
+  '.............afcladdacncpadefcaaaa..............',
+  '..............aaahhddappaddaaadddda.............',
+  '.............addhhhhddaadddadddhhdda............',
+  '............ahhhhhhhddaddddadhhhhhhda...........',
+  '............addhhhdhddaaaaaddhhhdhhda...........',
+  '.............adhhddddda...addddhhdhda...........',
+  '..............adddddaa.....addddddda............',
+  '...............aaa...........aaaa.a.............',
+  '................................................',
+  '................................................',
+  '................................................',
+  '................................................',
+  '................................................',
+  '................................................',
 ]
 
-const WIDTH = 33
-const HEIGHT = 31
+const SIZE = 48
 
-/**
- * The colours, taken from the picture itself rather than the sheet's printed
- * palette: the printed swatches are not quite what the drawing uses, and the
- * drawing is what is being matched.
- */
+/** The colours the drawing uses, read from it. */
 const INK: Readonly<Record<string, string>> = {
-  K: '#181813', // outline
-  Y: '#fccf41', // petal
-  O: '#f5a31f', // petal shade
-  R: '#de6e14', // petal deep shade
-  B: '#904a2d', // face
-  b: '#693c2c', // face shade
-  D: '#392517', // mouth
-  G: '#54a53f', // leaf
-  g: '#296f2f', // leaf shade
-  P: '#f09a8a', // cheek
+  a: '#311610', // outline, eyes
+  j: '#491e13', // outline, softer
+  m: '#622514', // mouth and face edge
+  g: '#7e3318', // face shade
+  b: '#964628', // face
+  i: '#bf531b', // face light
+  e: '#f5780e', // petal deep shade
+  l: '#f98c11', // petal shade
+  f: '#fda518', // petal
+  p: '#fcb41e', // petal
+  o: '#fdc424', // petal light
+  c: '#fed22b', // petal lighter
+  n: '#fef5a9', // petal highlight
+  d: '#327b3b', // leaf shade
+  h: '#82c23b', // leaf
+  k: '#f4846b', // cheek
+  r: '#e64e51', // tongue
   W: '#ffffff', // eye shine
   /**
    * Sparkles when Sun is being made. Deliberately not the Sun's own core
@@ -81,22 +103,27 @@ const INK: Readonly<Record<string, string>> = {
   L: '#fff3c7',
 }
 
-/** The middle of the face, in grid cells, for the glow. */
-const FACE_COLUMN = 17
-const FACE_ROW = 15
+/** Where the drawing actually is inside its 48 x 48, so it is sized and placed by that. */
+const DRAWN_LEFT = 7
+const DRAWN_RIGHT = 41
+const DRAWN_BOTTOM = 41
+
+/** The middle of the face, in cells, for the glow. */
+const FACE_COLUMN = 24
+const FACE_ROW = 24
 
 /** Where a bite is taken: the right of the head, the side Zombies come from. */
-const BITE_COLUMN = 31
-const BITE_ROW = 15
+const BITE_COLUMN = 42
+const BITE_ROW = 24
 /** A bite's radius in cells when nothing at all is left. */
-const BITE_MAX = 10
+const BITE_MAX = 14
 /** Rows from here down are leaves, and a Zombie bites the head, not the leaves. */
-const LEAVES_ROW = 23
+const LEAVES_ROW = 33
 
 /**
- * The three faces from the sheet that this game has a reason to show.
- * Turn-arounds, walking and shooting are left out: a Sunflower here stands
- * still, faces the Zombies, and fires nothing.
+ * The three faces this game has a reason to show. Turn-arounds, walking and
+ * shooting are left out: a Sunflower here stands still, faces the Zombies,
+ * and fires nothing.
  */
 export type SunflowerMood = 'happy' | 'glowing' | 'hurt'
 
@@ -107,47 +134,47 @@ const BOB_STEPS = 30
 
 type Cell = readonly [row: number, column: number, ink: string]
 
-/** The eyes and mouth as drawn, which the other two faces paint over. */
-const FACE_CELLS: readonly Cell[] = [
-  [14, 13, 'B'], [14, 14, 'B'], [14, 21, 'B'], [14, 22, 'B'],
-  ...[15, 16, 17].flatMap((row): Cell[] => [
-    [row, 12, 'B'], [row, 13, 'B'], [row, 14, 'B'],
-    [row, 20, 'B'], [row, 21, 'B'], [row, 22, 'B'],
-  ]),
-  [18, 16, 'B'], [18, 19, 'B'], [19, 17, 'B'], [19, 18, 'B'],
+function block(rows: readonly number[], columns: readonly number[], ink: string): Cell[] {
+  return rows.flatMap((row) => columns.map((column): Cell => [row, column, ink]))
+}
+
+/** The drawing's eyes and mouth, wiped to face so another face can be drawn. */
+const WIPE: readonly Cell[] = [
+  ...block([22, 23, 24, 25, 26, 27], [18, 19, 20, 21], 'b'),
+  ...block([22, 23, 24, 25], [27, 28, 29], 'b'),
+  ...block([26, 27, 28], [21, 22, 23, 24, 25], 'b'),
 ]
 
 /**
  * What each face changes. The happy face is the drawing as it is; the other
- * two wipe its eyes and mouth and draw their own, after the sheet's
- * "making energy" and "being hit" faces.
+ * two wipe its eyes and mouth and draw their own.
  */
 const MOODS: Readonly<Record<SunflowerMood, readonly Cell[]>> = {
   happy: [],
   glowing: [
-    ...FACE_CELLS,
+    ...WIPE,
     // Eyes shut in a grin: two little arches.
-    [15, 12, 'K'], [15, 13, 'K'], [16, 11, 'K'], [16, 14, 'K'],
-    [15, 20, 'K'], [15, 21, 'K'], [16, 19, 'K'], [16, 22, 'K'],
-    // Mouth open wide, tongue showing.
-    [18, 16, 'D'], [18, 17, 'D'], [18, 18, 'D'], [18, 19, 'D'],
-    [19, 16, 'D'], [19, 17, 'P'], [19, 18, 'P'], [19, 19, 'D'],
-    [20, 17, 'D'], [20, 18, 'D'],
+    [24, 17, 'a'], [23, 18, 'a'], [23, 19, 'a'], [23, 20, 'a'], [24, 21, 'a'],
+    [24, 26, 'a'], [23, 27, 'a'], [23, 28, 'a'], [23, 29, 'a'], [24, 30, 'a'],
+    // Mouth open wide.
+    [26, 22, 'a'], [26, 23, 'a'], [26, 24, 'a'], [26, 25, 'a'],
+    [27, 22, 'a'], [27, 23, 'r'], [27, 24, 'r'], [27, 25, 'a'],
+    [28, 23, 'a'], [28, 24, 'a'],
     // Sparkles in the empty corners.
-    ...([[2, 3], [2, 28], [26, 2], [25, 29]] as const).flatMap(([row, column]): Cell[] => [
+    ...([[4, 9], [4, 39], [37, 5], [36, 43]] as const).flatMap(([row, column]): Cell[] => [
       [row, column, 'L'], [row - 1, column, 'L'], [row + 1, column, 'L'],
       [row, column - 1, 'L'], [row, column + 1, 'L'],
     ]),
   ],
   hurt: [
-    ...FACE_CELLS,
+    ...WIPE,
     // Eyes squeezed shut, "> <".
-    [14, 12, 'K'], [15, 13, 'K'], [16, 12, 'K'],
-    [14, 21, 'K'], [15, 20, 'K'], [16, 21, 'K'],
+    [22, 18, 'a'], [23, 19, 'a'], [24, 20, 'a'], [25, 19, 'a'], [26, 18, 'a'],
+    [22, 29, 'a'], [23, 28, 'a'], [24, 27, 'a'], [25, 28, 'a'], [26, 29, 'a'],
     // An open "ow".
-    [18, 17, 'D'], [18, 18, 'D'],
-    [19, 16, 'D'], [19, 17, 'P'], [19, 18, 'P'], [19, 19, 'D'],
-    [20, 17, 'D'], [20, 18, 'D'],
+    [26, 23, 'a'], [26, 24, 'a'],
+    [27, 22, 'a'], [27, 23, 'r'], [27, 24, 'r'], [27, 25, 'a'],
+    [28, 23, 'a'], [28, 24, 'a'],
   ],
 }
 
@@ -164,7 +191,7 @@ function takeBite(grid: string[][], radius: number): void {
   if (radius <= 0) return
   const bitten: [number, number][] = []
   for (let row = 0; row < LEAVES_ROW; row++) {
-    for (let column = 0; column < WIDTH; column++) {
+    for (let column = 0; column < SIZE; column++) {
       if (Math.hypot(row - BITE_ROW, column - BITE_COLUMN) < radius && inked(grid, row, column)) {
         bitten.push([row, column])
       }
@@ -175,7 +202,7 @@ function takeBite(grid: string[][], radius: number): void {
   }
   for (const [row, column] of bitten) {
     for (const [r, c] of [[row + 1, column], [row - 1, column], [row, column + 1], [row, column - 1]] as const) {
-      if (inked(grid, r, c)) grid[r]![c] = 'K'
+      if (inked(grid, r, c)) grid[r]![c] = 'a'
     }
   }
 }
@@ -184,13 +211,13 @@ function build(mood: SunflowerMood, bite: number): HTMLCanvasElement {
   const grid = FRONT.map((line) => [...line])
   for (const [row, column, ink] of MOODS[mood]) {
     const line = grid[row]
-    if (line !== undefined && column >= 0 && column < WIDTH) line[column] = ink
+    if (line !== undefined && column >= 0 && column < SIZE) line[column] = ink
   }
   takeBite(grid, bite)
 
   const sprite = document.createElement('canvas')
-  sprite.width = WIDTH
-  sprite.height = HEIGHT
+  sprite.width = SIZE
+  sprite.height = SIZE
   const context = sprite.getContext('2d')
   if (context !== null) {
     grid.forEach((line, row) => {
@@ -238,13 +265,14 @@ export function drawSunflowerSprite(
   beingEaten: boolean,
 ): void {
   const mood = sunflowerMood(plant, beingEaten)
-  // Rounded to whole cells, so a bite grows a cell at a time and only a
-  // dozen pictures of a bitten Sunflower are ever built.
+  // Rounded to whole cells, so a bite grows a cell at a time and only fifteen
+  // pictures of a bitten Sunflower are ever built.
   const bite = Math.round(BITE_MAX * (1 - health))
 
-  const width = board.squareWidth * 1.02
-  const cell = width / WIDTH
-  const height = cell * HEIGHT
+  // Sized by the drawing, not by the empty margin round it: the drawn part is
+  // as wide as the Square.
+  const cell = (board.squareWidth * 1.02) / (DRAWN_RIGHT - DRAWN_LEFT + 1)
+  const size = cell * SIZE
 
   // Each Sunflower bobs on its own beat, worked out from its Square, so a row
   // of them sways rather than marching in step.
@@ -253,15 +281,16 @@ export function drawSunflowerSprite(
   // A Sunflower being eaten shudders instead of bobbing.
   const shake = mood === 'hurt' ? (Math.floor(tick / 4) % 2 === 0 ? -cell : cell) : 0
 
-  const left = Math.round(centre.x - width / 2 + shake)
-  const top = Math.round(centre.y + board.squareHeight * 0.47 - height + bob)
+  const drawnMiddle = (DRAWN_LEFT + DRAWN_RIGHT + 1) / 2
+  const left = Math.round(centre.x - drawnMiddle * cell + shake)
+  const top = Math.round(centre.y + board.squareHeight * 0.47 - (DRAWN_BOTTOM + 1) * cell + bob)
 
   if (mood === 'glowing') {
     // A soft light behind the head, pulsing. Kept well short of opaque, so the
     // lawn under it can never blend to the Sun's own core colour.
     const glowX = left + (FACE_COLUMN + 0.5) * cell
     const glowY = top + (FACE_ROW + 0.5) * cell
-    const radius = 17 * cell
+    const radius = 22 * cell
     const pulse = 0.35 + 0.15 * Math.sin(tick / 6)
     const gradient = context.createRadialGradient(glowX, glowY, 0, glowX, glowY, radius)
     gradient.addColorStop(0, `rgba(255, 243, 199, ${pulse})`)
@@ -275,6 +304,6 @@ export function drawSunflowerSprite(
   context.save()
   // Nearest-neighbour scaling, or the pixel art is smeared into a blur.
   context.imageSmoothingEnabled = false
-  context.drawImage(sprite(mood, bite), left, top, Math.round(width), Math.round(height))
+  context.drawImage(sprite(mood, bite), left, top, Math.round(size), Math.round(size))
   context.restore()
 }
