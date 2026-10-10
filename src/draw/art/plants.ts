@@ -2,17 +2,13 @@ import type { Planted, Square } from '../../game/board.ts'
 import { PLANTS } from '../../game/plants.ts'
 import { centreOf } from '../layout.ts'
 import type { BoardLayout } from '../layout.ts'
+import { drawSunflowerSprite } from './sunflower.ts'
 
 // Color palette for original plant vector artwork
 const LEAF_DARK = '#1b5e20'
 const LEAF_MID = '#2e7d32'
 const LEAF_LIGHT = '#43a047'
 const PEA_HEAD = '#66bb6a'
-
-const SUNFLOWER_PETAL = '#fdd835'
-const SUNFLOWER_PETAL_EDGE = '#f57f17'
-const SUNFLOWER_FACE = '#f57f17'
-const SUNFLOWER_FACE_EDGE = '#e65100'
 
 const NUT_SHELL = '#c68642'
 const NUT_EDGE = '#5d4037'
@@ -214,79 +210,6 @@ function drawPeashooter(
   const health = healthFraction(plant)
   if (health < 1) {
     applyBiteCutout(context, headX + headRadius * 0.85, headY, headRadius * 1.1 * (1 - health), lawnColor)
-  }
-}
-
-/** Sunflower: golden flower with radiated petals and friendly face disk. */
-function drawSunflower(
-  context: CanvasRenderingContext2D,
-  plant: Planted,
-  board: BoardLayout,
-  centre: { x: number; y: number },
-  lawnColor: string,
-): void {
-  const scale = board.scale
-  const headRadius = board.squareWidth * 0.26
-  const footY = centre.y + board.squareHeight * 0.32
-  const headY = centre.y - board.squareHeight * 0.04
-  const headX = centre.x
-
-  drawBaseLeaves(context, centre.x, footY, scale)
-  drawStem(context, centre.x, footY, headX, headY, 6 * scale)
-
-  // Petals ring radiating around center
-  const petalCount = 12
-  const petalDistance = headRadius * 0.88
-  const petalRadius = headRadius * 0.38
-  context.fillStyle = SUNFLOWER_PETAL
-  context.strokeStyle = SUNFLOWER_PETAL_EDGE
-  context.lineWidth = Math.max(1, 1.5 * scale)
-
-  for (let i = 0; i < petalCount; i++) {
-    const angle = (i / petalCount) * Math.PI * 2
-    const px = headX + Math.cos(angle) * petalDistance
-    const py = headY + Math.sin(angle) * petalDistance
-    context.beginPath()
-    context.arc(px, py, petalRadius, 0, Math.PI * 2)
-    context.fill()
-    context.stroke()
-  }
-
-  // Face disk
-  context.fillStyle = SUNFLOWER_FACE
-  context.strokeStyle = SUNFLOWER_FACE_EDGE
-  context.lineWidth = Math.max(1.5, 2 * scale)
-  context.beginPath()
-  context.arc(headX, headY, headRadius * 0.72, 0, Math.PI * 2)
-  context.fill()
-  context.stroke()
-
-  // Cheerful eyes
-  const eyeDistance = headRadius * 0.25
-  const eyeRadius = headRadius * 0.12
-  context.fillStyle = '#3e2723'
-  context.beginPath()
-  context.arc(headX - eyeDistance, headY - headRadius * 0.08, eyeRadius, 0, Math.PI * 2)
-  context.arc(headX + eyeDistance, headY - headRadius * 0.08, eyeRadius, 0, Math.PI * 2)
-  context.fill()
-
-  context.fillStyle = '#ffffff'
-  context.beginPath()
-  context.arc(headX - eyeDistance + 1, headY - headRadius * 0.08 - 1, eyeRadius * 0.35, 0, Math.PI * 2)
-  context.arc(headX + eyeDistance + 1, headY - headRadius * 0.08 - 1, eyeRadius * 0.35, 0, Math.PI * 2)
-  context.fill()
-
-  // Sweet smile
-  context.strokeStyle = '#3e2723'
-  context.lineWidth = Math.max(1.2, 1.8 * scale)
-  context.lineCap = 'round'
-  context.beginPath()
-  context.arc(headX, headY + headRadius * 0.08, headRadius * 0.25, 0.2, Math.PI - 0.2)
-  context.stroke()
-
-  const health = healthFraction(plant)
-  if (health < 1) {
-    applyBiteCutout(context, headX + headRadius * 0.75, headY, headRadius * 1.1 * (1 - health), lawnColor)
   }
 }
 
@@ -987,6 +910,8 @@ export function drawPlantArt(
   plant: Planted,
   board: BoardLayout,
   lawnColor: (square: Square) => string,
+  tick: number,
+  beingEaten: boolean,
 ): void {
   const centre = centreOf(plant.square, board)
   const squareColor = lawnColor(plant.square)
@@ -996,7 +921,9 @@ export function drawPlantArt(
       drawPeashooter(context, plant, board, centre, squareColor)
       break
     case 'sunflower':
-      drawSunflower(context, plant, board, centre, squareColor)
+      // Pixel art from the user's character sheet; the other plants are still
+      // flat vector shapes until they get sheets of their own.
+      drawSunflowerSprite(context, plant, board, centre, healthFraction(plant), tick, beingEaten)
       break
     case 'wall-nut':
       drawWallNut(context, plant, board, centre, squareColor)

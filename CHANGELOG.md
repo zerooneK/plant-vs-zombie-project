@@ -4,6 +4,24 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.34.0] - 2026-10-10
+
+### Pixel-Art Sunflower
+
+Replaces the Sunflower's flat vector drawing with 48 x 48 pixel art made from the user's own character sheet. Only the Sunflower changes; every other plant keeps its vector art until it gets a sheet of its own. Presentation only: nothing in `src/game/` changed.
+
+- **New file `src/draw/art/sunflower.ts`**: builds the sprite from shapes on a 48 x 48 grid using the sheet's eight-colour palette, traces a dark outline round it, and keeps each finished picture so it is built once rather than every frame. Drawn with image smoothing off so the pixels stay sharp.
+- **Three faces from the sheet**:
+  - *Happy* - big eyes with a shine, cheeks, small smile. The usual face.
+  - *Glowing* - eyes shut in a grin, sparkles and a soft light behind the head, for the last second and a half before the Sunflower makes Sun (read from `stepsUntilSun`).
+  - *Hurt* - "> <" eyes and an open mouth, and a small shudder, while a Zombie is eating it (asked with the existing `plantBeingEaten`).
+- **Idle bob**: each Sunflower bobs one sprite pixel on its own beat, so a row of them does not move in step.
+- **Bites in pixels**: damage is cut out of the right of the head a pixel at a time and the outline follows the bite, in place of the round vector cutout.
+- **Left out on purpose**: the sheet's turn-arounds, walking, shooting and death poses. A Sunflower here stands still, faces the Zombies, fires nothing, and leaves the lawn the moment it is eaten.
+- **Wiring**: `drawPlantArt` now also takes the step count and whether the plant is being eaten; `src/draw/board.ts` works out which plants are being eaten.
+- The glow colour is `#fff3c7`, not the Sun's core `#fff9c4`, so headless checks that find Sun by that colour still find only Sun.
+- **Verification**: typecheck and build pass, all 178 rule tests pass, and all three faces were checked in Chrome on the test bed.
+
 ## [0.33.0] - 2026-10-06
 
 ### Collapse Combat Resolution Sequence (Architecture Refactor)

@@ -1,5 +1,5 @@
 import { MOWER_COLUMN, everySquare } from '../game/board.ts'
-import type { Square } from '../game/board.ts'
+import type { Planted, Square } from '../game/board.ts'
 import { plantBeingEaten } from '../game/zombies.ts'
 import type { GameState } from '../game/sim.ts'
 import { centreOf } from './layout.ts'
@@ -75,10 +75,18 @@ export function drawBoard(
     context.strokeRect(left, top, board.squareWidth, board.squareHeight)
   }
 
+  // The plants a Zombie is biting right now, asked of the rules the same way
+  // the Zombies below ask it, so a plant's face and a Zombie's reach agree.
+  const eaten = new Set<Planted>()
+  for (const zombie of state.zombies) {
+    const food = plantBeingEaten(zombie, state.occupants)
+    if (food !== undefined) eaten.add(food)
+  }
+
   // Plants and Lawn Mowers
   for (const occupant of state.occupants) {
     if (occupant.kind === 'plant') {
-      drawPlantArt(context, occupant, board, lawnColour)
+      drawPlantArt(context, occupant, board, lawnColour, state.tick, eaten.has(occupant))
     } else {
       drawLawnMowerArt(context, occupant.square, board)
     }
