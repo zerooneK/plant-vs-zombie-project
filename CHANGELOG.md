@@ -4,6 +4,20 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.35.0] - 2026-10-10
+
+### Sunflower Matched to the Character Sheet's Front View
+
+Replaces the Sunflower sprite built from shapes (0.34.0) with the front view from the user's character sheet, read off it cell by cell. Presentation only: nothing in `src/game/` changed.
+
+- **Read from the picture, not approximated**: the front view is AI-made art scaled to about four screen pixels per art pixel. The grid spacing was measured from the picture's edges, each cell sampled, the blur round the edges cleaned away, and the detail the blur had eaten (the smile, the eye shine, the cheeks) finished by hand against an enlarged copy with the grid drawn over it.
+- **33 x 31, not 48 x 48**: the sheet's caption says 48 x 48, but the drawing holds 33 x 31 art pixels, and that is the grid used.
+- **Colours from the drawing itself**, since the sheet's printed swatches are not quite what the drawing uses.
+- **The other two faces** paint over the drawing's eyes and mouth only: *glowing* (eyes shut in a grin, mouth open, sparkles) and *hurt* ("> <" eyes, open "ow"). The idle bob, the shudder while being eaten, and the glow behind the head are unchanged.
+- **Bites** still come out a cell at a time from the right of the head, and the edge of a bite now gets the outline colour so the sprite keeps its dark line all round.
+- **Not exact, and why**: the source picture is 139 x 170 and blurred, so a few cells were judgement calls. An exact match needs the original PNG at its real size.
+- **Verification**: typecheck and build pass, all 178 rule tests pass, and all three faces were checked in Chrome on the test bed.
+
 ## [0.34.0] - 2026-10-10
 
 ### Pixel-Art Sunflower
