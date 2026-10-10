@@ -4,6 +4,13 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.36.2] - 2026-10-10
+
+### Docs Caught Up With GitHub
+
+- `AGENTS.md` and `CLAUDE.md` said the repository had no Git remote. It now lives on GitHub, so the "No remote yet" note is replaced by where it lives and what that means for the skills: PRs work there, issues still live in `.scratch/`.
+- `CLAUDE.md` said `npm test` runs 131 checks; it runs 178.
+
 ## [0.36.1] - 2026-10-10
 
 ### Even Eyes and Fuller Cheeks on the Sunflower

@@ -46,7 +46,7 @@ Node 22 and npm. No linter is configured.
 | `npm run dev` | Work on the game at `localhost:5173` |
 | `npm run build` | Typecheck, then build the playable game into `dist/` |
 | `npm run preview` | Serve `dist/` over HTTP, to check the built game |
-| `npm test` | Run the rule checks (`node:test`, no test framework) — 131 checks |
+| `npm test` | Run the rule checks (`node:test`, no test framework) — 178 checks |
 | `npm run typecheck` | Typecheck only |
 
 Run a single file, or a single named check:
@@ -190,7 +190,7 @@ A stale graph is worse than no graph, because it will confidently answer questio
 - **Issue tracker** — issues are markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
 - **Triage labels** — the five default role names, written as a `Status:` line in each issue file. See `docs/agents/triage-labels.md`.
 - **Domain docs** — single-context: `CONTEXT.md` at the root, `docs/adr/` at the root. See `docs/agents/domain.md`.
-- **No remote yet** — the repository has **no Git remote**, so the parts of `implement`, `code-review`, `resolving-merge-conflicts` and `handoff` that talk to GitHub Issues or PRs will stall until you add one. Everything else works offline.
+- **Remote** — the repository lives on GitHub at `github.com/zerooneK/plant-vs-zombie-project`, so the parts of `implement`, `code-review`, `resolving-merge-conflicts` and `handoff` that open or read PRs work there. Issues still live in `.scratch/`, not GitHub Issues.
 
 ## House conventions
 

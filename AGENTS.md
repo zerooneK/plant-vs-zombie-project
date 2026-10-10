@@ -120,9 +120,9 @@ The five default role names, written as a `Status:` line in each issue file. See
 
 Single-context: `CONTEXT.md` at the root, `docs/adr/` at the root. See `docs/agents/domain.md`.
 
-### No remote yet
+### Remote
 
-The repository has **no Git remote**, so the parts of `implement`, `code-review`, `resolving-merge-conflicts` and `handoff` that talk to GitHub Issues or PRs will stall until you add one. Everything else works offline.
+The repository lives on GitHub at `github.com/zerooneK/plant-vs-zombie-project`, so the parts of `implement`, `code-review`, `resolving-merge-conflicts` and `handoff` that open or read PRs work there. Issues still live in `.scratch/`, not GitHub Issues, so those skills read tickets from the files above.
 
 ## Generated output
 
