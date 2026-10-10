@@ -44,13 +44,13 @@ const FRONT: readonly string[] = [
   '.......afccceffffjmggbbbbbbibgmffoccffa.........',
   '.......acccpfifffgiiibbbbbbibbbgfpcofg..........',
   '.......afnccpligagiiibbbbbbbbbbajfffmmma........',
-  '.......afcccccfeabbbbbbbbbbjabbgaiegfccpa.......',
+  '.......afcccccfeabjabbbbbbbjabbgaiegfccpa.......',
   '.......accccpfebgbbaabbbbbbbaabbgagffccnfa......',
-  '........afccfffagbbaabbbbbbaWabbgaefccccfa......',
-  '.........gfffffabbaWagbbbbbaaabbgaeeeccfea......',
+  '........afccfffagbaWabbbbbbaWabbgaefccccfa......',
+  '.........gfffffabbaaagbbbbbaaabbgaeeeccfea......',
   '........apfflijagbaaagbbbbbaaakkgaiefffeg.......',
-  '.......afcffeeeagbjaammarabbbkkkgageffeim.......',
-  '.......apcccffeagkkjjbbrrjbbbbkkgaegbiea........',
+  '.......afcffeeeagbbbbbbarabbbkkkgageffeim.......',
+  '.......apcccffeagkkbbbbrrjbbbbkkgaegbiea........',
   '.......apcccccfeakkkbbbaabbbbbbgalffmjg.........',
   '........jlcccffgagbbbbbbbbbbbbgaelfcfa..........',
   '.........aefegeeeeagggbbbbbbjjalfccccfa.........',
@@ -134,25 +134,47 @@ const BOB_STEPS = 30
 
 type Cell = readonly [row: number, column: number, ink: string]
 
-function block(rows: readonly number[], columns: readonly number[], ink: string): Cell[] {
-  return rows.flatMap((row) => columns.map((column): Cell => [row, column, ink]))
-}
-
-/** The drawing's eyes and mouth, wiped to face so another face can be drawn. */
-const WIPE: readonly Cell[] = [
-  ...block([22, 23, 24, 25, 26, 27], [18, 19, 20, 21], 'b'),
-  ...block([22, 23, 24, 25], [27, 28, 29], 'b'),
-  ...block([26, 27, 28], [21, 22, 23, 24, 25], 'b'),
+/**
+ * The boxes the drawing's eyes and mouth sit in, as [first row, last row,
+ * first column, last column]. The two eyes are the same shape on purpose: in
+ * the picture the left one hung a row lower and a row longer, onto the cheek,
+ * which at this size reads as a mistake rather than a tilt, so the left eye
+ * is the right eye copied across.
+ */
+const FACE_BOXES: readonly (readonly [number, number, number, number])[] = [
+  [21, 25, 18, 20],
+  [21, 25, 27, 29],
+  [26, 28, 21, 25],
 ]
+
+/** The inks of the eyes and mouth: the only cells a new face wipes. */
+const FACE_INKS = new Set(['a', 'j', 'm', 'W', 'r'])
+
+/**
+ * Wipes the drawing's eyes and mouth to plain face, so another face can be
+ * drawn. Only eye and mouth inks are wiped, not everything in the boxes: a
+ * box that reaches a cheek would otherwise punch a brown hole in it.
+ */
+function wipeFace(grid: string[][]): void {
+  for (const [top, bottom, left, right] of FACE_BOXES) {
+    for (let row = top; row <= bottom; row++) {
+      for (let column = left; column <= right; column++) {
+        const line = grid[row]
+        if (line !== undefined && FACE_INKS.has(line[column] ?? '')) line[column] = 'b'
+      }
+    }
+  }
+}
 
 /**
  * What each face changes. The happy face is the drawing as it is; the other
- * two wipe its eyes and mouth and draw their own.
+ * two wipe its eyes and mouth (see `wipeFace`) and draw their own.
  */
 const MOODS: Readonly<Record<SunflowerMood, readonly Cell[]>> = {
   happy: [],
   glowing: [
-    ...WIPE,
+    // Fuller cheeks for the big grin.
+    [26, 17, 'k'], [26, 18, 'k'], [27, 19, 'k'], [27, 29, 'k'],
     // Eyes shut in a grin: two little arches.
     [24, 17, 'a'], [23, 18, 'a'], [23, 19, 'a'], [23, 20, 'a'], [24, 21, 'a'],
     [24, 26, 'a'], [23, 27, 'a'], [23, 28, 'a'], [23, 29, 'a'], [24, 30, 'a'],
@@ -167,10 +189,9 @@ const MOODS: Readonly<Record<SunflowerMood, readonly Cell[]>> = {
     ]),
   ],
   hurt: [
-    ...WIPE,
     // Eyes squeezed shut, "> <".
-    [22, 18, 'a'], [23, 19, 'a'], [24, 20, 'a'], [25, 19, 'a'], [26, 18, 'a'],
-    [22, 29, 'a'], [23, 28, 'a'], [24, 27, 'a'], [25, 28, 'a'], [26, 29, 'a'],
+    [21, 18, 'a'], [22, 19, 'a'], [23, 20, 'a'], [24, 19, 'a'], [25, 18, 'a'],
+    [21, 29, 'a'], [22, 28, 'a'], [23, 27, 'a'], [24, 28, 'a'], [25, 29, 'a'],
     // An open "ow".
     [26, 23, 'a'], [26, 24, 'a'],
     [27, 22, 'a'], [27, 23, 'r'], [27, 24, 'r'], [27, 25, 'a'],
@@ -209,6 +230,7 @@ function takeBite(grid: string[][], radius: number): void {
 
 function build(mood: SunflowerMood, bite: number): HTMLCanvasElement {
   const grid = FRONT.map((line) => [...line])
+  if (mood !== 'happy') wipeFace(grid)
   for (const [row, column, ink] of MOODS[mood]) {
     const line = grid[row]
     if (line !== undefined && column >= 0 && column < SIZE) line[column] = ink

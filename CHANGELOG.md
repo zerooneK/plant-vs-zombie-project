@@ -4,6 +4,18 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.36.1] - 2026-10-10
+
+### Even Eyes and Fuller Cheeks on the Sunflower
+
+Fixes picked out by the user from in-game screenshots. Presentation only: nothing in `src/game/` changed.
+
+- **Eyes the same size**: in the source picture the left eye hung one row lower and one row longer than the right, down onto the cheek. At 48 x 48 that read as a mistake, not a tilt, so the left eye is now the right eye copied across: both are five rows tall, on the same rows, with the shine in the same place, and the left one no longer touches the cheek.
+- **A hole in the cheek, fixed**: the glowing and hurt faces wiped the drawing's eyes by painting a whole box round them brown, and the left box reached one cell of the cheek, leaving a brown hole in it. Faces now wipe only eye and mouth colours, so the cheeks are never touched.
+- **Fuller cheeks when glowing**: three more pink cells on the left cheek and one on the right, so the big grin's cheeks read as full.
+- **Hurt eyes** moved up a row to sit where the eyes now are.
+- **Verification**: typecheck and build pass, all 178 rule tests pass, and the happy, glowing and hurt faces were checked in Chrome on the test bed against the mock-up the user chose.
+
 ## [0.36.0] - 2026-10-10
 
 ### Sunflower From the User's Full-Size Picture, at 48 x 48
