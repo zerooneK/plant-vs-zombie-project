@@ -37,14 +37,14 @@ const CHOMPER_COST = 150
  * reason, and one that waits for a thing it can watch is a check that says what it
  * means.
  */
-const CHOMPER_SQUARE: Square = { row: 0, column: 7 }
+const CHOMPER_SQUARE: Square = { row: 0, column: 8 }
 
 /**
  * Steps from planting until a Zombie walking in on the planting step is standing in this
  * Chomper's Square.
  *
  * **Measured, and it is two more than the walk looks like it should be.** A Zombie is
- * in Column 7 - the Chomper's Column - once it has walked 282 steps, which is the
+ * in Column 8 - the Chomper's Column - once it has walked 282 steps, which is the
  * arithmetic of a Zombie's own speed and the width of a Column and nothing else. Two
  * steps come out of that before the Zombie is standing in the Square rather than merely
  * a step from it: one for `sendDueWaves`, which puts a Zombie on the lawn from the step
@@ -53,15 +53,15 @@ const CHOMPER_SQUARE: Square = { row: 0, column: 7 }
  * reaches a Square does not stop in it until the step after.
  *
  * **Nothing is ever observed standing in a Chomper's Square, and that is the whole of
- * the step before the one above.** The Zombie is seen in Column 8 on step 283 and gone
+ * the step before the one above.** The Zombie is seen in Column 9 on step 283 and gone
  * on step 284, and the checks below are written around that rather than in spite of it:
  * there is no state in which the check can look at a Zombie that has arrived at a
  * Chomper and has not been eaten, because arriving and being eaten happen inside the
  * same step. `THE_FIRST_BITE` is that visible step.
  *
  * Getting this wrong is not a rounding error. A fixture a step the other way puts the
- * Zombie in Column 8 - `squareAtX` puts a Zombie standing exactly on a Column's boundary
- * in the Column to its right, and x = 640 is the boundary - so it never arrives at all
+ * Zombie in Column 9 - `squareAtX` puts a Zombie standing exactly on a Column's boundary
+ * in the Column to its right, and x = 720 is the boundary - so it never arrives at all
  * and walks on to the Row's Lawn Mower, taking the Chomper with it if it is slow enough.
  * That is how every Zombie in the game is asked where it is, and the Potato Mine's
  * checks depend on the same boundary.
@@ -153,7 +153,7 @@ const A_WAVE_KEEP_ALIVE = (atStep: number) => oneZombieIn(CHOMPER_SQUARE.row + 1
  * Long enough that nothing this file does can reach the far end of it, so the
  * keep-alive Zombie is still walking in every check here - which is the point of it.
  */
-const THE_ENTIRE_LAWN = 9 * Math.round(4.7 * STEPS_PER_SECOND) + STEPS_PER_SECOND
+const THE_ENTIRE_LAWN = 10 * Math.round(4.7 * STEPS_PER_SECOND) + STEPS_PER_SECOND
 
 /**
  * A Chomper standing in `CHOMPER_SQUARE`, paid for out of Sun that has fallen, with a

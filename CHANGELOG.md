@@ -4,6 +4,24 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.40.0] - 2026-10-12
+
+### The Mower Strip: Ten Columns, Nine to Plant
+
+The board now matches the original's layout. The Lawn Mowers stand on their own strip at the left, and there are nine Columns to plant to the right of it.
+
+- **The board is ten Columns**: the mower strip, then nine Columns of lawn. Before, it was nine Columns with the mower standing in the first, so a fresh Row had only eight to plant.
+- **The strip never takes a plant**, before or after its mower has run (new `isPlantable` in `board.ts`; `place` refuses it like a taken Square, with no Sun spent and the packet still chosen). Before, a Row that had spent its mower got the Square back as lawn. That reverses a ticket 06 decision; ADR 0024 records why.
+- **The strip is drawn as bare earth**, so a Square that refuses a plant looks different from one that takes it.
+- **Zombies walk one Column further**: 9 Columns to their mower, 10 to get past the left edge. Their speed is unchanged. On Level 1-1, a player who plants nothing now loses at 147.0 seconds instead of 142.3, and an economy-first plan wins with 17.9 seconds to spare instead of 17.6.
+- **Checks**:
+  - New and rewritten checks for the ten-Column board and the strip refusing a plant after its mower has run.
+  - Checks that placed a plant "one Column from the right" (the Chomper, Potato Mine, Cherry Bomb and pea checks) moved one Column right, so their walks are the same length as before.
+  - `untilTick` now waits up to six thousand steps, which is two crossings of the wider board.
+  - The Sunflower check now lets Sun it made before being eaten run out before it looks.
+- **Docs**: ADR 0024; the spec no longer describes the mower standing on the lawn.
+- **Verification**: typecheck and build pass, and all 179 rule tests pass, one of them new: the mower strip is the first Column and the only Squares that refuse a plant.
+
 ## [0.39.0] - 2026-10-12
 
 ### Easier Zombies and a Faster Sunflower

@@ -57,18 +57,18 @@ export function oneZombieIn(row: number, atStep: number): Wave {
 /**
  * Plays the rules on until the game has reached that step of play, naming what it
  * is waiting for, so that a check failing inside it reports which of the game's
- * promises was not kept rather than only that four thousand steps were not
- * enough.
+ * promises was not kept rather than only that six thousand steps were not
+ * enough. Six thousand is a Zombie crossing the ten-Column board twice, with room.
  */
 export function untilTick(state: GameState, tick: number, whatItIsWaitingFor: string): GameState {
   let current = state
-  for (let step = 0; step < 4000; step++) {
+  for (let step = 0; step < 6000; step++) {
     if (current.tick >= tick) {
       return current
     }
     current = apply(current, { kind: 'advance' })
   }
-  assert.fail(`the game never got there in four thousand steps: ${whatItIsWaitingFor}`)
+  assert.fail(`the game never got there in six thousand steps: ${whatItIsWaitingFor}`)
 }
 
 /**

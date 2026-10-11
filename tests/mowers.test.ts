@@ -27,13 +27,13 @@ const ROW = 2
 const MOWER_SQUARE: Square = { row: ROW, column: MOWER_COLUMN }
 
 /**
- * Steps after a Zombie walks in before it reaches its Row's Lawn Mower: eight
- * Columns to cross to get there, because the mower stands in the ninth.
+ * Steps after a Zombie walks in before it reaches its Row's Lawn Mower: nine
+ * Columns to cross to get there, because the mower stands in the tenth.
  */
-const STEPS_TO_THE_MOWER = 8 * ZOMBIE_STEPS_PER_COLUMN
+const STEPS_TO_THE_MOWER = 9 * ZOMBIE_STEPS_PER_COLUMN
 
 /**
- * The step a Zombie that walked in on that step is mown on: eight Columns to
+ * The step a Zombie that walked in on that step is mown on: nine Columns to
  * cross, and then the one step that carries it onto the mower Square.
  *
  * Worked out from the walk rather than looked up, so that a check can ask for the
@@ -69,7 +69,7 @@ test('a Zombie reaching the left edge of a Row sets off that Row\'s Lawn Mower',
     'the Zombie walked in',
   )
 
-  // Eight Columns of walking, with nothing on the lawn to stop it, brings it to
+  // Nine Columns of walking, with nothing on the lawn to stop it, brings it to
   // the left edge of its Row. A Zombie walks between Squares rather than in them,
   // so this is the step where it is standing exactly on the mower Square's far
   // edge: it has not yet crossed onto the mower, and the mower is still waiting.
@@ -209,18 +209,19 @@ test('spending one Row\'s Lawn Mower leaves every other Row its own', () => {
   )
 })
 
-test('a Row that has spent its Lawn Mower can be planted in the Square it left', () => {
-  // The mower's Square is drawn as bare grass once the mower has gone, so it takes
-  // a plant. A Square that looks like every other bare Square and refused one
-  // would be a Square a player cannot read, and the mower Column is the one place
-  // on the lawn where a plant can never be reached, eaten or shot past - so the
-  // space coming back is the honest answer, not a loophole.
+test('a Row that has spent its Lawn Mower still cannot be planted in the Square it left', () => {
+  // The mower Column is not lawn to plant in, before or after its mower has run. It is
+  // the original's layout: a strip the mowers stand in, and nine Columns to plant to
+  // the right of it.
   //
-  // Settled at ticket 06, when the mower stopped being a mower with a flag on it
-  // and became a mower that is simply not on the lawn any more.
+  // This reverses ticket 06, which let the Square come back as bare grass once the
+  // mower had gone. That made a Row that had lost its mower nine Columns wide and
+  // every other Row eight, so how much lawn a player had depended on how badly the
+  // level had gone. Now every Row is nine Columns to plant, always.
+  //
   // The Wave a long way off is there so the level is still being played while this
   // check plays it: a level of one Wave is won the moment its only Zombie is mown,
-  // and this check goes on to collect Sun and plant, which a won level will not do.
+  // and this check goes on to plant, which a won level will not do.
   const mown = untilTick(
     initialGameState(
       DEFAULT_SEED,
@@ -232,21 +233,17 @@ test('a Row that has spent its Lawn Mower can be planted in the Square it left',
     stepAZombieReachesItsMower(1),
     'the Zombie reached its mower and the mower ran',
   )
-  assert.equal(hasLawnMower(mown.occupants, MOWER_SQUARE), false, 'the mower has run, leaving bare lawn')
-  assert.equal(occupantAt(mown.occupants, MOWER_SQUARE), null, 'and nothing standing in that Square at all')
+  assert.equal(hasLawnMower(mown.occupants, MOWER_SQUARE), false, 'the mower has run')
+  assert.equal(occupantAt(mown.occupants, MOWER_SQUARE), null, 'and nothing is standing in that Square at all')
 
   const affordable = withSunToPlant(mown)
-  const planted = apply(apply(affordable, { kind: 'choose', choice: 'peashooter' }), {
+  const refused = apply(apply(affordable, { kind: 'choose', choice: 'peashooter' }), {
     kind: 'place',
     square: MOWER_SQUARE,
   })
 
-  assert.equal(
-    plantIn(planted.occupants, MOWER_SQUARE)?.name,
-    'peashooter',
-    'so a plant goes into the Square the mower left behind',
-  )
-  assert.equal(planted.sun, affordable.sun - 100, 'and it costs Sun, as it does in any other Square')
+  assert.equal(plantIn(refused.occupants, MOWER_SQUARE), undefined, 'and still no plant goes into it')
+  assert.equal(refused.sun, affordable.sun, 'and no Sun is spent')
 })
 
 test('initialGameState starts with zero spent lawn mowers', () => {
@@ -272,7 +269,7 @@ test('runMowers encapsulates spentMowers accumulation in sorted order', () => {
     id: 1,
     name: 'basic',
     row: 0,
-    walked: 8 * ZOMBIE_STEPS_PER_COLUMN + 1,
+    walked: 9 * ZOMBIE_STEPS_PER_COLUMN + 1,
     health: 200,
     armour: 0,
     stepsUntilBite: 0,
@@ -283,7 +280,7 @@ test('runMowers encapsulates spentMowers accumulation in sorted order', () => {
     id: 2,
     name: 'basic',
     row: 3,
-    walked: 8 * ZOMBIE_STEPS_PER_COLUMN + 1,
+    walked: 9 * ZOMBIE_STEPS_PER_COLUMN + 1,
     health: 200,
     armour: 0,
     stepsUntilBite: 0,

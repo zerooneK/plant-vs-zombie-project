@@ -57,8 +57,10 @@ function marginInSeconds(state: GameState): number {
  * It was 22.9 until the balance pass that took a Basic Zombie to 200 health and a
  * Sunflower to eighteen seconds. It is smaller now because the level ends sooner:
  * Zombies fall faster, so the last of the Flag Wave is down sooner after it walks in.
+ * It went to 17.9 when the board gained the mower Column: every Zombie walks one
+ * Column further before it is anywhere a mower could take it.
  */
-const ECONOMY_MARGIN_IN_SECONDS = 17.6
+const ECONOMY_MARGIN_IN_SECONDS = 17.9
 
 /** What a Sunflower costs, written out rather than read from the rules. */
 const SUNFLOWER_COST = 50
@@ -91,7 +93,7 @@ const PRODUCTION_INTERVAL_IN_SECONDS = 18
 const PAYBACK_IN_SECONDS = 2 * PRODUCTION_INTERVAL_IN_SECONDS
 
 /**
- * How long a Zombie takes to walk the length of the whole lawn: the nine Columns
+ * How long a Zombie takes to walk the length of the lawn it can be planted on: the nine Columns
  * at 4.7 seconds each, worked out here rather than read from the rules so that a
  * check can catch the number being wrong.
  *
@@ -206,7 +208,9 @@ test('a player who builds an economy before a defence still wins Level 1-1', () 
  * It is written here rather than read from the rules, so that a check can catch the
  * pacing being wrong: Sun flowing faster, a Zombie walking faster, a Wave moving,
  * and this number moves with all three. It was 142.3 when the Sunflower arrived and
- * the spacing was last settled at ticket 08, and it has not moved since - which is
+ * the spacing was last settled at ticket 08. It moved to 147.0, exactly one Column of
+ * Zombie walk later, when the board gained its mower Column and every Row became ten
+ * Columns long; before that it had not moved - which is
  * the answer to whether the Sunflower's arrival disturbed the level's pacing, since
  * a player who plants nothing never gets near one.
  *
@@ -216,7 +220,7 @@ test('a player who builds an economy before a defence still wins Level 1-1', () 
  * into a Row with no mower left while the level's hardest Wave is still two Waves
  * away. They never see the Flag Wave at all, which is what losing early *is*.
  */
-const LOSING_TIME = 142.3
+const LOSING_TIME = 147.0
 
 test('a player who plants nothing loses Level 1-1, at a time the check states', () => {
   // The other half of "a level has to be answerable", and the half that makes the

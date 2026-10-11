@@ -828,7 +828,7 @@ test('all four shooters are food for three bites and Recharge for seven and a ha
   // The last Column, so the Row's Zombie is standing on the plant almost at once
   // rather than after a walk across the lawn: this check is about how long a plant
   // lasts and how long its packet takes, and not about how far away anything is.
-  const square: Square = { row, column: 8 }
+  const square: Square = { row, column: 9 }
 
   for (const plant of ['peashooter', 'snow-pea', 'repeater', 'puff-shroom'] as const) {
     const level = levelOffering([plant], oneZombieIn(row, WAVE_AT))
