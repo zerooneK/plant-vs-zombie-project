@@ -185,6 +185,15 @@ A stale graph is worse than no graph, because it will confidently answer questio
 
 `ask-matt` is the router over all 25 vendored skills. Read `.agents/skills/ask-matt/SKILL.md` (the main flow) and `PHASE-BOUNDARIES.md` (the context-management decision tree) before picking a workflow. It is user-invoked, so it will never fire on its own — a human has to ask for it.
 
+## Sub-agents
+
+The main conversation is the orchestrator: it talks to the user and writes the code itself, because check-first work goes one slice at a time and cannot be split across agents. Two project sub-agents in `.claude/agents/` take the jobs that do split off cleanly, both on Sonnet:
+
+- **`rule-checker`** — read-only review of a change against the rules in this file and `AGENTS.md`. Run it before reporting a change done. It reports; it never edits, so the fix is still reviewed by someone other than its author.
+- **`visual-checker`** — opens `dist/index.html` in a browser (`cloakbrowser` if present, else Claude in Chrome), screenshots, and reports what is drawn. It keeps image-heavy work out of the main conversation. It looks; it does not check rules.
+
+Tell the user each time work is handed to one, and what came back.
+
 ## Agent skills
 
 - **Issue tracker** — issues are markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.

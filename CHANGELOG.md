@@ -4,6 +4,16 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.37.0] - 2026-10-11
+
+### Project sub-agents
+
+Adds two Claude Code sub-agents under `.claude/agents/`, both on Sonnet. The main conversation stays the orchestrator and keeps writing the code, since check-first work goes one slice at a time:
+
+- **`rule-checker`**: read-only review of a change against `AGENTS.md` and `CLAUDE.md`. It covers the `src/game/` boundary, the single `apply` entry point, check-first order, restated numbers in tests, step order in `advance`, and the version ritual. It reports and never edits.
+- **`visual-checker`**: opens `dist/index.html` in a browser (`cloakbrowser` if present, else Claude in Chrome), takes screenshots and reports what is drawn. It names any state it could not reach.
+- `CLAUDE.md`: new "Sub-agents" section describing both and when to use them.
+
 ## [0.36.2] - 2026-10-10
 
 ### Docs Caught Up With GitHub
