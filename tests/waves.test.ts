@@ -229,7 +229,7 @@ test("the Flag Wave is the last Wave of the Level, and the only one", () => {
 
 /**
  * The step the lone Zombie of a one-Wave level reaches its Row's Lawn Mower on:
- * the eight Columns to cross, and then the one step that carries it onto the
+ * the nine Columns to cross, and then the one step that carries it onto the
  * mower's own Square.
  *
  * Worked out from the walk rather than read from the rules, as the mower and Game
@@ -237,7 +237,7 @@ test("the Flag Wave is the last Wave of the Level, and the only one", () => {
  * caught here rather than quietly absorbed.
  */
 function stepTheZombieReachesItsMower(walkedInAtStep: number): number {
-  return walkedInAtStep + 8 * ZOMBIE_STEPS_PER_COLUMN + 1
+  return walkedInAtStep + 9 * ZOMBIE_STEPS_PER_COLUMN + 1
 }
 
 test('a Level is won when the last Wave has come and no Zombies remain', () => {
@@ -303,7 +303,7 @@ test('a Zombie getting in on the same step the last Wave is gone is a loss, not 
   const firstMownAt = stepTheZombieReachesItsMower(ONE_WAVE)
   const secondMownAt = firstMownAt + 1
   const lastWalksIn = firstMownAt + 2
-  const breachesAt = lastWalksIn + 9 * ZOMBIE_STEPS_PER_COLUMN + 1
+  const breachesAt = lastWalksIn + 10 * ZOMBIE_STEPS_PER_COLUMN + 1
 
   const level = levelWith(
     oneZombieIn(ROW, ONE_WAVE),

@@ -42,7 +42,7 @@ const FULL_HEALTH = 300
 const BITE_DAMAGE = 100
 
 /** Where the checks below stand their Peashooter: a long clear run at the left. */
-const PEA_SQUARE: Square = { row: 2, column: 1 }
+const PEA_SQUARE: Square = { row: 2, column: 2 }
 
 /**
  * Where the eating checks stand their Peashooter: the last Column, the one
@@ -640,8 +640,8 @@ test('a Zombie that walks past the left of the board leaves the lawn', () => {
   // end at all, so a level of one Wave was simply a level that went on for ever;
   // now that a level is won once its last Wave has come and the lawn is clear, a
   // one-Wave fixture is a level that finishes - and the mower saving the first
-  // Zombie would win it, forty seconds before the second Zombie was due.
-  const SAVED_AT = 1 + 40 * STEPS_PER_SECOND
+  // Zombie would win it, forty-five seconds before the second Zombie was due.
+  const SAVED_AT = 1 + 45 * STEPS_PER_SECOND
   const SECOND_WAVE = SAVED_AT + 1
   const oneThenAnother = levelWith(
     { atStep: 1, zombies: [{ name: 'basic', row: 2 }] },
@@ -662,7 +662,7 @@ test('a Zombie that walks past the left of the board leaves the lawn', () => {
   const arrivedAgain = untilTick(initialGameState(DEFAULT_SEED, oneThenAnother), SECOND_WAVE)
   assert.equal(arrivedAgain.zombies.length, 1, 'a second Zombie walks in behind it, into a Row with no mower left')
 
-  // About forty seconds of walking to cross nine Columns, and nothing in the way
+  // About forty-five seconds of walking to cross nearly all ten Columns, and nothing in the way
   // to interrupt it, so this check is about one thing only: where the Zombie
   // goes when it gets to the end rather than stopping there.
   //
@@ -671,7 +671,7 @@ test('a Zombie that walks past the left of the board leaves the lawn', () => {
   // the level, and `game-over.test.ts` is where that is checked. All this asks is
   // the narrower thing, which is the Zombie's own account - that it goes, rather
   // than standing off the side of the board for ever where no player can see it.
-  const nearlyOff = untilTick(arrivedAgain, arrivedAgain.tick + 40 * STEPS_PER_SECOND)
+  const nearlyOff = untilTick(arrivedAgain, arrivedAgain.tick + 45 * STEPS_PER_SECOND)
   assert.ok(zombieX(zombieIn(nearlyOff, 2)) < SQUARE_WIDTH, 'it is nearly off the left of the board')
 
   const gone = until(nearlyOff, (state) => state.zombies.length === 0)
@@ -777,16 +777,16 @@ test('a Lawn Mower clears a Buckethead Zombie on contact, ignoring its armour', 
 
 test('a Cherry Bomb blast destroys an armoured Zombie and its armour in one hit', () => {
   const BOMB_COST = 150
-  const BOMB_SQUARE: Square = { row: 2, column: 6 }
+  const BOMB_SQUARE: Square = { row: 2, column: 7 }
   const level: Level = {
     ...LEVEL_1_1,
     plants: ['cherry-bomb'],
     waves: [{ atStep: 30 * STEPS_PER_SECOND, zombies: [{ name: 'buckethead', row: 2 }] }],
   }
   const ready = withSunToPlant(initialGameState(DEFAULT_SEED, level), BOMB_COST)
-  // 283 steps from edge to column 7
+  // 283 steps from edge to column 8
   const arrivedAtSquare = untilTick(ready, 30 * STEPS_PER_SECOND + 283)
-  assert.equal(squareAtX(2, zombieX(zombieIn(arrivedAtSquare, 2)))?.column, 7, 'Buckethead reached Column 7')
+  assert.equal(squareAtX(2, zombieX(zombieIn(arrivedAtSquare, 2)))?.column, 8, 'Buckethead reached Column 8')
 
   const chosen = apply(arrivedAtSquare, { kind: 'choose', choice: 'cherry-bomb' })
   assert.equal(chosen.chosen, 'cherry-bomb', 'Cherry Bomb was chosen')

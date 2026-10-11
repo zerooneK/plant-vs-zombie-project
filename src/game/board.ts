@@ -1,7 +1,8 @@
 import type { PlantName } from './plants.ts'
 
 export const BOARD_ROWS = 5
-export const BOARD_COLUMNS = 9
+/** The mower Column, then nine Columns to plant in, as in the original. */
+export const BOARD_COLUMNS = 10
 
 /** The size of one Square, in the board's own units, before the window scales it. */
 export const SQUARE_WIDTH = 80
@@ -54,22 +55,23 @@ export function everySquare(): Square[] {
 }
 
 /**
- * The Column a Row's Lawn Mower stands in.
+ * The Column a Row's Lawn Mower stands in, which is never planted in.
  *
- * In the original the mower sits on its own strip to the left of the lawn,
- * which is not one of the nine plantable Columns. This board has no such strip,
- * so the mower stands in the first Column instead. That is a deliberate
- * difference from the original, and it is a visible one: the first Column of
- * every Row cannot be planted, so a fresh lawn is eight Columns wide to plant.
+ * As in the original: the mowers stand on a strip at the left of the lawn, and
+ * there are nine Columns to plant to the right of it, whether or not a Row's
+ * mower has run.
  *
- * Once a mower has run it is off the lawn, and its Square is bare grass like any
- * other - so a Row that has spent its mower is nine Columns wide to plant. That
- * is a consequence of spending the Row's last defence rather than a rule in its
- * own right, and it is settled at ticket 06: the mower's absence is the whole of
- * the record that it has run, and a Square nothing is standing in is a Square a
- * plant can go in.
+ * Until 0.40 the board was nine Columns with the mower standing in the first,
+ * so a fresh Row had eight to plant, and a Row that had spent its mower got its
+ * Square back and had nine (ticket 06). How much lawn a player had then
+ * depended on how badly the level had gone; now it is always nine.
  */
 export const MOWER_COLUMN = 0
+
+/** Whether a plant may ever go in this Square: anywhere but the mower Column. */
+export function isPlantable(square: Square): boolean {
+  return square.column !== MOWER_COLUMN
+}
 
 /**
  * Anything standing in a Square.

@@ -38,12 +38,12 @@ const THIRTY_SECONDS = 30 * STEPS_PER_SECOND
 /**
  * Where the checks below stand their mine, and how long a Zombie takes to get there.
  *
- * The seventh Column, which is a choice rather than a default. A Zombie crosses one
+ * The eighth Column, the second from the right, which is a choice rather than a default. A Zombie crosses one
  * Column in about four and a half seconds, so the Column a mine is planted in decides
  * how much warning a check has - and the checks below need both kinds. One wants a
  * Zombie to arrive while the mine is still asleep, and another wants one to arrive
  * after it has woken, and fifteen seconds is between about four and five Columns of
- * Zombie walk. The seventh is the right end of the lawn for that: a Zombie walking in
+ * Zombie walk. The eighth is the right end of the lawn for that: a Zombie walking in
  * on the first step is standing in it on the 284th, comfortably inside the arming
  * delay, and a Zombie walking in nine hundred steps later is standing in it long
  * after it.
@@ -52,7 +52,7 @@ const THIRTY_SECONDS = 30 * STEPS_PER_SECOND
  * arrive is a check that fails for the wrong reason, and one that waits for a thing
  * it can watch is a check that says what it means.
  */
-const MINE_SQUARE: Square = { row: 0, column: 7 }
+const MINE_SQUARE: Square = { row: 0, column: 8 }
 
 /**
  * A level offering a Potato Mine and nothing else.

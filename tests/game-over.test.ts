@@ -23,16 +23,16 @@ const MOWER_SQUARE: Square = { row: ROW, column: MOWER_COLUMN }
 const PLANT_SQUARE: Square = { row: 0, column: 2 }
 
 /**
- * The step the first Zombie is mown on: eight Columns to cross, and then the one
+ * The step the first Zombie is mown on: nine Columns to cross, and then the one
  * step that carries it onto the mower Square.
  */
 function stepAZombieReachesItsMower(walkedInAtStep: number): number {
-  return walkedInAtStep + 8 * ZOMBIE_STEPS_PER_COLUMN + 1
+  return walkedInAtStep + 9 * ZOMBIE_STEPS_PER_COLUMN + 1
 }
 
 /**
  * The step a Zombie that walked in on that step walks off the left of the board
- * on: nine Columns to cross, and then the one step that carries it past the left
+ * on: ten Columns to cross, and then the one step that carries it past the left
  * edge of the board altogether.
  *
  * Worked out from the walk rather than looked up, for the same reason the mower
@@ -42,7 +42,7 @@ function stepAZombieReachesItsMower(walkedInAtStep: number): number {
  * Zombie past the left edge of the board has got in.
  */
 function stepAZombieBreaches(walkedInAtStep: number): number {
-  return walkedInAtStep + 9 * ZOMBIE_STEPS_PER_COLUMN + 1
+  return walkedInAtStep + 10 * ZOMBIE_STEPS_PER_COLUMN + 1
 }
 
 const FIRST_WALK_IN = 1
@@ -118,7 +118,7 @@ test('Game Over stops the level: the Zombies stop walking and planting stops', (
   // a claim about a Zombie that is still walking, not about the one that ended
   // the level and is already gone.
   const thirdWalksIn =
-    stepAZombieBreaches(SECOND_WALK_IN) - Math.round((9 * ZOMBIE_STEPS_PER_COLUMN) / 2)
+    stepAZombieBreaches(SECOND_WALK_IN) - Math.round((10 * ZOMBIE_STEPS_PER_COLUMN) / 2)
   const onTheLine = untilTick(
     withSunToPlant(
       initialGameState(

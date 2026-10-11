@@ -1,4 +1,5 @@
 import {
+  isPlantable,
   occupantAt,
   plantIn,
   startingOccupants,
@@ -284,6 +285,12 @@ function place(state: GameState, square: Square): GameState {
     name === null ? undefined : state.seedBank.find((candidate) => candidate.name === name)
 
   if (name === null || name === SHOVEL || packet === undefined) {
+    return { ...state }
+  }
+
+  // The mower Column is never lawn to plant in, even once its mower has run. A
+  // refusal like any other: no Sun, and the packet stays chosen.
+  if (!isPlantable(square)) {
     return { ...state }
   }
 

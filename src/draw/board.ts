@@ -1,4 +1,4 @@
-import { MOWER_COLUMN, everySquare } from '../game/board.ts'
+import { MOWER_COLUMN, everySquare, isPlantable } from '../game/board.ts'
 import type { Planted, Square } from '../game/board.ts'
 import { ZOMBIE_BITE_INTERVAL } from '../game/balance.ts'
 import { plantBeingEaten } from '../game/zombies.ts'
@@ -14,6 +14,9 @@ import { PEA_RADIUS, drawShotArt } from './art/projectiles.ts'
 const BACKGROUND = '#22301f'
 const LAWN_EVEN = '#7cb342'
 const LAWN_ODD = '#689f38'
+/** The mower strip: bare earth rather than grass, so it reads as not lawn to plant in. */
+const STRIP_EVEN = '#a1886a'
+const STRIP_ODD = '#94795c'
 const SELECTED_FILL = 'rgba(255, 235, 59, 0.38)'
 const SELECTED_EDGE = '#fdd835'
 /** Steps a plant's red flash takes to fade after a bite. */
@@ -27,11 +30,13 @@ const FLASH_STEPS = 20
  * be filled in with the wrong stripe if the stripes ever change.
  */
 export function lawnColour(square: Square): string {
-  return (square.row + square.column) % 2 === 0 ? LAWN_EVEN : LAWN_ODD
+  const even = (square.row + square.column) % 2 === 0
+  if (!isPlantable(square)) return even ? STRIP_EVEN : STRIP_ODD
+  return even ? LAWN_EVEN : LAWN_ODD
 }
 
 /**
- * Paints the lawn: five Rows crossed by nine Columns of mown stripes, whatever
+ * Paints the lawn: five Rows crossed by the mower strip and nine Columns of mown stripes, whatever
  * is standing in them, the selected Square marked, and the Sun lying on it.
  *
  * All characters and elements are drawn as original flat vector artwork made

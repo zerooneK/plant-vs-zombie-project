@@ -46,7 +46,7 @@ Node 22 and npm. No linter is configured.
 | `npm run dev` | Work on the game at `localhost:5173` |
 | `npm run build` | Typecheck, then build the playable game into `dist/` |
 | `npm run preview` | Serve `dist/` over HTTP, to check the built game |
-| `npm test` | Run the rule checks (`node:test`, no test framework) — 178 checks |
+| `npm test` | Run the rule checks (`node:test`, no test framework) — 179 checks |
 | `npm run typecheck` | Typecheck only |
 
 Run a single file, or a single named check:

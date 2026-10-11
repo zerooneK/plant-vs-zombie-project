@@ -178,10 +178,15 @@ test('a Sunflower a Zombie has eaten makes no more Sun', () => {
   }
   assert.equal(flowerIn(state, square), null, 'the Sunflower has been eaten')
 
+  // Sun it made before it was eaten may still be lying there, and is let run out
+  // first: what is being asked is whether it makes any more.
+  for (let step = 0; step < INTERVAL && sunOver(state, square).length > 0; step++) {
+    state = apply(state, { kind: 'advance' })
+  }
   const before = sunOver(state, square).length
   const waitedOn = afterSteps(state, INTERVAL)
 
-  assert.equal(before, 0, 'and it left nothing lying over the Square it was eaten on')
+  assert.equal(before, 0, 'and once the Sun it made before then has gone, nothing is lying over the Square it was eaten on')
   assert.equal(
     waitedOn.tokens.filter((token) => token.x === centreX(square)).length,
     0,
