@@ -4,6 +4,311 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.38.0] - 2026-10-12
+
+### A Pixel-Art Peashooter, One Size for Pixel Art, and a Red Flash Instead of a Bite
+
+The second character in the Sunflower's style, and the shared code every later one will use. Presentation only: nothing in `src/game/` changed.
+
+- **New `src/draw/art/pixel.ts`**: grids of letters, repainting cells for a face, the red flash, turning a grid into a picture, keeping each picture once built, and placing it on its Square. A character file now holds only its grid, colours, faces and movement.
+- **One size for every pixel-art character**: 42 cells to a Square's width, so a cell, and the one-cell outline, is the same on all of them. The Sunflower was drawn larger than the Peashooter, with pixels about a fifth bigger; it is now a little smaller, about 0.83 of a Square wide, and no longer reaches the Square's edges.
+- **A bite is a red flash, not a hole.** A plant a Zombie bites turns red and fades back over a third of a second, and shudders while it is eaten. Pixel-art plants no longer have bites cut out of them: a Peashooter still fires while it is eaten, and with its snout bitten away its peas came out of nothing. One picture per face, not one per amount of health. Vector plants keep their bite until they are redrawn.
+- **Peas come out of the snout**: peas are drawn under the plants, so a new pea is hidden by the head that fired it, and level with the Peashooter's snout rather than the middle of the Row.
+- **The Sunflower moved onto `pixel.ts`**, checked by drawing both versions across 480 combinations of face, health, tick and Square size before its size and bite changed.
+- **New `src/draw/art/peashooter.ts`**, from the user's 1254 x 1254 picture, shrunk by script to 48 x 48 in 12 colours. It bobs a cell on its own beat like the Sunflower, shudders and flashes when eaten, and sits back a cell for 8 steps after each shot, read from the plant's shot countdown and the Peashooter's fire interval.
+- **Removed** the vector `drawPeashooter` and its colour from `plants.ts`. Snow Pea and Repeater are still vector.
+- **New `sprite-maker` sub-agent** (`.claude/agents/`, on Sonnet): turns one of the user's pictures into a sprite on `pixel.ts`, by script, copying only what the picture shows, and never commits. `CLAUDE.md` describes it with the other two.
+- **ADR 0022** records pixel art as letter grids, the red flash and the one size; ADR 0017 is marked partly superseded.
+- **Verification**: typecheck and build pass and all 178 rule tests pass.
+
+## [0.37.0] - 2026-10-11
+
+### Project sub-agents
+
+Adds two Claude Code sub-agents under `.claude/agents/`, both on Sonnet. The main conversation stays the orchestrator and keeps writing the code, since check-first work goes one slice at a time:
+
+- **`rule-checker`**: read-only review of a change against `AGENTS.md` and `CLAUDE.md`. It covers the `src/game/` boundary, the single `apply` entry point, check-first order, restated numbers in tests, step order in `advance`, and the version ritual. It reports and never edits.
+- **`visual-checker`**: opens `dist/index.html` in a browser (`cloakbrowser` if present, else Claude in Chrome), takes screenshots and reports what is drawn. It names any state it could not reach.
+- `CLAUDE.md`: new "Sub-agents" section describing both and when to use them.
+
+## [0.36.2] - 2026-10-10
+
+### Docs Caught Up With GitHub
+
+- `AGENTS.md` and `CLAUDE.md` said the repository had no Git remote. It now lives on GitHub, so the "No remote yet" note is replaced by where it lives and what that means for the skills: PRs work there, issues still live in `.scratch/`.
+- `CLAUDE.md` said `npm test` runs 131 checks; it runs 178.
+
+## [0.36.1] - 2026-10-10
+
+### Even Eyes and Fuller Cheeks on the Sunflower
+
+Fixes picked out by the user from in-game screenshots. Presentation only: nothing in `src/game/` changed.
+
+- **Eyes the same size**: in the source picture the left eye hung one row lower and one row longer than the right, down onto the cheek. At 48 x 48 that read as a mistake, not a tilt, so the left eye is now the right eye copied across: both are five rows tall, on the same rows, with the shine in the same place, and the left one no longer touches the cheek.
+- **A hole in the cheek, fixed**: the glowing and hurt faces wiped the drawing's eyes by painting a whole box round them brown, and the left box reached one cell of the cheek, leaving a brown hole in it. Faces now wipe only eye and mouth colours, so the cheeks are never touched.
+- **Fuller cheeks when glowing**: three more pink cells on the left cheek and one on the right, so the big grin's cheeks read as full.
+- **Hurt eyes** moved up a row to sit where the eyes now are.
+- **Verification**: typecheck and build pass, all 178 rule tests pass, and the happy, glowing and hurt faces were checked in Chrome on the test bed against the mock-up the user chose.
+
+## [0.36.0] - 2026-10-10
+
+### Sunflower From the User's Full-Size Picture, at 48 x 48
+
+Replaces the 33 x 31 Sunflower read off the small character sheet (0.35.0) with a 48 x 48 one made from the user's own 1254 x 1254 front-view picture. Presentation only: nothing in `src/game/` changed.
+
+- **The picture**: a PNG, but 1254 x 1254 rather than the 192 x 192 expected, with a white background rather than a transparent one. It is 48 x 48 pixel art enlarged about 26 times, with soft edges from the enlarging.
+- **How it was shrunk**: the middle of each 26-pixel cell was read, so the soft edges between cells never mix into a colour, with the grid placed where the cells came out most even. The white background and the grey ground shadow were cleared (the lawn is the ground here), the colours were grouped into the 17 the drawing uses, and the eye shines and the tongue were set back to white and red where grouping had merged them into their neighbours.
+- **The new design** keeps what the picture has and the old one did not: eyebrows, an open mouth with a red tongue, and highlights on the petals and leaves.
+- **Sizing**: placed and sized by the drawn part, not the empty margin round it, so the flower is as wide on the lawn as before.
+- **Faces**: *happy* is the picture as it is; *glowing* and *hurt* repaint only its eyes and mouth. Bite, bob, shudder and glow are unchanged.
+- **Verification**: typecheck and build pass, all 178 rule tests pass, and all three faces were checked in Chrome on the test bed.
+
+## [0.35.0] - 2026-10-10
+
+### Sunflower Matched to the Character Sheet's Front View
+
+Replaces the Sunflower sprite built from shapes (0.34.0) with the front view from the user's character sheet, read off it cell by cell. Presentation only: nothing in `src/game/` changed.
+
+- **Read from the picture, not approximated**: the front view is AI-made art scaled to about four screen pixels per art pixel. The grid spacing was measured from the picture's edges, each cell sampled, the blur round the edges cleaned away, and the detail the blur had eaten (the smile, the eye shine, the cheeks) finished by hand against an enlarged copy with the grid drawn over it.
+- **33 x 31, not 48 x 48**: the sheet's caption says 48 x 48, but the drawing holds 33 x 31 art pixels, and that is the grid used.
+- **Colours from the drawing itself**, since the sheet's printed swatches are not quite what the drawing uses.
+- **The other two faces** paint over the drawing's eyes and mouth only: *glowing* (eyes shut in a grin, mouth open, sparkles) and *hurt* ("> <" eyes, open "ow"). The idle bob, the shudder while being eaten, and the glow behind the head are unchanged.
+- **Bites** still come out a cell at a time from the right of the head, and the edge of a bite now gets the outline colour so the sprite keeps its dark line all round.
+- **Not exact, and why**: the source picture is 139 x 170 and blurred, so a few cells were judgement calls. An exact match needs the original PNG at its real size.
+- **Verification**: typecheck and build pass, all 178 rule tests pass, and all three faces were checked in Chrome on the test bed.
+
+## [0.34.0] - 2026-10-10
+
+### Pixel-Art Sunflower
+
+Replaces the Sunflower's flat vector drawing with 48 x 48 pixel art made from the user's own character sheet. Only the Sunflower changes; every other plant keeps its vector art until it gets a sheet of its own. Presentation only: nothing in `src/game/` changed.
+
+- **New file `src/draw/art/sunflower.ts`**: builds the sprite from shapes on a 48 x 48 grid using the sheet's eight-colour palette, traces a dark outline round it, and keeps each finished picture so it is built once rather than every frame. Drawn with image smoothing off so the pixels stay sharp.
+- **Three faces from the sheet**:
+  - *Happy* - big eyes with a shine, cheeks, small smile. The usual face.
+  - *Glowing* - eyes shut in a grin, sparkles and a soft light behind the head, for the last second and a half before the Sunflower makes Sun (read from `stepsUntilSun`).
+  - *Hurt* - "> <" eyes and an open mouth, and a small shudder, while a Zombie is eating it (asked with the existing `plantBeingEaten`).
+- **Idle bob**: each Sunflower bobs one sprite pixel on its own beat, so a row of them does not move in step.
+- **Bites in pixels**: damage is cut out of the right of the head a pixel at a time and the outline follows the bite, in place of the round vector cutout.
+- **Left out on purpose**: the sheet's turn-arounds, walking, shooting and death poses. A Sunflower here stands still, faces the Zombies, fires nothing, and leaves the lawn the moment it is eaten.
+- **Wiring**: `drawPlantArt` now also takes the step count and whether the plant is being eaten; `src/draw/board.ts` works out which plants are being eaten.
+- The glow colour is `#fff3c7`, not the Sun's core `#fff9c4`, so headless checks that find Sun by that colour still find only Sun.
+- **Verification**: typecheck and build pass, all 178 rule tests pass, and all three faces were checked in Chrome on the test bed.
+
+## [0.33.0] - 2026-10-06
+
+### Collapse Combat Resolution Sequence (Architecture Refactor)
+
+Consolidates projectile flight, casualty purging, and plant firing into a deep combat module in `src/game/shots.ts`, following Candidate 4 of the architecture review and recorded in ADR-0021:
+
+- **Unified Combat Seam**:
+  - `resolveCombat(input: CombatInput): CombatResult`: Advances flying projectiles, calculates impact damage and chill, removes dead casualties, and commands ready plants to fire at surviving targets ahead.
+- **Private Micro-Steps**: Made `flyRight`, `fireFromPlants`, `fireShot`, and `ShotStep` private internal implementation details in `src/game/shots.ts`.
+- **Encapsulated Casualty Purging**: `resolveCombat` calls `removeExhausted` internally, ensuring corpses never leak into plant targeting or the win/loss condition.
+- **Streamlined Simulation Loop**: `src/game/sim.ts: advance` calls `resolveCombat` directly, eliminating intermediate plumbing of corpses and partial lists.
+- **Verification**: Added unit tests in `tests/shooters.test.ts` testing flight impacts, casualty removal, plant firing, and corpse target exclusion. All 178 rule tests pass.
+
+## [0.32.0] - 2026-10-06
+
+### Deepen Lawn Mower Defense Across UI Seam (Architecture Refactor)
+
+Eliminates presentation deduction of spent Lawn Mowers by introducing explicit defense state and deepening `src/game/mowers.ts`, following Candidate 3 of the architecture review and recorded in ADR-0020:
+
+- **Explicit State on `GameState`**: Added `spentMowers: readonly Row[]` to `GameState`, initialized as `[]` in `initialGameState()`.
+- **Deep Mower Management (`src/game/mowers.ts`)**:
+  - `runMowers(zombies, occupants, spentMowers)` now manages the accumulation of `spentMowers` sorted by row index, clears zombies in breached rows, and frees Column 0 squares for planting.
+- **Clean UI & Canvas Seam**:
+  - `src/ui/Lawn.tsx`: Deleted `rowsWithoutAMower`. UI report reads `state.spentMowers` directly.
+  - `src/draw/board.ts`: Renders spent footprints by directly iterating `state.spentMowers`, eliminating row-by-row occupancy scans.
+- **Verification**: Added unit tests in `tests/mowers.test.ts` verifying initial state, single trigger, and sorted accumulation across multiple rows. All 175 rule tests pass.
+
+## [0.31.0] - 2026-10-06
+
+### Deepen Sun Economy Module (Architecture Refactor)
+
+Consolidates Sun token lifecycle, physics, and collection behind a deep module in `src/game/sun.ts`, following Candidate 2 of the architecture review and recorded in ADR-0019:
+
+- **Private Token Mechanics**: Made `fallSun`, `spendLife`, `isResting`, `isSpent`, `spawnSun`, and `sunUnderPoint` private internal functions in `src/game/sun.ts`.
+- **Deep Sun Interface**:
+  - `stepSun(input: StepSunInput): StepSunResult`: Accepts a state slice (`tokens`, `stepsUntilSkySun`, `nextSunId`, `random`), advances falling and resting tokens, discards expired tokens, advances the sky countdown, and spawns new sky Sun when due.
+  - `collectSun(tokens, point): CollectSunResult`: Encapsulates hit detection and token removal, returning the remaining tokens and amount collected.
+  - `sunFrom(square, id, amount): SunToken`: Preserved for plant-generated Sun tokens at Sunflower positions.
+- **Streamlined Simulation**: Removed token lifecycle loops, helper interfaces, and `SUN_INTERVAL` coupling from `src/game/sim.ts`.
+- **Verification**: Added direct unit tests for `stepSun` and `collectSun` in `tests/sun.test.ts`. All 172 rule tests pass.
+
+## [0.30.0] - 2026-10-06
+
+### Deepen Plant Action Pipeline (Architecture Refactor)
+
+Consolidates the plant action pipeline into a deep module in `src/game/plants.ts`, following Candidate 1 of the architecture review and recorded in ADR-0018:
+
+- **Deleted Shallow Modules**: Removed `src/game/mines.ts`, `src/game/bombs.ts`, and `src/game/chompers.ts`.
+- **Deep Plant Interface**:
+  - `createPlanted(name, square)`: Encapsulates plant creation and countdown initialization away from `sim.ts`.
+  - `resolveInstantPlantActions(zombies, occupants)`: Resolves pre-movement explosive plants (Cherry Bomb) before Zombies step.
+  - `resolveContactPlantActions(zombies, occupants)`: Resolves post-movement contact plants (Potato Mine arming/detonating, Chomper chewing/devouring).
+  - `producePlantSun(occupants, firstId)`: Manages Sun-producing plants at step completion.
+- **Verification**: Added `tests/plants.test.ts`. All 168 rule tests pass.
+
+## [0.29.0] - 2026-10-06
+
+### Original Artwork Pass (Ticket 21)
+
+Replaces all placeholder shapes across the lawn with original, expressive flat vector artwork, satisfying User Stories 64–66 in `docs/specs/001-lawn-defence-mvp.md` and Step 14 in `docs/plan.md`.
+
+- **All 10 Plants (`src/draw/art/plants.ts`):**
+  - **Peashooter**: Leafy base, stem, green head with tubular snout pointing right, leaf crest at back, expressive eye, and dynamic bite cutout.
+  - **Sunflower**: Golden radiating petals, friendly face disk with smile and eyes.
+  - **Wall-nut**: Wide textured walnut shell, friendly eyes, stress cracks, and bite cutout.
+  - **Tall-nut**: Towering oblong shell, heavy brow ridge, deep vertical grooves, resolute expression.
+  - **Potato Mine**: Soil mound, potato body, sleepy eyes, antenna with glowing red beacon halo when armed.
+  - **Snow Pea**: Crystalline frost-blue head, sharp icicle back crest, chilled eyes, and icy snout.
+  - **Chomper**: Purple carnivorous plant with gaping jaws and sharp white teeth when ready; clamped jaws with chewing curve when digesting.
+  - **Repeater**: Double-leaf crest, dual firing snouts, and focused warrior brow.
+  - **Cherry Bomb**: Twin glossy red cherries with 3D specular shine, angry determined eyes, linked by Y-stem with leaf.
+  - **Puff-shroom**: Low-profile stem, violet spotted mushroom cap, and petite spore snout.
+- **All 5 Zombies (`src/draw/art/zombies.ts`):**
+  - **Basic Zombie**: Ragged brown suit jacket, white collared shirt, red necktie, blue-grey trousers, shoes, mismatched goofy eyes, and slack mouth with crooked tooth. Outstretched arms when shambling or eating.
+  - **Conehead Zombie**: Vibrant safety traffic cone on head while armour remains; cone falls off once armour is broken.
+  - **Buckethead Zombie**: Galvanized metallic bucket with highlight rim on head while armour remains; falls off when broken.
+  - **Flag Zombie**: Wooden staff carrying a waving red cloth banner with skull emblem.
+  - **Pole Vaulting Zombie**: Athletic singlet with stripe, running forward pose while carrying long vaulting pole.
+  - **Chilled effect**: Icy cyan skin and jacket tint with frost sparkles on slowed zombies.
+- **Lawn Mowers & Field Elements (`src/draw/art/mowers.ts`, `src/draw/art/sun.ts`, `src/draw/art/projectiles.ts`):**
+  - **Lawn Mower**: Red chassis with silver motor block, cooling vents, wheels, and pull handle.
+  - **Spent Mower**: Dashed outline footprint marking where a spent mower stood on the grass.
+  - **Sun Token**: Radiant golden rays, warm yellow disc, strictly preserving the `#fff9c4` core colour.
+  - **Projectiles**: Vibrant green peas with 3D specular highlights, and ice-blue crystalline Snow Pea shots.
+- **Seed Bank Vector Icons (`src/ui/icons.tsx`, `src/App.tsx`, `src/ui/app.css`):**
+  - Crisp inline SVG icons for all ten seed packets and the Shovel.
+- **Modular Presentation Architecture:**
+  - Separated monolithic drawing code from `src/draw/board.ts` into clean domain modules in `src/draw/art/`.
+  - Added pure `middleOfRow` helper to `src/draw/layout.ts`.
+- **ADR 0017 recorded:** Documents original vector artwork pass.
+
+## [0.28.0] - 2026-10-06
+
+### Level Select Polish (Ticket 20)
+
+Polishes the level select screen, building on the saved progress foundation established in Ticket 19.
+
+- **Visual polish & cards layout (`src/App.tsx`, `src/ui/app.css`):**
+  - Responsive level select grid with refined card styling, hover elevation, focus-visible outlines, and smooth transitions.
+  - Clear status badges (`✓ Won`, `Next Up`, `Unlocked`, `🔒 Locked`).
+  - Personal best completion times prominently shown for won levels (`Best: 1m 24s`).
+  - Active level highlighted with distinct accent border.
+  - Locked levels clearly indicate locked status without spoiling future level design.
+- **Fast navigation:**
+  - Contextual "Resume Level X" or "Back to Lawn" button ensures the player is never trapped in the menu.
+  - "Continue Adventure (Level X)" button allows continuing directly to the next uncompleted unlocked Level.
+- **Strict presentation boundary:**
+  - All visual improvements remain in the React presentation layer (`src/App.tsx`, `src/ui/app.css`), leaving the headless rulebook and progression engine completely intact.
+- **ADR 0016 recorded:** Documents level select polish and design decisions.
+
+## [0.27.0] - 2026-10-06
+
+### Level Select with Saved Progress (Ticket 19)
+
+Builds saved progression and the Level Select menu, satisfying User Stories 4, 5, 62, 67, and 68.
+
+- **Pure progression model (`src/game/progress.ts`):**
+  - `INITIAL_PROGRESS`: Level 1-1 unlocked by default.
+  - `isLevelUnlocked`: Automatically unlocks subsequent Adventure levels sequentially upon beating earlier levels; completed levels remain unlocked and replayable.
+  - `recordWin`: Pure function recording completions and personal best completion times without duplicates.
+  - `serializeProgress` / `deserializeProgress`: JSON serialization with graceful fallback to `INITIAL_PROGRESS` on corrupt or missing storage data.
+- **Level Select Screen (`src/App.tsx`):**
+  - Full Adventure mode grid displaying Levels 1-1 through 1-10 with their completion status and best completion times.
+  - "Level Select" navigation buttons in the header and in outcome banners allow moving between the lawn and the menu at any time.
+  - "Restart" button restarts the active Level without reloading the page.
+  - Winning a level provides an immediate "Next Level" action button and persists progress to browser local storage (`lawn-defence:progress`).
+- **Layout stability:** Action buttons are integrated within banners without shifting the height of the header/help container, preventing lawn canvas jump.
+- **7 new rule checks in `tests/progress.test.ts`:** Full test suite expands to 164 checks, all passing.
+- **ADR 0015 recorded:** Documents saved progress and level select architecture.
+
+## [0.26.0] - 2026-10-06
+
+### Levels 1-2 to 1-10 (Ticket 18)
+
+Completes the 10-level campaign data for Adventure mode, defining `LEVEL_1_2` through `LEVEL_1_10` in `src/game/levels.ts`.
+
+- **Levels 1-2 through 1-10 defined:** Defined as pure data with plant offerings and wave schedules.
+- **Sequential plant unlocks:** Plants expand by level across the campaign:
+  - 1-1: Peashooter, Sunflower
+  - 1-2: adds Cherry Bomb
+  - 1-3: adds Wall-nut
+  - 1-4: adds Potato Mine
+  - 1-5: adds Snow Pea
+  - 1-6: adds Chomper
+  - 1-7: adds Repeater
+  - 1-8: adds Puff-shroom
+  - 1-9: adds Tall-nut
+  - 1-10: all 10 plants offered
+- **Canonical zombie debuts:**
+  - Conehead Zombie debuts at Level 1-3
+  - Pole Vaulting Zombie debuts at Level 1-6
+  - Buckethead Zombie debuts at Level 1-8
+  - All 5 zombies appear in Level 1-10
+- **Schedule invariants:**
+  - Every level begins with an initial breather (at least 20 seconds) before the first wave arrives.
+  - Every level ends in exactly one Flag Wave carrying a Flag Zombie.
+  - Every level is losable if the player takes no action.
+- **Level progression helpers:** Added `LEVEL_ORDER` and `nextLevel(levelName)` to `src/game/levels.ts`. All levels registered in `LEVELS` for addressable loading via `?level=`.
+- **9 new rule checks added:** Suite expands from 148 to 157 checks in `tests/levels.test.ts`, all passing.
+- **ADR 0014 recorded:** Documents level progression, plant unlocks, and zombie pacing.
+
+## [0.25.0] - 2026-10-06
+
+### Pole Vaulting Zombie (Ticket 17)
+
+The fifth and final early zombie: an athletic enemy that runs fast and vaults over the first plant it encounters.
+With this ticket, all five early zombies from the original Plants vs. Zombies are implemented.
+
+- **Roster & Stats:** `POLE_VAULTING_ZOMBIE` added with 500 health, 0 armour, and `hasPole: true`.
+- **Running speed:** Runs at twice standard walking speed (2 steps per tick; 1 step per tick when slowed by Snow Pea)
+  while holding its pole.
+- **Vaulting mechanics:** Vaults across the first plant obstacle met into the Column to its left, dealing zero
+  bite damage to the vaulted plant and dropping its pole (`hasPole = false`).
+- **Tall-nut blocking:** Tall-nut stands too high to clear: the Pole Vaulting Zombie crashes into it, loses its pole,
+  and must chew through the Tall-nut in place, keeping plants behind safe.
+- **Trap interactions:** An armed Potato Mine or ready Chomper vaulted over is not triggered; if landed upon, the
+  trap triggers normally.
+- **Visuals:** Canvas renders the carried vaulting pole extending forward in the zombie's hands while `hasPole` is
+  true, disappearing once vaulted or blocked.
+- **Flag Wave scaling:** 500 health is scaled by 1.25 to 625 in Flag Waves.
+- **8 new rule checks added:** Suite expands from 140 to 148 checks, all passing.
+- **ADR 0013 recorded:** Documents mechanics, running speed, vaulting geometry, and Tall-nut interaction.
+
+## [0.24.0] - 2026-10-06
+
+### Conehead and Buckethead Zombies, and Armour (Ticket 16)
+
+The first enemies with Armour: a traffic cone (370 armour) and a metal bucket (1100 armour).
+Armour absorbs pea hits before body health (270) takes damage. When armour breaks, excess
+damage carries over directly to health, and subsequent hits damage the Zombie underneath.
+One-hit removals (Potato Mine, Cherry Bomb, Chomper, Lawn Mower) destroy an armoured Zombie
+whole, ignoring armour.
+
+- **Armour on ZombieKind and Zombie:** `armour` field added to the roster and live state.
+  Conehead has 370 armour; Buckethead has 1100 armour; Basic and Flag have 0.
+- **Damage absorption and carryover:** `takeDamage` deducts damage from armour first,
+  with any excess spilling over into health.
+- **Visual two-stage combat:** A traffic cone or metal bucket is drawn on the Zombie's head
+  only while `armour > 0`. When armour breaks, the headwear disappears, leaving an ordinary
+  Basic Zombie picture.
+- **Flag Wave toughness scaling:** Flag Wave multiplier (1.25) scales both health and armour,
+  so Flag Wave armoured enemies are sturdier in both layers.
+- **9 new rule checks added:** Suite expands from 131 to 140 checks, all passing.
+- **ADR 0012 recorded:** Settle open questions from ADR 0009-0011 regarding armour mechanics.
+
+## [0.23.4] - 2026-10-06
+
+### Use connected MCP tools to assist in decision-making
+
+Docs only — no game code, no checks, no build change.
+
+- **`AGENTS.md` and `CLAUDE.md` now carry a rule to use connected MCP tools to assist in
+  decision-making when faced with choices.**
+
 ## [0.23.3] - 2026-10-04
 
 ### The Chomper's chewing state, looked at for the first time

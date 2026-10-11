@@ -1,6 +1,12 @@
 import {
   BOARD_COLUMNS,
+  squareAtX,
+  type Occupant,
+  type Planted,
+  type Square,
 } from './board.ts'
+import { plantBeingEaten, zombieX, type Zombie } from './zombies.ts'
+import { sunFrom, type SunToken } from './sun.ts'
 import {
   CHERRY_BOMB_BLAST_COLUMNS,
   CHERRY_BOMB_BLAST_ROWS,
@@ -527,7 +533,7 @@ export const POTATO_MINE: Plant = {
  * removes a *plant* except a bite and the Shovel, and this plant spends itself on
  * the step it goes down rather than needing to be taken off the lawn - so there is
  * no question of whether it survives its own explosion, only of when it is spent.
- * See `bombs.ts`.
+ * See `resolveInstantPlantActions` below.
  */
 export const CHERRY_BOMB: Plant = {
   name: 'cherry-bomb',
@@ -612,3 +618,201 @@ export const PLANTS: Readonly<Record<PlantName, Plant>> = {
   'cherry-bomb': CHERRY_BOMB,
   chomper: CHOMPER,
 }
+
+/**
+ * Creates a new planted plant instance in the specified Square.
+ *
+ * Encapsulates the runtime countdown initialization so caller modules never
+ * need to know which plants require arming delays, produce intervals, or
+ * devouring locks.
+ */
+export function createPlanted(name: PlantName, square: Square): Planted {
+  const plant = PLANTS[name]
+  return {
+    kind: 'plant',
+    square,
+    name,
+    health: plant.health,
+    stepsUntilShot: 0,
+    stepsUntilSun: plant.producing?.interval ?? 0,
+    stepsUntilArmed: plant.arming?.delay ?? 0,
+    stepsUntilChewed: 0,
+  }
+}
+
+/**
+ * Result of resolving plant actions against the board: updated Zombies and
+ * Occupants after detonations, devouring, or arming.
+ */
+export interface PlantActionResult {
+  readonly zombies: readonly Zombie[]
+  readonly occupants: readonly Occupant[]
+}
+
+/**
+ * Whether this Zombie is standing inside a blast centred on this Square.
+ */
+function isInTheBlast(zombie: Zombie, centre: Square, blast: Detonating): boolean {
+  const square = squareAtX(zombie.row, zombieX(zombie))
+
+  if (square === null) {
+    return false
+  }
+
+  return (
+    Math.abs(square.row - centre.row) <= blast.rows &&
+    Math.abs(square.column - centre.column) <= blast.columns
+  )
+}
+
+/**
+ * Resolves instant plant actions that trigger the moment they are planted,
+ * before Zombies take their step (e.g. Cherry Bomb detonating).
+ */
+export function resolveInstantPlantActions(
+  zombies: readonly Zombie[],
+  occupants: readonly Occupant[],
+): PlantActionResult {
+  const taken = new Set<Zombie>()
+  const fired = new Set<Occupant>()
+
+  const onTheLawn = occupants.map((occupant) => {
+    if (occupant.kind !== 'plant') {
+      return occupant
+    }
+
+    const blast = PLANTS[occupant.name].detonating
+    if (blast === null) {
+      return occupant
+    }
+
+    for (const zombie of zombies) {
+      if (isInTheBlast(zombie, occupant.square, blast)) {
+        taken.add(zombie)
+      }
+    }
+
+    const spent = { ...occupant, stepsUntilArmed: 0, stepsUntilShot: 0 }
+    fired.add(spent)
+
+    return spent
+  })
+
+  return {
+    zombies: zombies.filter((zombie) => !taken.has(zombie)),
+    occupants: onTheLawn.filter((occupant) => !fired.has(occupant)),
+  }
+}
+
+/**
+ * Resolves post-movement contact actions: Potato Mines arming/detonating on arrival,
+ * followed by Chompers devouring reachable Zombies.
+ */
+export function resolveContactPlantActions(
+  zombies: readonly Zombie[],
+  occupants: readonly Occupant[],
+): PlantActionResult {
+  // 1. Resolve arming plants (Potato Mine)
+  const takenByMines = new Set<Zombie>()
+  const firedMines = new Set<Occupant>()
+
+  const afterMines = occupants.map((occupant) => {
+    if (occupant.kind !== 'plant' || PLANTS[occupant.name].arming === null) {
+      return occupant
+    }
+
+    if (occupant.stepsUntilArmed > 1) {
+      return { ...occupant, stepsUntilArmed: occupant.stepsUntilArmed - 1 }
+    }
+
+    const reached = zombies.find((zombie) => plantBeingEaten(zombie, occupants) === occupant)
+
+    if (reached === undefined) {
+      return { ...occupant, stepsUntilArmed: 0 }
+    }
+
+    takenByMines.add(reached)
+    const spent = { ...occupant, stepsUntilArmed: 0 }
+    firedMines.add(spent)
+
+    return spent
+  })
+
+  const remainingZombies = zombies.filter((zombie) => !takenByMines.has(zombie))
+  const remainingOccupants = afterMines.filter((occupant) => !firedMines.has(occupant))
+
+  // 2. Resolve devouring plants (Chomper)
+  const takenByChompers = new Set<Zombie>()
+
+  const afterChompers = remainingOccupants.map((occupant) => {
+    if (occupant.kind !== 'plant') {
+      return occupant
+    }
+
+    const devouring = PLANTS[occupant.name].devouring
+    if (devouring === null) {
+      return occupant
+    }
+
+    if (occupant.stepsUntilChewed > 1) {
+      return { ...occupant, stepsUntilChewed: occupant.stepsUntilChewed - 1 }
+    }
+
+    const reached = remainingZombies.find((zombie) => plantBeingEaten(zombie, remainingOccupants) === occupant)
+
+    if (reached === undefined) {
+      return { ...occupant, stepsUntilChewed: 0 }
+    }
+
+    takenByChompers.add(reached)
+    return { ...occupant, stepsUntilChewed: devouring.chew }
+  })
+
+  return {
+    zombies: remainingZombies.filter((zombie) => !takenByChompers.has(zombie)),
+    occupants: afterChompers,
+  }
+}
+
+/**
+ * Result of one step of plant Sun production.
+ */
+export interface PlantSunResult {
+  readonly occupants: readonly Occupant[]
+  readonly tokens: readonly SunToken[]
+  readonly nextId: number
+}
+
+/**
+ * Advances Sun-producing plants (e.g. Sunflower), generating Sun tokens when intervals mature.
+ */
+export function producePlantSun(
+  occupants: readonly Occupant[],
+  firstId: number,
+): PlantSunResult {
+  let nextId = firstId
+  const made: SunToken[] = []
+
+  const stepped = occupants.map((occupant) => {
+    if (occupant.kind !== 'plant') {
+      return occupant
+    }
+
+    const producing = PLANTS[occupant.name].producing
+    if (producing === null) {
+      return occupant
+    }
+
+    if (occupant.stepsUntilSun > 1) {
+      return { ...occupant, stepsUntilSun: occupant.stepsUntilSun - 1 }
+    }
+
+    made.push(sunFrom(occupant.square, nextId, producing.amount))
+    nextId += 1
+
+    return { ...occupant, stepsUntilSun: producing.interval }
+  })
+
+  return { occupants: stepped, tokens: made, nextId }
+}
+

@@ -9,3 +9,6 @@ dist/
 
 # Local issue tracker — working material, not versioned. See docs/agents/issue-tracker.md
 .scratch/
+
+# Local MCP and agent tooling config
+opencode.json

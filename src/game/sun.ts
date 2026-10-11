@@ -12,15 +12,10 @@ import {
   SUN_AMOUNT,
   SUN_FALL_PER_STEP,
   SUN_HIT_RADIUS,
+  SUN_INTERVAL,
   SUN_LIFETIME,
   SUN_RADIUS,
 } from './balance.ts'
-
-/** A new piece of Sun, and the random state left behind after placing it. */
-export interface SunFall {
-  readonly random: Random
-  readonly token: SunToken
-}
 
 /**
  * One piece of Sun, falling towards the lawn or lying on it.
@@ -40,13 +35,41 @@ export interface SunToken {
   readonly life: number
 }
 
+/** State slice required to advance Sun physics and sky spawning by one step. */
+export interface StepSunInput {
+  readonly tokens: readonly SunToken[]
+  readonly stepsUntilSkySun: number
+  readonly nextSunId: number
+  readonly random: Random
+}
+
+/** State updates resulting from one step of Sun simulation. */
+export interface StepSunResult {
+  readonly tokens: readonly SunToken[]
+  readonly stepsUntilSkySun: number
+  readonly nextSunId: number
+  readonly random: Random
+}
+
+/** Result of attempting to collect Sun at a board coordinate. */
+export interface CollectSunResult {
+  readonly tokens: readonly SunToken[]
+  readonly collected: number
+}
+
+/** A new piece of Sun, and the random state left behind after placing it. */
+interface SunFall {
+  readonly random: Random
+  readonly token: SunToken
+}
+
 /** Has this Sun finished falling and settled on the lawn? */
-export function isResting(token: SunToken): boolean {
+function isResting(token: SunToken): boolean {
   return token.y >= token.restingY
 }
 
 /** One step of falling, stopping at the place it comes to rest. */
-export function fallSun(token: SunToken): SunToken {
+function fallSun(token: SunToken): SunToken {
   return { ...token, y: Math.min(token.y + SUN_FALL_PER_STEP, token.restingY) }
 }
 
@@ -55,12 +78,12 @@ export function fallSun(token: SunToken): SunToken {
  * of Sun that spends its whole life in the air still gets its full time on the
  * lawn rather than being lost on the way down.
  */
-export function spendLife(token: SunToken): SunToken {
+function spendLife(token: SunToken): SunToken {
   return isResting(token) ? { ...token, life: token.life - 1 } : token
 }
 
 /** Has this Sun waited out its whole life on the lawn and been lost? */
-export function isSpent(token: SunToken): boolean {
+function isSpent(token: SunToken): boolean {
   return isResting(token) && token.life <= 0
 }
 
@@ -73,7 +96,7 @@ export function isSpent(token: SunToken): boolean {
  * close to where it started looked like a bug rather than like Sun falling,
  * because on some seeds it simply appeared in place and never moved.
  */
-export function spawnSun(id: number, random: Random): SunFall {
+function spawnSun(id: number, random: Random): SunFall {
   const across = nextBetween(random, SUN_RADIUS, LOGICAL_WIDTH - SUN_RADIUS)
   const down = nextBetween(across.random, SUN_RADIUS + SQUARE_HEIGHT, LOGICAL_HEIGHT - SUN_RADIUS)
 
@@ -124,7 +147,7 @@ export function sunFrom(square: Square, id: number, amount: number): SunToken {
  * Where two Suns overlap, the one drawn on top is the one collected, which is
  * the one furthest along in the list because each new Sun is added to the end.
  */
-export function sunUnderPoint(tokens: readonly SunToken[], point: Point): SunToken | null {
+function sunUnderPoint(tokens: readonly SunToken[], point: Point): SunToken | null {
   let hit: SunToken | null = null
 
   for (const token of tokens) {
@@ -137,4 +160,50 @@ export function sunUnderPoint(tokens: readonly SunToken[], point: Point): SunTok
   }
 
   return hit
+}
+
+/**
+ * Advances lawn Sun tokens (falling or aging/despawning) and spawns sky Sun
+ * when the sky countdown matures.
+ */
+export function stepSun(input: StepSunInput): StepSunResult {
+  const living = input.tokens
+    .map((token) => (isResting(token) ? spendLife(token) : fallSun(token)))
+    .filter((token) => !isSpent(token))
+
+  if (input.stepsUntilSkySun > 1) {
+    return {
+      random: input.random,
+      tokens: living,
+      stepsUntilSkySun: input.stepsUntilSkySun - 1,
+      nextSunId: input.nextSunId,
+    }
+  }
+
+  const spawn = spawnSun(input.nextSunId, input.random)
+
+  return {
+    random: spawn.random,
+    tokens: [...living, spawn.token],
+    stepsUntilSkySun: SUN_INTERVAL,
+    nextSunId: input.nextSunId + 1,
+  }
+}
+
+/**
+ * Collects Sun under a clicked point on the board.
+ *
+ * Returns remaining tokens and the amount collected. If no Sun is hit,
+ * returns the existing tokens and 0 collected Sun.
+ */
+export function collectSun(tokens: readonly SunToken[], point: Point): CollectSunResult {
+  const hit = sunUnderPoint(tokens, point)
+  if (hit === null) {
+    return { tokens, collected: 0 }
+  }
+
+  return {
+    tokens: tokens.filter((candidate) => candidate !== hit),
+    collected: hit.amount,
+  }
 }

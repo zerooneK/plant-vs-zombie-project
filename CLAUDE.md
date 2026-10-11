@@ -10,6 +10,10 @@ Always talk in **simple English**. Use normal, everyday words. Keep technical wo
 
 **Say so when something is stuck.** If a problem will not go away, or a fix is taking far too long, stop and tell the user — what is wrong, what is causing the delay, and how they could help. Do not keep working a problem in silence and then report it as a finished task or a dead end. Two things this rule is aimed at: **silence looks like progress**, so a long stretch of retries reads from the outside as the job still moving, when nobody watching can see the wall or offer the thing that would clear it — a denied permission, a missing file, a decision only the user can make; and **being stuck is information worth having early**, since half a turn of debugging is worth more than five. It does not mean narrating ordinary dead ends: a check failing red because the feature does not exist yet is the work working, and a denied command with an obvious workaround is not a stop — take the workaround and say which one you took.
 
+## Decision-making
+
+From now on, use the connected MCP tools to assist in decision-making when faced with choices.
+
 ## Version, changelog and git
 
 This project has a version number. It lives in the `VERSION` file at the repo root. Do not repeat the number in prose anywhere — read it from that file, so it cannot go stale.
@@ -30,7 +34,7 @@ A Plants vs. Zombies prototype (React + TypeScript, built with Vite) **plus** 26
 
 Game code is in `src/` and `tests/`. The design work is in `docs/`: `docs/plan.md` is the build plan, `docs/specs/` holds specs, `docs/adr/` holds decisions already made, and `docs/agents/` holds the engineering-skill configuration. `CONTEXT.md` is the shared vocabulary. `VERSION` and `CHANGELOG.md` track the version. `.scratch/` is the issue tracker and is git-ignored.
 
-**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`. The build order is tracked as one ticket per step under `.scratch/lawn-defence-mvp/issues/` — steps 1 through 15 are done (step 10's Wall-nut and Tall-nut included), which is all ten plants. **Ticket 16 is next: conehead and buckethead.** Tickets 17–21 remain: pole vaulter, levels 1-2 to 1-10, level select with saved progress, and original artwork.
+**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`. The build order is tracked as one ticket per step under `.scratch/lawn-defence-mvp/issues/` — steps 1 through 15 are done (step 10's Wall-nut and Tall-nut included), which is all ten plants; step 16 is done: conehead and buckethead; step 17 is done: Pole Vaulting Zombie (all five zombies complete); step 18 is done: levels 1-2 to 1-10; step 19 is done: level select with saved progress; step 20 is done: level select polish; step 21 is done: original artwork (all 14 plan steps complete).
 
 ## Commands
 
@@ -42,7 +46,7 @@ Node 22 and npm. No linter is configured.
 | `npm run dev` | Work on the game at `localhost:5173` |
 | `npm run build` | Typecheck, then build the playable game into `dist/` |
 | `npm run preview` | Serve `dist/` over HTTP, to check the built game |
-| `npm test` | Run the rule checks (`node:test`, no test framework) — 131 checks |
+| `npm test` | Run the rule checks (`node:test`, no test framework) — 178 checks |
 | `npm run typecheck` | Typecheck only |
 
 Run a single file, or a single named check:
@@ -88,16 +92,13 @@ The game runs at a fixed **60 steps a second**, independent of frame rate.
 
 1. Seed Packet Recharge ticks down
 2. Due Waves walk in at the right edge
-3. Cherry Bombs go off (`detonateBombs`)
+3. Instant plant actions: Cherry Bombs go off (`resolveInstantPlantActions`)
 4. Zombies walk and eat (`walkAndEat`) — this both moves Zombies and bites plants
 5. Mowers run (`runMowers`)
-6. Mines detonate (`detonateMines`)
-7. Chompers eat (`devourWithChompers`)
-8. Peas fly (`flyRight`)
-9. Exhausted Zombies are removed (`removeExhausted`)
-10. Plants fire (`fireFromPlants`)
-11. Win/loss is decided from the Waves left and the Zombies standing
-12. Sky Sun falls (`stepSun`), then plants make Sun (`stepProduction`)
+6. Contact plant actions: Mines detonate and Chompers eat (`resolveContactPlantActions`)
+7. Combat resolution: Peas fly, exhausted casualties are purged, and plants fire (`resolveCombat`)
+8. Win/loss is decided from the Waves left and the Zombies standing
+9. Sky Sun falls and advances (`stepSun`), then plants make Sun (`producePlantSun`)
 
 Four consequences worth internalising: production runs on the plants **still standing at the end of the step**, so a Sunflower eaten this step makes nothing; a Zombie is removed *after* it eats, so a Zombie killed by a pea on the same step it bit still got that bite in — but a Zombie killed by a bomb on that step did not, because the bomb goes off first; a Chomper that eats a Zombie standing in its Square has already been bitten once by it, because both happen inside the one step; and moving a line changes behaviour. Read the comments in `advance` before reordering anything.
 
@@ -113,7 +114,7 @@ Four consequences worth internalising: production runs on the plants **still sta
 
 The six kinds of job a plant can have are: **shoot**, **make Sun**, **stand in the way** (Wall-nut — every field `null`, just high `health`), **trap**, **go off**, and **eat**. A plant that only blocks is described by no capability at all, deliberately. Each description holds only what is a per-plant choice: `arming` holds the delay but not what an armed plant does, `detonating` holds the size of the blast but not that a blast removes Zombies, and `devouring` holds the chew but not that eating removes a Zombie.
 
-**The three plants that take a Zombie off the lawn whole run in three different places in the step, and that ordering is the design.** `detonateBombs` runs *before* `walkAndEat`, because a bomb is waiting for nothing — which is what makes it a rescue: a bomb put down in front of a Zombie about to reach a plant kills it before it bites, where asked after the walk it would be saving a Row one bite too late. `detonateMines` and `devourWithChompers` both run *after* it, because each is asked by a Zombie *reaching* it and can only be asked once the Zombies have moved. Chompers come after the mines so a Zombie a Chomper has just eaten is off the lawn rather than left for a mine in the same Square to find. Moving any of these lines changes its checks.
+**The three plants that take a Zombie off the lawn whole run across two distinct plant phases in the step, and that ordering is the design.** `resolveInstantPlantActions` runs *before* `walkAndEat`, because a bomb is waiting for nothing — which is what makes it a rescue: a bomb put down in front of a Zombie about to reach a plant kills it before it bites, where asked after the walk it would be saving a Row one bite too late. `resolveContactPlantActions` runs *after* it, because each is asked by a Zombie *reaching* it and can only be asked once the Zombies have moved and mowers have run. Inside `resolveContactPlantActions`, Chompers resolve after the mines so a Zombie a Chomper has just eaten is off the lawn rather than left for a mine in the same Square to find. Moving any of these lines changes its checks.
 
 **`stepsUntilChewed` is one field meaning two things, and that is deliberate.** A Chomper's life has two "ready" moments — before it has ever eaten, and after a chew — and zero means ready at one end and spent at the other, the same reading every other countdown in this game gives. Two fields would let a Chomper be "ready" and "chewing" at once. It is **not** `arming` with a negative delay: `arming` counts *down towards* a moment the plant has not reached, `devouring` counts *up from* one it has just passed, and one cannot be the same counter as the other. See `docs/adr/0011`.
 
@@ -184,12 +185,22 @@ A stale graph is worse than no graph, because it will confidently answer questio
 
 `ask-matt` is the router over all 25 vendored skills. Read `.agents/skills/ask-matt/SKILL.md` (the main flow) and `PHASE-BOUNDARIES.md` (the context-management decision tree) before picking a workflow. It is user-invoked, so it will never fire on its own — a human has to ask for it.
 
+## Sub-agents
+
+The main conversation is the orchestrator: it talks to the user and writes the code itself, because check-first work goes one slice at a time and cannot be split across agents. Three project sub-agents in `.claude/agents/` take the jobs that do split off cleanly, all on Sonnet:
+
+- **`rule-checker`** — read-only review of a change against the rules in this file and `AGENTS.md`. Run it before reporting a change done. It reports; it never edits, so the fix is still reviewed by someone other than its author.
+- **`visual-checker`** — opens `dist/index.html` in a browser (`cloakbrowser` if present, else Claude in Chrome), screenshots, and reports what is drawn. It keeps image-heavy work out of the main conversation. It looks; it does not check rules.
+- **`sprite-maker`** — turns one of the user's pixel-art pictures into a 48 x 48 letter-grid sprite on the shared `src/draw/art/pixel.ts`, shrinking it with a script rather than by eye, and wires it in. It copies; anything the picture does not show comes back as a question rather than an invention. It never touches `src/game/` and never commits: the orchestrator reviews, versions and commits. User pictures are kept in `.scratch/art/`.
+
+Tell the user each time work is handed to one, and what came back.
+
 ## Agent skills
 
 - **Issue tracker** — issues are markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
 - **Triage labels** — the five default role names, written as a `Status:` line in each issue file. See `docs/agents/triage-labels.md`.
 - **Domain docs** — single-context: `CONTEXT.md` at the root, `docs/adr/` at the root. See `docs/agents/domain.md`.
-- **No remote yet** — the repository has **no Git remote**, so the parts of `implement`, `code-review`, `resolving-merge-conflicts` and `handoff` that talk to GitHub Issues or PRs will stall until you add one. Everything else works offline.
+- **Remote** — the repository lives on GitHub at `github.com/zerooneK/plant-vs-zombie-project`, so the parts of `implement`, `code-review`, `resolving-merge-conflicts` and `handoff` that open or read PRs work there. Issues still live in `.scratch/`, not GitHub Issues.
 
 ## House conventions
 

@@ -5,7 +5,7 @@ import { layout, pointOnBoard, squareAtPoint } from '../draw/layout.ts'
 import type { BoardLayout, Viewport } from '../draw/layout.ts'
 import { startFrames } from '../draw/frames.ts'
 import { SHOVEL, apply, type Choice, type GameState, type Outcome } from '../game/sim.ts'
-import { BOARD_ROWS, MOWER_COLUMN, hasLawnMower, type Occupant, type Row, type Square } from '../game/board.ts'
+import type { Row, Square } from '../game/board.ts'
 
 function isSameSquare(a: Square | null, b: Square | null): boolean {
   if (a === null || b === null) {
@@ -97,25 +97,6 @@ function sameRows(a: readonly Row[], b: readonly Row[]): boolean {
   return a.length === b.length && a.every((row, index) => row === b[index])
 }
 
-/**
- * The Rows that have spent their Lawn Mower, found by asking the lawn.
- *
- * Asked the same way the drawing and the rules ask, one Row at a time, so that
- * the words on the page, the mark on the grass and the rule that saves a Row are
- * all looking at the same thing.
- */
-function rowsWithoutAMower(occupants: readonly Occupant[]): Row[] {
-  const spent: Row[] = []
-
-  for (let row = 0; row < BOARD_ROWS; row++) {
-    if (!hasLawnMower(occupants, { row, column: MOWER_COLUMN })) {
-      spent.push(row)
-    }
-  }
-
-  return spent
-}
-
 /** The canvas size the player sees, and the board drawn to fit it. */
 interface Geometry {
   readonly view: Viewport
@@ -180,7 +161,7 @@ export function Lawn({ game, onChange }: { game: GameRef; onChange: (report: Rep
           selected: state.selected,
           sun: state.sun,
           chosen: state.chosen,
-          spent: rowsWithoutAMower(state.occupants),
+          spent: state.spentMowers,
           outcome: state.outcome,
           flagWaveWarning: state.flagWaveWarning,
           packets: state.seedBank.map((packet) => ({

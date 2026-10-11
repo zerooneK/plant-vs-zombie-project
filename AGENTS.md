@@ -10,6 +10,10 @@ Two things this rule is aimed at. **Silence looks like progress**, so a long str
 
 What it does not mean: do not narrate ordinary dead ends. A check failing red because the feature does not exist yet is the work working. A denied command that has an obvious workaround is not a stop — take the workaround and say which one you took. The rule is about the point where the next attempt is a guess rather than a step, and waiting stops being free.
 
+## Decision-making
+
+From now on, use the connected MCP tools to assist in decision-making when faced with choices.
+
 ## Version, changelog and git
 
 This project has a version number. It lives in the `VERSION` file at the repo root. Do not repeat the number in prose anywhere — read it from that file, so it cannot go stale.
@@ -30,7 +34,7 @@ A Plants vs. Zombies prototype (React + TypeScript, built with Vite) **plus** 25
 
 Game code is in `src/` and `tests/`. The design work is in `docs/`: `docs/plan.md` is the build plan, `docs/specs/` holds specs, `docs/adr/` holds decisions already made, and `docs/agents/` holds the engineering-skill configuration. `CONTEXT.md` is the shared vocabulary. `VERSION` and `CHANGELOG.md` track the version. `.scratch/` is the issue tracker and is git-ignored.
 
-**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`. The build order is tracked as one ticket per step under `.scratch/lawn-defence-mvp/issues/` — steps 1 through 15 are done (step 10's Wall-nut and Tall-nut included), which is all ten plants. **Ticket 16 is next: conehead and buckethead.** Tickets 17–21 remain: pole vaulter, levels 1-2 to 1-10, level select with saved progress, and original artwork.
+**Start with `docs/plan.md`** when picking up unfinished work. It lists what is in scope, what is not, and the build order. The agreed spec is `docs/specs/001-lawn-defence-mvp.md`. The build order is tracked as one ticket per step under `.scratch/lawn-defence-mvp/issues/` — steps 1 through 15 are done (step 10's Wall-nut and Tall-nut included), which is all ten plants; step 16 is done: conehead and buckethead; step 17 is done: Pole Vaulting Zombie (all five zombies complete); step 18 is done: levels 1-2 to 1-10; step 19 is done: level select with saved progress; step 20 is done: level select polish; step 21 is done: original artwork (all 14 plan steps complete).
 
 ## Commands
 
@@ -116,9 +120,9 @@ The five default role names, written as a `Status:` line in each issue file. See
 
 Single-context: `CONTEXT.md` at the root, `docs/adr/` at the root. See `docs/agents/domain.md`.
 
-### No remote yet
+### Remote
 
-The repository has **no Git remote**, so the parts of `implement`, `code-review`, `resolving-merge-conflicts` and `handoff` that talk to GitHub Issues or PRs will stall until you add one. Everything else works offline.
+The repository lives on GitHub at `github.com/zerooneK/plant-vs-zombie-project`, so the parts of `implement`, `code-review`, `resolving-merge-conflicts` and `handoff` that open or read PRs work there. Issues still live in `.scratch/`, not GitHub Issues, so those skills read tickets from the files above.
 
 ## Generated output
 

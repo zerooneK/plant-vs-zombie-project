@@ -1,10 +1,54 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Lawn } from './ui/Lawn.tsx'
 import type { GameRef, PacketView, Report } from './ui/Lawn.tsx'
 import type { Row, Square } from './game/board.ts'
-import { SHOVEL, apply, initialGameState, type Choice } from './game/sim.ts'
-import { LEVEL_1_1, LEVELS, type Level } from './game/levels.ts'
+import { SHOVEL, apply, initialGameState, type Choice, type GameState } from './game/sim.ts'
+import { LEVEL_1_1, LEVEL_ORDER, LEVELS, nextLevel, type Level } from './game/levels.ts'
+import { STEPS_PER_SECOND } from './game/clock.ts'
+import {
+  INITIAL_PROGRESS,
+  deserializeProgress,
+  isLevelUnlocked,
+  recordWin,
+  serializeProgress,
+  type Progress,
+} from './game/progress.ts'
 import type { PlantName } from './game/plants.ts'
+import { PlantIcon, ShovelIcon } from './ui/icons.tsx'
+
+const STORAGE_KEY = 'lawn-defence:progress'
+
+/** Player-facing format for elapsed completion times in seconds (e.g. "45s", "1m 35s"). */
+function formatCompletionTime(seconds: number): string {
+  const rounded = Math.max(0, Math.round(seconds))
+  const minutes = Math.floor(rounded / 60)
+  const remainingSeconds = rounded % 60
+
+  if (minutes === 0) {
+    return `${remainingSeconds}s`
+  }
+
+  const paddedSeconds = remainingSeconds.toString().padStart(2, '0')
+  return `${minutes}m ${paddedSeconds}s`
+}
+
+/** Initial presentation report created for a newly prepared level state. */
+function initialReportFor(state: GameState): Report {
+  return {
+    selected: null,
+    sun: state.sun,
+    chosen: null,
+    spent: [],
+    outcome: state.outcome,
+    flagWaveWarning: state.flagWaveWarning,
+    packets: state.seedBank.map((packet) => ({
+      name: packet.name,
+      cost: packet.cost,
+      ready: true,
+    })),
+  }
+}
+
 
 /** Player-facing wording. Rows and Columns count from one, not zero. */
 function describeSquare(square: Square | null): string {
@@ -110,6 +154,18 @@ function levelFromTheAddress(): Level {
 }
 
 export function App() {
+  const [progress, setProgress] = useState<Progress>(() => {
+    try {
+      return deserializeProgress(window.localStorage.getItem(STORAGE_KEY))
+    } catch {
+      return INITIAL_PROGRESS
+    }
+  })
+
+  const [currentLevel, setCurrentLevel] = useState<Level>(() => levelFromTheAddress())
+  const [runId, setRunId] = useState(0)
+  const [view, setView] = useState<'playing' | 'level-select'>('playing')
+
   // The rules are held here, once, and shared with the canvas that drives them:
   // the Seed Bank has to send commands to the same state the lawn draws, and
   // neither of them may re-render React sixty times a second to do it.
@@ -119,28 +175,46 @@ export function App() {
   // it a new one each time.
   const holder = useRef<GameRef | null>(null)
   if (holder.current === null) {
-    holder.current = { current: initialGameState(freshSeed(), levelFromTheAddress()) }
+    holder.current = { current: initialGameState(freshSeed(), currentLevel) }
   }
   const game = holder.current
 
-  const [report, setReport] = useState<Report>({
-    selected: null,
-    sun: game.current.sun,
-    chosen: null,
-    spent: [],
-    outcome: game.current.outcome,
-    flagWaveWarning: game.current.flagWaveWarning,
-    packets: game.current.seedBank.map((packet) => ({
-      name: packet.name,
-      cost: packet.cost,
-      ready: true,
-    })),
-  })
+  const [report, setReport] = useState<Report>(() => initialReportFor(game.current))
+
+  const startLevel = useCallback(
+    (level: Level) => {
+      setCurrentLevel(level)
+      const fresh = initialGameState(freshSeed(), level)
+      game.current = fresh
+      setRunId((id) => id + 1)
+      setReport(initialReportFor(fresh))
+      setView('playing')
+    },
+    [game],
+  )
+
+  // Persisting win outcomes to local storage keeps unlocked levels across browser sessions.
+  useEffect(() => {
+    if (report.outcome === 'won') {
+      const elapsedSeconds = Math.round(game.current.tick / STEPS_PER_SECOND)
+      setProgress((prev) => {
+        const next = recordWin(prev, currentLevel.name, elapsedSeconds)
+        try {
+          window.localStorage.setItem(STORAGE_KEY, serializeProgress(next))
+        } catch {
+          // Local storage can fail in restricted environments.
+        }
+        return next
+      })
+    }
+  }, [report.outcome, currentLevel.name, game])
+
 
   // A level that has ended has stopped, whichever way it ended, so everything that
   // is laid over the help text is laid over the same thing and the help area keeps
   // one height.
   const ended = report.outcome !== 'playing'
+  const next = nextLevel(currentLevel.name)
 
   const choose = useCallback((choice: Choice) => {
     const before = game.current
@@ -149,77 +223,127 @@ export function App() {
       return
     }
     game.current = after
-  }, [])
+  }, [game])
 
   return (
     <div className="app">
       <header className="app__header">
-        <h1>Lawn Defence</h1>
-        {/* The help text stays on the page when the level is lost, and the banner
-            is laid over it rather than taking its place. Swapping one for the other
-            changes how tall this is, which moves the canvas up the page - so the
-            board would jump at the exact moment a player is looking at the lawn they
-            lost on, and the Zombies frozen on it would all move a little. */}
-        <div className="app__help">
-          <p aria-hidden={ended}>
-            Click a Sun to collect it. Choose a Seed Packet, then click a Square to plant it.
-          </p>
-          <p aria-hidden={ended}>
-            Zombies walk in from the right. A Peashooter shoots the nearest one in its own Row. A
-            Zombie that reaches a plant stops and eats it. One that reaches the left edge sets off
-            that Row's Lawn Mower, which clears the Row once and is then gone. If that Row is
-            breached again the level is lost.
-          </p>
-          {ended && (
-            <p className={`app__banner app__banner--${report.outcome}`} role="status">
-              {report.outcome === 'won'
-                ? 'Level complete. The last Wave has come and the lawn is clear.'
-                : 'Game Over. A Zombie got in at the left of the board and this level is lost.'}
-            </p>
-          )}
-          {/* The Flag Wave is announced while the level is still being played, and is
-              laid over the help text for the same reason the ending banner is: an
-              announcement that pushed the help text down would move the canvas up the
-              page, and the whole point of announcing a Wave is that the player looks
-              at the lawn. */}
-          {report.flagWaveWarning && !ended && (
-            <p className="app__banner app__banner--flag-wave" role="status">
-              A huge wave of Zombies is coming. It is the last one.
-            </p>
-          )}
+        <div className="app__header-bar">
+          <h1>
+            Lawn Defence — {currentLevel.name === 'test-bed' ? 'Test Bed' : `Level ${currentLevel.name}`}
+          </h1>
+          <div className="app__header-actions">
+            <button
+              className="menu-button"
+              onClick={() => setView((v) => (v === 'level-select' ? 'playing' : 'level-select'))}
+              type="button"
+            >
+              {view === 'level-select' ? 'Back to Lawn' : 'Level Select'}
+            </button>
+            <button
+              className="menu-button"
+              onClick={() => startLevel(currentLevel)}
+              type="button"
+            >
+              Restart
+            </button>
+          </div>
         </div>
+
+        {view === 'playing' && (
+          <div className="app__help">
+            <p aria-hidden={ended}>
+              Click a Sun to collect it. Choose a Seed Packet, then click a Square to plant it.
+            </p>
+            <p aria-hidden={ended}>
+              Zombies walk in from the right. A Peashooter shoots the nearest one in its own Row. A
+              Zombie that reaches a plant stops and eats it. One that reaches the left edge sets off
+              that Row's Lawn Mower, which clears the Row once and is then gone. If that Row is
+              breached again the level is lost.
+            </p>
+            {ended && (
+              <div className={`app__banner app__banner--${report.outcome}`} role="status">
+                <span className="app__banner-text">
+                  {report.outcome === 'won'
+                    ? 'Level complete. The last Wave has come and the lawn is clear.'
+                    : 'Game Over. A Zombie got in at the left of the board and this level is lost.'}
+                </span>
+                <div className="app__banner-actions">
+                  {report.outcome === 'won' && next !== null && (
+                    <button
+                      className="banner-button banner-button--primary"
+                      onClick={() => startLevel(next)}
+                      type="button"
+                    >
+                      Next Level ({next.name})
+                    </button>
+                  )}
+                  <button
+                    className="banner-button"
+                    onClick={() => startLevel(currentLevel)}
+                    type="button"
+                  >
+                    {report.outcome === 'won' ? 'Play Again' : 'Try Again'}
+                  </button>
+                  <button
+                    className="banner-button"
+                    onClick={() => setView('level-select')}
+                    type="button"
+                  >
+                    Level Select
+                  </button>
+                </div>
+              </div>
+            )}
+            {report.flagWaveWarning && !ended && (
+              <p className="app__banner app__banner--flag-wave" role="status">
+                A huge wave of Zombies is coming. It is the last one.
+              </p>
+            )}
+          </div>
+        )}
       </header>
 
-      <SeedBank
-        packets={report.packets}
-        chosen={report.chosen}
-        sun={report.sun}
-        onChoose={choose}
-        playable={report.outcome === 'playing'}
-      />
+      {view === 'level-select' ? (
+        <LevelSelect
+          currentLevel={currentLevel}
+          isPlaying={report.outcome === 'playing'}
+          onResume={() => setView('playing')}
+          onSelectLevel={startLevel}
+          progress={progress}
+        />
+      ) : (
+        <>
+          <SeedBank
+            chosen={report.chosen}
+            onChoose={choose}
+            packets={report.packets}
+            playable={report.outcome === 'playing'}
+            sun={report.sun}
+          />
 
-      <Lawn game={game} onChange={setReport} />
+          <Lawn key={`${currentLevel.name}-${runId}`} game={game} onChange={setReport} />
 
-      <footer className="app__footer">
-        <p>
-          Sun: <strong>{report.sun}</strong>
-        </p>
-        <p>
-          Holding: <strong>{describeChoice(report.chosen)}</strong>
-        </p>
-        <p>
-          Selected: <strong>{describeSquare(report.selected)}</strong>
-        </p>
-        {/* This line stays after Game Over too. It is still true - the Row still has
-            no mower - and a footer that loses a line gives its height to the canvas,
-            so the board would resize at the moment the level is lost. */}
-        <p>
-          Lawn Mowers: <strong>{describeSpentRows(report.spent)}</strong>
-        </p>
-      </footer>
+          <footer className="app__footer">
+            <p>
+              Sun: <strong>{report.sun}</strong>
+            </p>
+            <p>
+              Holding: <strong>{describeChoice(report.chosen)}</strong>
+            </p>
+            <p>
+              Selected: <strong>{describeSquare(report.selected)}</strong>
+            </p>
+            <p>
+              Lawn Mowers: <strong>{describeSpentRows(report.spent)}</strong>
+            </p>
+          </footer>
+        </>
+      )}
     </div>
   )
 }
+
 
 /** One Seed Packet, and whether it can be chosen right now. */
 function Packet({
@@ -254,6 +378,7 @@ function Packet({
       onClick={() => onChoose(name)}
       type="button"
     >
+      <PlantIcon name={name} size={30} />
       <span className="packet__name">{PLANT_NAMES[name]}</span>
       <span className="packet__cost">{packet.cost}</span>
       {!packet.ready && <span className="packet__note">Recharging</span>}
@@ -305,9 +430,123 @@ function SeedBank({
         onClick={() => onChoose(SHOVEL)}
         type="button"
       >
+        <ShovelIcon size={30} />
         <span className="packet__name">Shovel</span>
         <span className="packet__note">Clears a plant</span>
       </button>
     </div>
   )
 }
+
+/**
+ * Menu presenting the ten Adventure levels, their win state, and personal best
+ * times, allowing players to navigate freely between levels without reloading.
+ */
+function LevelSelect({
+  progress,
+  currentLevel,
+  isPlaying,
+  onSelectLevel,
+  onResume,
+}: {
+  progress: Progress
+  currentLevel: Level
+  isPlaying: boolean
+  onSelectLevel: (level: Level) => void
+  onResume: () => void
+}) {
+  const nextUpName = LEVEL_ORDER.find(
+    (name) => isLevelUnlocked(progress, name) && !progress.completed.includes(name),
+  )
+  const nextUpLevel = nextUpName ? LEVELS[nextUpName] : null
+
+  return (
+    <div className="level-select">
+      <div className="level-select__header">
+        <div className="level-select__title-group">
+          <h2>Adventure Levels</h2>
+          <p>Choose an unlocked Level to defend. Progress saves automatically in your browser.</p>
+        </div>
+        <div className="level-select__actions">
+          {nextUpLevel && (
+            <button
+              className="action-button action-button--primary"
+              onClick={() => onSelectLevel(nextUpLevel)}
+              type="button"
+            >
+              Continue Adventure (Level {nextUpLevel.name})
+            </button>
+          )}
+          <button className="action-button" onClick={onResume} type="button">
+            {isPlaying
+              ? `Resume ${currentLevel.name === 'test-bed' ? 'Test Bed' : `Level ${currentLevel.name}`}`
+              : 'Back to Lawn'}
+          </button>
+        </div>
+      </div>
+
+      <div className="level-select__grid">
+        {LEVEL_ORDER.map((levelName) => {
+          const level = LEVELS[levelName]
+          if (!level) {
+            return null
+          }
+          const unlocked = isLevelUnlocked(progress, levelName)
+          const won = progress.completed.includes(levelName)
+          const isCurrent = levelName === currentLevel.name
+          const isNextUp = levelName === nextUpName
+          const bestTime = progress.bestTimes[levelName]
+
+          const classes = ['level-card']
+          if (!unlocked) {
+            classes.push('level-card--locked')
+          }
+          if (won) {
+            classes.push('level-card--won')
+          }
+          if (isCurrent) {
+            classes.push('level-card--current')
+          }
+          if (isNextUp) {
+            classes.push('level-card--next')
+          }
+
+          const badge = !unlocked ? '🔒 Locked' : won ? '✓ Won' : isNextUp ? 'Next Up' : 'Unlocked'
+          const timeNote = bestTime !== undefined ? `, Best time ${formatCompletionTime(bestTime)}` : ''
+
+          return (
+            <button
+              key={levelName}
+              aria-label={`Level ${levelName}: ${badge}${timeNote}`}
+              className={classes.join(' ')}
+              disabled={!unlocked}
+              onClick={() => onSelectLevel(level)}
+              type="button"
+            >
+              <div className="level-card__header">
+                <span className="level-card__title">Level {levelName}</span>
+                <span className="level-card__badge">{badge}</span>
+              </div>
+
+              {unlocked ? (
+                <div className="level-card__stats">
+                  {bestTime !== undefined ? (
+                    <span className="level-card__time">
+                      Best: <strong>{formatCompletionTime(bestTime)}</strong>
+                    </span>
+                  ) : (
+                    <span className="level-card__note">Ready to play</span>
+                  )}
+                </div>
+              ) : (
+                <div className="level-card__locked-hint">Locked</div>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+

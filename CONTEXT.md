@@ -92,6 +92,10 @@ _Avoid_: enemy, mob, monster, attacker
 A separate layer on a zombie that has to be destroyed before the zombie underneath can be hurt.
 _Avoid_: shield, helmet, plating
 
+**Pole Vaulting Zombie**:
+An athletic zombie that runs quickly with a pole and vaults over the first plant it encounters, unless blocked by a Tall-nut. Once vaulted or blocked, it drops its pole and walks like an ordinary zombie.
+_Avoid_: pole vaulter, jumper, jumper zombie
+
 **Wave**:
 A scheduled group of zombies entering from the right side of the board. Each level is made of waves on a timer.
 _Avoid_: spawn group, round, wave spawn
