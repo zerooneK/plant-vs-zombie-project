@@ -419,10 +419,10 @@ test('Zombies two Rows away, or two Columns away, are outside the blast and surv
   assert.deepEqual(
     onTheLawn(after).sort((a, b) => a[0] - b[0]),
     [
-      [0, 270],
-      [2, 270],
-      [2, 270],
-      [4, 270],
+      [0, 200],
+      [2, 200],
+      [2, 200],
+      [4, 200],
     ],
     'exactly the four one Square outside the blast are left, two in the bomb’s own Row and one in each of the Rows beyond',
   )
@@ -503,7 +503,7 @@ test('a Cherry Bomb at the edge of the lawn clears the Zombies it can reach and 
 
   assert.deepEqual(
     onTheLawn(after).sort((a, b) => a[0] - b[0]),
-    [[BLAST_ROWS + 1, 270]],
+    [[BLAST_ROWS + 1, 200]],
     'only the Zombie in the Row beyond the blast is left: the bomb’s own Row and the Row below it were both inside it',
   )
 })

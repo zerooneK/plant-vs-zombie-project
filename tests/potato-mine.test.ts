@@ -265,7 +265,7 @@ test('a Potato Mine that has fired is gone, and the Square it was in takes a sec
   const arrivedAtTheSquare = afterSteps(planted, 1400)
   const second = arrivedAtTheSquare.zombies.find((zombie) => zombie.row === MINE_SQUARE.row)
   assert.ok(second, 'the second Zombie is on the lawn, having walked past the Square')
-  assert.equal(second.health, 270, 'and it is at full health, so nothing was waiting for it')
+  assert.equal(second.health, 200, 'and it is at full health, so nothing was waiting for it')
   assert.ok(
     second.walked > 284,
     'and it is past the Column the mine was planted in, rather than stopped in it',
@@ -297,7 +297,7 @@ test('two Zombies reaching a Potato Mine on the same step: one is destroyed and 
     [2],
     'and it is the second that is left: the mine was spent on the first one in the list',
   )
-  assert.equal(after.zombies[0]?.health, 270, 'and the survivor is at full health')
+  assert.equal(after.zombies[0]?.health, 200, 'and the survivor is at full health')
   assert.equal(plantAt(after), undefined, 'while the mine is gone either way, having fired once')
 
   // And the survivor is *walking*, not standing where the mine was: it came to the same
@@ -328,7 +328,7 @@ test('a Zombie that reaches a Potato Mine before it has armed is not destroyed b
 
   const zombie = after.zombies.find((candidate) => candidate.row === MINE_SQUARE.row)
   assert.ok(zombie, 'the Zombie is still on the lawn a long time after reaching the mine')
-  assert.equal(zombie.health, 270, 'at full health, so the mine did not touch it')
+  assert.equal(zombie.health, 200, 'at full health, so the mine did not touch it')
 })
 
 test('a Potato Mine is a plant while it waits, so a Zombie that reaches it early eats it', () => {
@@ -352,7 +352,7 @@ test('a Potato Mine is a plant while it waits, so a Zombie that reaches it early
   const carried = afterSteps(planted, 284 + 2 * STEPS_PER_SECOND + STEPS_PER_SECOND)
   const zombie = carried.zombies.find((candidate) => candidate.row === MINE_SQUARE.row)
   assert.ok(zombie, 'and the Zombie is still on the lawn, unharmed by a mine that never fired')
-  assert.equal(zombie.health, 270, 'at full health')
+  assert.equal(zombie.health, 200, 'at full health')
   assert.ok(
     zombie.walked > 284,
     'walking on past the Square the mine was in, exactly as it would walk past any other',

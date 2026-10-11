@@ -14,7 +14,7 @@ Chomper, and Lawn Mower) treat armoured targets?
 ## Decision
 
 **Armour is a separate numerical layer on a Zombie that absorbs damage before health is touched.**
-A Conehead has 370 armour and 270 health; a Buckethead has 1100 armour and 270 health.
+A Conehead has 370 armour and 200 health; a Buckethead has 1100 armour and 200 health (270 until the Basic Zombie's health was lowered; see ADR 0023).
 When hit by a projectile:
 1. Damage is deducted from `armour` first.
 2. If damage exceeds what remains of `armour`, the excess carries over directly to `health`.

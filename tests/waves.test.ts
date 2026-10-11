@@ -123,11 +123,11 @@ function aLevelEndingInAFlagWave() {
 }
 
 /** The Zombie a Wave that is not the Flag Wave sends, and how tough it is. */
-const BASIC_HEALTH = 270
+const BASIC_HEALTH = 200
 
 /**
- * The health a Zombie in the Flag Wave walks in with: seventeen peas rather than
- * fourteen.
+ * The health a Zombie in the Flag Wave walks in with: thirteen peas rather than
+ * ten.
  *
  * Written out as the number rather than worked out from the ordinary Wave's, so
  * that a check can catch a Flag Wave that is no tougher than any other - which is
@@ -136,7 +136,7 @@ const BASIC_HEALTH = 270
  * first written; see the note on `FLAG_WAVE_TOUGHNESS` for why playing the level
  * said otherwise.
  */
-const FLAG_WAVE_HEALTH = 338
+const FLAG_WAVE_HEALTH = 250
 
 test('the Flag Wave is announced before it arrives', () => {
   const start = initialGameState(DEFAULT_SEED, aLevelEndingInAFlagWave())
@@ -180,7 +180,7 @@ test('every Zombie in the Flag Wave is tougher than in the other Waves, and a Fl
   assert.equal(
     fromTheOrdinaryWave.health,
     BASIC_HEALTH,
-    'a Zombie from an ordinary Wave walks in with 270 health',
+    'a Zombie from an ordinary Wave walks in with 200 health',
   )
 
   const flagged = untilTick(ordinary, FLAG_WAVE, 'the Flag Wave walked in')

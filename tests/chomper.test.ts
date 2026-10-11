@@ -303,8 +303,8 @@ function afterSteps(state: GameState, steps: number): GameState {
 
 test('a Chomper destroys the Zombie it reaches, in a single bite', () => {
   // The first half of the plant, and the whole of what "a Chomper eats a Zombie" means:
-  // the Zombie it reaches is gone from the lawn, not wounded. A Zombie is 270 health and
-  // a Peashooter takes fourteen peas to fell one; this is one bite, so there is no damage
+  // the Zombie it reaches is gone from the lawn, not wounded. A Zombie is 200 health and
+  // a Peashooter takes ten peas to fell one; this is one bite, so there is no damage
   // number on a Chomper and nothing on it that a Conehead's armour could ever turn out to
   // be too small for. That is the same answer a Potato Mine and a Cherry Bomb give, for
   // the same reason.
@@ -327,7 +327,7 @@ test('a Chomper destroys the Zombie it reaches, in a single bite', () => {
   assert.equal(planted.zombies.length, 1, 'the Zombie is on the lawn and walking')
   assert.equal(
     planted.zombies[0]?.health,
-    270,
+    200,
     'at full health and a Column short of the Chomper, so nothing has eaten it yet',
   )
   assert.equal(
@@ -418,7 +418,7 @@ test('a Chomper cannot eat for forty-two seconds after it has eaten', () => {
     stillThere,
     'a Zombie that reached a chewing Chomper is still on the lawn: it was not eaten',
   )
-  assert.equal(stillThere.health, 270, 'at full health, so nothing touched it')
+  assert.equal(stillThere.health, 200, 'at full health, so nothing touched it')
 })
 
 test('a Zombie that reaches a Chomper mid-chew eats it, and the Chomper is gone', () => {
@@ -465,7 +465,7 @@ test('a Zombie that reaches a Chomper mid-chew eats it, and the Chomper is gone'
   )
   const survivor = eaten.zombies.find((zombie) => zombie.row === CHOMPER_SQUARE.row)
   assert.ok(survivor, 'and that Zombie is still on the lawn')
-  assert.equal(survivor.health, 270, 'unharmed by a Chomper that was busy chewing')
+  assert.equal(survivor.health, 200, 'unharmed by a Chomper that was busy chewing')
 })
 
 test('a Chomper eats again once the chew has finished', () => {

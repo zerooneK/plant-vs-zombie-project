@@ -4,6 +4,18 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.39.0] - 2026-10-12
+
+### Easier Zombies and a Faster Sunflower
+
+A balance pass from playing Level 1-1. A Peashooter planted a few seconds after a Zombie appeared could not stop it in time, and a new Sunflower took far too long to make its first Sun.
+
+- **A Basic Zombie has 200 health, down from 270**: ten peas instead of fourteen, about fourteen seconds of a lone Peashooter instead of nineteen. This is the original's too, whose 270 is 200 of body and a 70 head that falls off first. Conehead, Buckethead and Flag Zombies walk on the same body and are easier by the same amount; a Flag Wave's tougher Zombie has 250.
+- **A Sunflower makes Sun every 18 seconds, down from 24.25**, and its first piece comes 18 seconds after it is planted. Two pieces now pay a Sunflower back at 36 seconds, before a Zombie can cross the lawn (42.3), so it pays for itself in every Row of Level 1-1. It used to only break even in the Row the first Wave walks down; that was the original's design, and the user chose an easier game over it.
+- **Checks updated** to restate the new numbers, as the checks restate every number. The recorded margin an economy-first plan wins Level 1-1 by is now 17.6 seconds, down from 22.9, because the level ends sooner. The Sunflower payback check now records that even the first-attacked Row comes out ahead, and that a late Row still earns more. Two checks needed their setup moved, because Zombies now fall before the moment they look at. Three Zombies now walk into a Row two seconds apart, not three. The Snow Pea check digs up its control Peashooter too.
+- **Docs**: ADR 0023 records the change and why, and ADR 0007 is marked superseded on the interval. The spec, ADR 0012, the Flag Wave note and test comments no longer quote the old numbers.
+- **Verification**: typecheck passes and all 178 rule tests pass. Measured on Level 1-1, a Peashooter planted as the first Zombie appears fells it with 10 peas, 14 seconds later.
+
 ## [0.38.0] - 2026-10-12
 
 ### A Pixel-Art Peashooter, One Size for Pixel Art, and a Red Flash Instead of a Bite

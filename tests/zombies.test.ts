@@ -27,7 +27,7 @@ const ZOMBIE_STEP = 30 * STEPS_PER_SECOND
 const PEA_DAMAGE = 20
 
 /** The health a Basic Zombie walks in with, likewise written out. */
-const BASIC_HEALTH = 270
+const BASIC_HEALTH = 200
 
 /** The armour a Conehead Zombie walks in with. */
 const CONEHEAD_ARMOUR = 370
@@ -48,11 +48,11 @@ const PEA_SQUARE: Square = { row: 2, column: 1 }
  * Where the eating checks stand their Peashooter: the last Column, the one
  * closest to where the Zombies come in.
  *
- * Not a detail. A Peashooter kills a Basic Zombie in about nineteen seconds of
+ * Not a detail. A Peashooter kills a Basic Zombie in about fourteen seconds of
  * shooting, and a Zombie takes nearly five to cross each Column, so a Peashooter
- * planted in the first four Columns kills everything that walks at it long
- * before it can arrive - the plant is never reached, and so is never eaten. From
- * the fifth Column rightwards the Zombie gets there, hurt, and eats. Putting
+ * planted in most of the lawn kills everything that walks at it before it can
+ * arrive - the plant is never reached, and so is never eaten. Only close to where
+ * the Zombies come in does the Zombie get there, hurt, and eat. Putting
  * these checks at the far right is what lets them be about eating and nothing
  * else, and that a Peashooter in the first Columns is a thing that cannot be
  * eaten is a true and useful thing about the game.
@@ -412,13 +412,13 @@ test('a Zombie is removed from the lawn once a pea has taken all of its health',
     ),
   )
   const arrived = untilTick(planted, ZOMBIE_STEP)
-  assert.equal(zombieIn(arrived, 2).health, BASIC_HEALTH, 'a Basic Zombie walks in with 270 health')
+  assert.equal(zombieIn(arrived, 2).health, BASIC_HEALTH, 'a Basic Zombie walks in with 200 health')
 
   const hit = until(arrived, (state) => (state.zombies[0]?.health ?? BASIC_HEALTH) < BASIC_HEALTH)
   assert.equal(
     zombieIn(hit, 2).health,
     BASIC_HEALTH - PEA_DAMAGE,
-    'and one pea takes 20 off it, so it takes fourteen of them to fell one',
+    'and one pea takes 20 off it, so it takes ten of them to fell one',
   )
 
   const gone = until(hit, (state) => state.zombies.length === 0)
@@ -688,7 +688,7 @@ test('a Conehead Zombie walks in with armour, and peas damage the armour before 
   )
   const arrived = untilTick(planted, ZOMBIE_STEP)
   const conehead = zombieIn(arrived, 2)
-  assert.equal(conehead.health, BASIC_HEALTH, 'body health is 270')
+  assert.equal(conehead.health, BASIC_HEALTH, 'body health is 200')
   assert.equal(conehead.armour, CONEHEAD_ARMOUR, 'conehead walks in with 370 armour')
 
   const hit = until(arrived, (state) => (state.zombies[0]?.armour ?? CONEHEAD_ARMOUR) < CONEHEAD_ARMOUR)
@@ -706,7 +706,7 @@ test('a Buckethead Zombie walks in with more armour than a Conehead, and peas da
   )
   const arrived = untilTick(planted, ZOMBIE_STEP)
   const buckethead = zombieIn(arrived, 2)
-  assert.equal(buckethead.health, BASIC_HEALTH, 'body health is 270')
+  assert.equal(buckethead.health, BASIC_HEALTH, 'body health is 200')
   assert.equal(buckethead.armour, BUCKETHEAD_ARMOUR, 'buckethead walks in with 1100 armour')
 
   const hit = until(arrived, (state) => (state.zombies[0]?.armour ?? BUCKETHEAD_ARMOUR) < BUCKETHEAD_ARMOUR)
@@ -762,7 +762,7 @@ test('in a Flag Wave, an armoured Zombie has both its armour and health multipli
   })
   const arrived = untilTick(initialGameState(DEFAULT_SEED, level), 10)
   const conehead = zombieIn(arrived, 2)
-  assert.equal(conehead.health, 338, 'health is 270 * 1.25 = 338')
+  assert.equal(conehead.health, 250, 'health is 200 * 1.25 = 250')
   assert.equal(conehead.armour, 463, 'armour is 370 * 1.25 = 463')
 })
 

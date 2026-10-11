@@ -62,7 +62,7 @@ test('the test bed offers all four shooters, and each packet shows what it costs
 
 /** What one pea does to a Zombie's health, and what a Basic Zombie walks in with. */
 const PEA_DAMAGE = 20
-const BASIC_HEALTH = 270
+const BASIC_HEALTH = 200
 
 /**
  * Where the checks below stand their shooters, and which Row they watch.
@@ -230,7 +230,7 @@ test('a Repeater fires two peas in one shot, and both of them hit the same Zombi
     before = now
   }
 
-  assert.equal(before, BASIC_HEALTH, 'the Zombie walked in with its full 270 health')
+  assert.equal(before, BASIC_HEALTH, 'the Zombie walked in with its full 200 health')
   assert.equal(firstDrop, 2 * PEA_DAMAGE, 'and lost forty to the first pair of peas, not twenty')
 })
 
@@ -412,7 +412,7 @@ test('a slowed Zombie walks at half the speed of one that is not slowed', () => 
   // Ten seconds of walking, which is the longest window that is safe: a Zombie
   // walks into the first Column of the lawn in about thirty-eight seconds, so ten
   // keeps it well clear of the plant, and both peas are doing twenty damage every
-  // one and four tenths of a second, so fourteen peas fell a Zombie in under twenty
+  // one and four tenths of a second, so ten peas fell a Zombie in about fourteen
   // and this has to finish before that or the level ends underneath the check.
   // Asserted rather than assumed, for the same reason.
   const later = untilTick(hit, hit.tick + 10 * STEPS_PER_SECOND, 'ten seconds of walking')
@@ -467,10 +467,16 @@ test('a slowed Zombie is still slowed after its Snow Pea is dug up, and then wal
   )
 
   // The Snow Pea dug up with the Shovel, leaving the Zombie with the rest of its
-  // slow to run out.
-  const dug = apply(apply(slowed, { kind: 'choose', choice: SHOVEL }), {
+  // slow to run out. The control's Peashooter is dug up too: left shooting, it fells
+  // its 200-health Zombie in fourteen seconds, before the slow has run out and the
+  // two can be compared. Its Zombie was never slowed, which is all a control needs.
+  const snowPeaDug = apply(apply(slowed, { kind: 'choose', choice: SHOVEL }), {
     kind: 'shovel',
     square: { row, column: SHOOTER_SQUARE.column },
+  })
+  const dug = apply(apply(snowPeaDug, { kind: 'choose', choice: SHOVEL }), {
+    kind: 'shovel',
+    square: { row: control, column: SHOOTER_SQUARE.column },
   })
   assert.ok(
     !dug.occupants.some(
@@ -479,10 +485,10 @@ test('a slowed Zombie is still slowed after its Snow Pea is dug up, and then wal
     'the Snow Pea is gone',
   )
   assert.ok(
-    dug.occupants.some(
+    !dug.occupants.some(
       (occupant) => occupant.kind === 'plant' && occupant.square.row === control,
     ),
-    'and the Peashooter in the other Row is untouched, so the control keeps shooting',
+    "and so is the control's Peashooter, so the control's Zombie is still there to compare with",
   )
 
   // How fast each Zombie walks over the next few seconds: the two plants are gone
@@ -533,16 +539,20 @@ const SLOW_SECONDS = 10
 /**
  * How far apart the three Zombies in a Row walk in, in seconds.
  *
- * Three seconds, which is about two thirds of a Column - far enough that the pea
+ * Two seconds, which is about four tenths of a Column - far enough that the pea
  * passing the first has gone on to the second before the second is hit, and close
  * enough that a pea is still in the air when the next Zombie walks in. Both halves
  * of that matter, and the second especially: a Zombie that arrives after the peas
  * have crossed the lawn cannot be hit by any of them, whatever the plant shoots.
+ *
+ * It was three until a Basic Zombie went down to 200 health. A Repeater fells one
+ * in five shots, about seven seconds, and at three seconds apart the first was down
+ * before the third had walked in, so there was never a line of three to shoot through.
  */
-const STAGGER = 3
+const STAGGER = 2
 
 /**
- * One plant in one Row, and three Zombies walking into that Row three seconds apart.
+ * One plant in one Row, and three Zombies walking into that Row `STAGGER` seconds apart.
  *
  * The single-plant version of the fixture below, for the check that gives each
  * shooter a level of its own. They cannot share one: the four of them together would

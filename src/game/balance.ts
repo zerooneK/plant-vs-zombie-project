@@ -71,26 +71,19 @@ export const PEASHOOTER_SUN_COST = 100
 export const SUNFLOWER_SUN_COST = 50
 
 /**
- * How long between one Sun a Sunflower makes and the next. Believed to be the
- * original's twenty-four and a quarter seconds, which is a whole number of
- * steps at sixty a second, so the first Sun a planted Sunflower makes lands on
- * a step rather than somewhere between two of them.
+ * How long between one Sun a Sunflower makes and the next, and before the first.
+ * Eighteen seconds, shorter than the original's twenty-four and a quarter.
  *
- * Twenty-five Sun every twenty-four seconds is a slower rate than the sky's
- * twenty-five every ten, so one Sunflower is a *worse* deal than doing nothing
- * and waiting. It pays because you plant several and they run at once, and
- * seeing that is the game.
- *
- * Confirmed at ticket 11 by playing rather than by reading, and confirmed for a
- * sharper reason than the one above. Two pieces pay a Sunflower back at 48.5
- * seconds, and a Zombie crosses the whole lawn in 42.3 - **the payback time is
- * longer than the lawn is wide**. So what a Sunflower earns is decided by how long
- * before a Zombie reaches it, not by which Row it is in: measured across Level 1-1,
- * the Row the first Wave reaches at twenty-five seconds breaks even exactly and the
- * Rows reached later all come out ahead. The interval is not a rate to be tuned but
- * the thing that makes timing a decision, and shortening it would take that away.
+ * The original's number was confirmed at ticket 11: two pieces paid a Sunflower
+ * back at 48.5 seconds, longer than the 42.3 a Zombie takes to cross the lawn, so
+ * a Sunflower was a bet on a Zombie arriving late, and the Row the first Wave
+ * reaches only broke even. Playing it, the user found the first Sun far too slow
+ * in coming and chose eighteen seconds to make the game easier, knowing it
+ * changes that: two pieces now pay back at 36 seconds, before a crossing, so a
+ * Sunflower comes out ahead in every Row of Level 1-1. When a Zombie arrives still
+ * decides how much it earns, just no longer whether it pays.
  */
-export const SUNFLOWER_PRODUCE_INTERVAL = 24.25 * STEPS_PER_SECOND
+export const SUNFLOWER_PRODUCE_INTERVAL = 18 * STEPS_PER_SECOND
 
 /**
  * What one piece of Sun a Sunflower makes is worth. Believed to be the
@@ -142,18 +135,23 @@ export const SHOT_STEPS_PER_COLUMN = Math.round(0.3 * STEPS_PER_SECOND)
 export const PEA_DAMAGE = 20
 
 /**
- * How much health a Basic Zombie has. From memory, 270, which is the number
- * that makes a lone Peashooter a real answer rather than a fast one: thirteen
- * peas to fell one, and thirteen peas is about twenty seconds of standing and
- * firing while the Zombie spends thirty-five of them walking.
+ * How much health a Basic Zombie has: 200, ten peas, so a lone Peashooter fells
+ * one in about fourteen seconds.
+ *
+ * It was 270 from memory, fourteen peas and about twenty seconds. Playing Level
+ * 1-1, the user found a Peashooter planted a few seconds after a Zombie appeared
+ * could not stop it in time, and remembered the original's Zombie falling at
+ * about ten peas - which is the original's, too: its 270 is 200 of body and 70 of
+ * a head that falls off first. Every Zombie that walks on a Basic's body shares
+ * this number.
  */
-export const BASIC_ZOMBIE_HEALTH = 270
+export const BASIC_ZOMBIE_HEALTH = 200
 
 /**
  * How much armour a Conehead Zombie has. Believed to be the original's 370.
  *
  * Takes eighteen and a half peas at 20 damage each, so nineteen peas to knock
- * the cone off, followed by the fourteen peas needed to fell the Zombie underneath.
+ * the cone off, followed by the ten peas needed to fell the Zombie underneath.
  */
 export const CONEHEAD_ARMOUR = 370
 
@@ -161,7 +159,7 @@ export const CONEHEAD_ARMOUR = 370
  * How much armour a Buckethead Zombie has. Believed to be the original's 1100.
  *
  * Takes fifty-five peas at 20 damage each to knock the bucket off, followed by
- * the fourteen peas needed to fell the Zombie underneath.
+ * the ten peas needed to fell the Zombie underneath.
  */
 export const BUCKETHEAD_ARMOUR = 1100
 
@@ -601,8 +599,8 @@ export const FLAG_WAVE_WARNING = 10 * STEPS_PER_SECOND
  * whole of what the announcement is for. So this project's Flag Wave is both more
  * and harder, and this is the half of that which is ours rather than copied.
  *
- * One and a quarter. A Zombie in the Flag Wave takes seventeen peas to fell rather
- * than fourteen.
+ * One and a quarter. A Zombie in the Flag Wave takes thirteen peas to fell rather
+ * than ten.
  *
  * That number was one and a half when this was first written, on the argument that
  * a third more health was a third more climax. Playing the level said otherwise. A
@@ -617,8 +615,9 @@ export const FLAG_WAVE_WARNING = 10 * STEPS_PER_SECOND
  * forty-two a Zombie spends crossing the *whole* lawn, which is the distance to a
  * Peashooter in the last Column and not the one in the first.
  *
- * One and a quarter is seventeen peas against thirty-three seconds: nine seconds to
- * spare, which is a Peashooter placed a little late rather than a Peashooter
+ * One and a quarter was seventeen peas against thirty-three seconds when a Basic
+ * Zombie had 270 health: nine seconds to spare. At 200 it is thirteen peas, about
+ * eighteen seconds, so fifteen to spare - a Peashooter placed a little late rather than a Peashooter
  * standing in exactly the right place at exactly the right moment. Two of them in
  * one Row is still a problem rather than a certainty, which is what the Flag Wave is
  * for - the pressure comes from three of them arriving in three Rows at once, which
