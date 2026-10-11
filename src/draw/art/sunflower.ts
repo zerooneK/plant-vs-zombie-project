@@ -1,5 +1,7 @@
 import type { Planted } from '../../game/board.ts'
 import type { BoardLayout } from '../layout.ts'
+import { blit, copy, drawnPart, flashLevel, paint, pictures, place, render, wipe } from './pixel.ts'
+import type { Box, Cell, Grid, Ink } from './pixel.ts'
 
 /**
  * The Sunflower, from the user's 1254 x 1254 front-view picture, shrunk to
@@ -14,15 +16,12 @@ import type { BoardLayout } from '../layout.ts'
  * shines were set back to white and the tongue back to red, where grouping had
  * merged them into their neighbours.
  *
- * Written out as letters rather than kept as an image file, so the faces
- * below can repaint single cells and the game still opens from `file://`.
- *
- * Every picture the Sunflower can show is built once and kept, so a lawn full
- * of Sunflowers costs one image copy each per frame.
+ * Grids, faces, bites and placing are shared by every pixel-art character;
+ * see `pixel.ts`.
  */
 
 /** The front view, as drawn. `.` is empty; every other letter is in `INK`. */
-const FRONT: readonly string[] = [
+const FRONT: Grid = [
   '................................................',
   '................................................',
   '................................................',
@@ -73,10 +72,8 @@ const FRONT: readonly string[] = [
   '................................................',
 ]
 
-const SIZE = 48
-
 /** The colours the drawing uses, read from it. */
-const INK: Readonly<Record<string, string>> = {
+const INK: Ink = {
   a: '#311610', // outline, eyes
   j: '#491e13', // outline, softer
   m: '#622514', // mouth and face edge
@@ -104,21 +101,14 @@ const INK: Readonly<Record<string, string>> = {
 }
 
 /** Where the drawing actually is inside its 48 x 48, so it is sized and placed by that. */
-const DRAWN_LEFT = 7
-const DRAWN_RIGHT = 41
-const DRAWN_BOTTOM = 41
+const DRAWN = drawnPart(FRONT)
 
 /** The middle of the face, in cells, for the glow. */
 const FACE_COLUMN = 24
 const FACE_ROW = 24
 
-/** Where a bite is taken: the right of the head, the side Zombies come from. */
-const BITE_COLUMN = 42
-const BITE_ROW = 24
-/** A bite's radius in cells when nothing at all is left. */
-const BITE_MAX = 14
-/** Rows from here down are leaves, and a Zombie bites the head, not the leaves. */
-const LEAVES_ROW = 33
+/** Sparkles are round the Sunflower, not part of it, so they never flash red. */
+const LOOSE = new Set(['L'])
 
 /**
  * The three faces this game has a reason to show. Turn-arounds, walking and
@@ -132,8 +122,6 @@ const GLOW_STEPS = 90
 /** Steps between one bob of the head and the next. */
 const BOB_STEPS = 30
 
-type Cell = readonly [row: number, column: number, ink: string]
-
 /**
  * The boxes the drawing's eyes and mouth sit in, as [first row, last row,
  * first column, last column]. The two eyes are the same shape on purpose: in
@@ -141,34 +129,21 @@ type Cell = readonly [row: number, column: number, ink: string]
  * which at this size reads as a mistake rather than a tilt, so the left eye
  * is the right eye copied across.
  */
-const FACE_BOXES: readonly (readonly [number, number, number, number])[] = [
+const FACE_BOXES: readonly Box[] = [
   [21, 25, 18, 20],
   [21, 25, 27, 29],
   [26, 28, 21, 25],
 ]
 
-/** The inks of the eyes and mouth: the only cells a new face wipes. */
+/**
+ * The inks of the eyes and mouth: the only cells a new face wipes, to plain
+ * face, so that a box reaching a cheek never punches a hole in it.
+ */
 const FACE_INKS = new Set(['a', 'j', 'm', 'W', 'r'])
 
 /**
- * Wipes the drawing's eyes and mouth to plain face, so another face can be
- * drawn. Only eye and mouth inks are wiped, not everything in the boxes: a
- * box that reaches a cheek would otherwise punch a brown hole in it.
- */
-function wipeFace(grid: string[][]): void {
-  for (const [top, bottom, left, right] of FACE_BOXES) {
-    for (let row = top; row <= bottom; row++) {
-      for (let column = left; column <= right; column++) {
-        const line = grid[row]
-        if (line !== undefined && FACE_INKS.has(line[column] ?? '')) line[column] = 'b'
-      }
-    }
-  }
-}
-
-/**
  * What each face changes. The happy face is the drawing as it is; the other
- * two wipe its eyes and mouth (see `wipeFace`) and draw their own.
+ * two wipe its eyes and mouth (see `FACE_INKS`) and draw their own.
  */
 const MOODS: Readonly<Record<SunflowerMood, readonly Cell[]>> = {
   happy: [],
@@ -199,73 +174,15 @@ const MOODS: Readonly<Record<SunflowerMood, readonly Cell[]>> = {
   ],
 }
 
-function inked(grid: readonly (readonly string[])[], row: number, column: number): boolean {
-  const ink = grid[row]?.[column]
-  return ink !== undefined && ink !== '.' && ink !== 'L'
+function build(key: string): HTMLCanvasElement {
+  const [mood, flash] = key.split(':') as [SunflowerMood, string]
+  const grid = copy(FRONT)
+  if (mood !== 'happy') wipe(grid, FACE_BOXES, FACE_INKS, 'b')
+  paint(grid, MOODS[mood])
+  return render(grid, INK, Number(flash), LOOSE)
 }
 
-/**
- * Clears a bite out of the right of the head, then outlines the edge the bite
- * leaves, so a bitten Sunflower still has its dark line all the way round.
- */
-function takeBite(grid: string[][], radius: number): void {
-  if (radius <= 0) return
-  const bitten: [number, number][] = []
-  for (let row = 0; row < LEAVES_ROW; row++) {
-    for (let column = 0; column < SIZE; column++) {
-      if (Math.hypot(row - BITE_ROW, column - BITE_COLUMN) < radius && inked(grid, row, column)) {
-        bitten.push([row, column])
-      }
-    }
-  }
-  for (const [row, column] of bitten) {
-    grid[row]![column] = '.'
-  }
-  for (const [row, column] of bitten) {
-    for (const [r, c] of [[row + 1, column], [row - 1, column], [row, column + 1], [row, column - 1]] as const) {
-      if (inked(grid, r, c)) grid[r]![c] = 'a'
-    }
-  }
-}
-
-function build(mood: SunflowerMood, bite: number): HTMLCanvasElement {
-  const grid = FRONT.map((line) => [...line])
-  if (mood !== 'happy') wipeFace(grid)
-  for (const [row, column, ink] of MOODS[mood]) {
-    const line = grid[row]
-    if (line !== undefined && column >= 0 && column < SIZE) line[column] = ink
-  }
-  takeBite(grid, bite)
-
-  const sprite = document.createElement('canvas')
-  sprite.width = SIZE
-  sprite.height = SIZE
-  const context = sprite.getContext('2d')
-  if (context !== null) {
-    grid.forEach((line, row) => {
-      line.forEach((letter, column) => {
-        const colour = INK[letter]
-        if (colour !== undefined) {
-          context.fillStyle = colour
-          context.fillRect(column, row, 1, 1)
-        }
-      })
-    })
-  }
-  return sprite
-}
-
-const sprites = new Map<string, HTMLCanvasElement>()
-
-function sprite(mood: SunflowerMood, bite: number): HTMLCanvasElement {
-  const key = `${mood}:${bite}`
-  let found = sprites.get(key)
-  if (found === undefined) {
-    found = build(mood, bite)
-    sprites.set(key, found)
-  }
-  return found
-}
+const sprite = pictures(build)
 
 /**
  * Which face to show. Being eaten beats glowing: a Sunflower about to make
@@ -282,37 +199,27 @@ export function drawSunflowerSprite(
   plant: Planted,
   board: BoardLayout,
   centre: { x: number; y: number },
-  health: number,
   tick: number,
   beingEaten: boolean,
+  flash: number,
 ): void {
   const mood = sunflowerMood(plant, beingEaten)
-  // Rounded to whole cells, so a bite grows a cell at a time and only fifteen
-  // pictures of a bitten Sunflower are ever built.
-  const bite = Math.round(BITE_MAX * (1 - health))
-
-  // Sized by the drawing, not by the empty margin round it: the drawn part is
-  // as wide as the Square.
-  const cell = (board.squareWidth * 1.02) / (DRAWN_RIGHT - DRAWN_LEFT + 1)
-  const size = cell * SIZE
 
   // Each Sunflower bobs on its own beat, worked out from its Square, so a row
   // of them sways rather than marching in step.
   const phase = (plant.square.row * 7 + plant.square.column * 11) * 5
-  const bob = Math.floor((tick + phase) / BOB_STEPS) % 2 === 0 ? 0 : cell
+  const bob = Math.floor((tick + phase) / BOB_STEPS) % 2 === 0 ? 0 : 1
   // A Sunflower being eaten shudders instead of bobbing.
-  const shake = mood === 'hurt' ? (Math.floor(tick / 4) % 2 === 0 ? -cell : cell) : 0
+  const shake = mood === 'hurt' ? (Math.floor(tick / 4) % 2 === 0 ? -1 : 1) : 0
 
-  const drawnMiddle = (DRAWN_LEFT + DRAWN_RIGHT + 1) / 2
-  const left = Math.round(centre.x - drawnMiddle * cell + shake)
-  const top = Math.round(centre.y + board.squareHeight * 0.47 - (DRAWN_BOTTOM + 1) * cell + bob)
+  const at = place(board, centre, DRAWN, shake, bob)
 
   if (mood === 'glowing') {
     // A soft light behind the head, pulsing. Kept well short of opaque, so the
     // lawn under it can never blend to the Sun's own core colour.
-    const glowX = left + (FACE_COLUMN + 0.5) * cell
-    const glowY = top + (FACE_ROW + 0.5) * cell
-    const radius = 22 * cell
+    const glowX = at.left + (FACE_COLUMN + 0.5) * at.cell
+    const glowY = at.top + (FACE_ROW + 0.5) * at.cell
+    const radius = 22 * at.cell
     const pulse = 0.35 + 0.15 * Math.sin(tick / 6)
     const gradient = context.createRadialGradient(glowX, glowY, 0, glowX, glowY, radius)
     gradient.addColorStop(0, `rgba(255, 243, 199, ${pulse})`)
@@ -323,9 +230,5 @@ export function drawSunflowerSprite(
     context.fill()
   }
 
-  context.save()
-  // Nearest-neighbour scaling, or the pixel art is smeared into a blur.
-  context.imageSmoothingEnabled = false
-  context.drawImage(sprite(mood, bite), left, top, Math.round(size), Math.round(size))
-  context.restore()
+  blit(context, sprite(`${mood}:${flashLevel(flash)}`), at)
 }

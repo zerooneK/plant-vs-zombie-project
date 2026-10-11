@@ -1,6 +1,7 @@
 import type { Shot } from '../../game/shots.ts'
 import { middleOfRow, place } from '../layout.ts'
 import type { BoardLayout } from '../layout.ts'
+import { muzzleDrop } from './peashooter.ts'
 
 export const PEA_RADIUS = 8
 
@@ -36,7 +37,9 @@ export function drawShotArt(
     withOthers < 2
       ? 0
       : (thisIndexInItsCluster - (withOthers - 1) / 2) * radius * 2.4
-  const centre = place({ x: shot.x + alone, y: middleOfRow(shot.row) }, board)
+  const middle = place({ x: shot.x + alone, y: middleOfRow(shot.row) }, board)
+  // Level with the Peashooter's snout, which sits below the middle of its Row.
+  const centre = { x: middle.x, y: middle.y + muzzleDrop(board) }
 
   const isSnowPea = shot.slowSteps > 0
 

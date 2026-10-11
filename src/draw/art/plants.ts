@@ -2,13 +2,13 @@ import type { Planted, Square } from '../../game/board.ts'
 import { PLANTS } from '../../game/plants.ts'
 import { centreOf } from '../layout.ts'
 import type { BoardLayout } from '../layout.ts'
+import { drawPeashooterSprite } from './peashooter.ts'
 import { drawSunflowerSprite } from './sunflower.ts'
 
 // Color palette for original plant vector artwork
 const LEAF_DARK = '#1b5e20'
 const LEAF_MID = '#2e7d32'
 const LEAF_LIGHT = '#43a047'
-const PEA_HEAD = '#66bb6a'
 
 const NUT_SHELL = '#c68642'
 const NUT_EDGE = '#5d4037'
@@ -126,91 +126,6 @@ function applyBiteCutout(
   context.beginPath()
   context.arc(biteX, biteY, biteRadius, 0, Math.PI * 2)
   context.fill()
-}
-
-/** Peashooter: original flat vector art with snout, back leaf curl, and expressive eye. */
-function drawPeashooter(
-  context: CanvasRenderingContext2D,
-  plant: Planted,
-  board: BoardLayout,
-  centre: { x: number; y: number },
-  lawnColor: string,
-): void {
-  const scale = board.scale
-  const headRadius = board.squareWidth * 0.24
-  const footY = centre.y + board.squareHeight * 0.32
-  const headY = centre.y - board.squareHeight * 0.05
-  const headX = centre.x - board.squareWidth * 0.03
-
-  drawBaseLeaves(context, centre.x, footY, scale)
-  drawStem(context, centre.x, footY, headX, headY, 6 * scale)
-
-  // Back leaf crest
-  context.fillStyle = LEAF_LIGHT
-  context.strokeStyle = LEAF_DARK
-  context.lineWidth = Math.max(1, 1.8 * scale)
-  context.beginPath()
-  context.ellipse(headX - headRadius * 0.9, headY - headRadius * 0.5, headRadius * 0.45, headRadius * 0.25, -0.6, 0, Math.PI * 2)
-  context.fill()
-  context.stroke()
-
-  // Head sphere
-  context.fillStyle = PEA_HEAD
-  context.strokeStyle = LEAF_DARK
-  context.lineWidth = Math.max(1.5, 2 * scale)
-  context.beginPath()
-  context.arc(headX, headY, headRadius, 0, Math.PI * 2)
-  context.fill()
-  context.stroke()
-
-  // Snout pointing right towards incoming zombies
-  const snoutWidth = headRadius * 0.9
-  const snoutHeight = headRadius * 0.55
-  const snoutX = headX + headRadius * 0.65
-  context.fillStyle = LEAF_LIGHT
-  context.strokeStyle = LEAF_DARK
-  context.lineWidth = Math.max(1.2, 1.8 * scale)
-  context.beginPath()
-  context.moveTo(snoutX, headY - snoutHeight * 0.45)
-  context.lineTo(snoutX + snoutWidth, headY - snoutHeight * 0.55)
-  context.lineTo(snoutX + snoutWidth, headY + snoutHeight * 0.55)
-  context.lineTo(snoutX, headY + snoutHeight * 0.45)
-  context.closePath()
-  context.fill()
-  context.stroke()
-
-  // Dark muzzle opening
-  context.fillStyle = LEAF_DARK
-  context.beginPath()
-  context.ellipse(snoutX + snoutWidth, headY, snoutWidth * 0.18, snoutHeight * 0.55, 0, 0, Math.PI * 2)
-  context.fill()
-
-  // Expressive eye
-  const eyeX = headX + headRadius * 0.2
-  const eyeY = headY - headRadius * 0.25
-  const eyeRadius = headRadius * 0.32
-  context.fillStyle = '#ffffff'
-  context.strokeStyle = LEAF_DARK
-  context.lineWidth = Math.max(1, 1.5 * scale)
-  context.beginPath()
-  context.ellipse(eyeX, eyeY, eyeRadius * 0.85, eyeRadius, 0, 0, Math.PI * 2)
-  context.fill()
-  context.stroke()
-
-  context.fillStyle = '#111111'
-  context.beginPath()
-  context.arc(eyeX + eyeRadius * 0.25, eyeY, eyeRadius * 0.5, 0, Math.PI * 2)
-  context.fill()
-
-  context.fillStyle = '#ffffff'
-  context.beginPath()
-  context.arc(eyeX + eyeRadius * 0.35, eyeY - eyeRadius * 0.2, eyeRadius * 0.2, 0, Math.PI * 2)
-  context.fill()
-
-  const health = healthFraction(plant)
-  if (health < 1) {
-    applyBiteCutout(context, headX + headRadius * 0.85, headY, headRadius * 1.1 * (1 - health), lawnColor)
-  }
 }
 
 /** Wall-nut: sturdy, wide walnut with shell texture, friendly eyes, and cracks when damaged. */
@@ -904,7 +819,11 @@ function drawPuffShroom(
   }
 }
 
-/** Draws any of the 10 plants in its Square with original vector artwork. */
+/**
+ * Draws any of the 10 plants in its Square. `flash` runs from 1 at the moment
+ * a Zombie bites the plant down to 0; pixel-art plants flash red with it
+ * instead of showing a bite taken out of them.
+ */
 export function drawPlantArt(
   context: CanvasRenderingContext2D,
   plant: Planted,
@@ -912,18 +831,19 @@ export function drawPlantArt(
   lawnColor: (square: Square) => string,
   tick: number,
   beingEaten: boolean,
+  flash: number,
 ): void {
   const centre = centreOf(plant.square, board)
   const squareColor = lawnColor(plant.square)
 
   switch (plant.name) {
     case 'peashooter':
-      drawPeashooter(context, plant, board, centre, squareColor)
+      drawPeashooterSprite(context, plant, board, centre, tick, beingEaten, flash)
       break
     case 'sunflower':
       // Pixel art from the user's character sheet; the other plants are still
       // flat vector shapes until they get sheets of their own.
-      drawSunflowerSprite(context, plant, board, centre, healthFraction(plant), tick, beingEaten)
+      drawSunflowerSprite(context, plant, board, centre, tick, beingEaten, flash)
       break
     case 'wall-nut':
       drawWallNut(context, plant, board, centre, squareColor)

@@ -187,10 +187,11 @@ A stale graph is worse than no graph, because it will confidently answer questio
 
 ## Sub-agents
 
-The main conversation is the orchestrator: it talks to the user and writes the code itself, because check-first work goes one slice at a time and cannot be split across agents. Two project sub-agents in `.claude/agents/` take the jobs that do split off cleanly, both on Sonnet:
+The main conversation is the orchestrator: it talks to the user and writes the code itself, because check-first work goes one slice at a time and cannot be split across agents. Three project sub-agents in `.claude/agents/` take the jobs that do split off cleanly, all on Sonnet:
 
 - **`rule-checker`** — read-only review of a change against the rules in this file and `AGENTS.md`. Run it before reporting a change done. It reports; it never edits, so the fix is still reviewed by someone other than its author.
 - **`visual-checker`** — opens `dist/index.html` in a browser (`cloakbrowser` if present, else Claude in Chrome), screenshots, and reports what is drawn. It keeps image-heavy work out of the main conversation. It looks; it does not check rules.
+- **`sprite-maker`** — turns one of the user's pixel-art pictures into a 48 x 48 letter-grid sprite on the shared `src/draw/art/pixel.ts`, shrinking it with a script rather than by eye, and wires it in. It copies; anything the picture does not show comes back as a question rather than an invention. It never touches `src/game/` and never commits: the orchestrator reviews, versions and commits. User pictures are kept in `.scratch/art/`.
 
 Tell the user each time work is handed to one, and what came back.
 

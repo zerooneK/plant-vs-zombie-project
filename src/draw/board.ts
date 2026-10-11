@@ -1,5 +1,6 @@
 import { MOWER_COLUMN, everySquare } from '../game/board.ts'
 import type { Planted, Square } from '../game/board.ts'
+import { ZOMBIE_BITE_INTERVAL } from '../game/balance.ts'
 import { plantBeingEaten } from '../game/zombies.ts'
 import type { GameState } from '../game/sim.ts'
 import { centreOf } from './layout.ts'
@@ -15,6 +16,8 @@ const LAWN_EVEN = '#7cb342'
 const LAWN_ODD = '#689f38'
 const SELECTED_FILL = 'rgba(255, 235, 59, 0.38)'
 const SELECTED_EDGE = '#fdd835'
+/** Steps a plant's red flash takes to fade after a bite. */
+const FLASH_STEPS = 20
 
 /**
  * The colour of one Square's grass, which alternates in stripes across the lawn.
@@ -77,27 +80,35 @@ export function drawBoard(
 
   // The plants a Zombie is biting right now, asked of the rules the same way
   // the Zombies below ask it, so a plant's face and a Zombie's reach agree.
-  const eaten = new Set<Planted>()
+  // Each is kept with how fresh its latest bite is: a Zombie's bite countdown
+  // is set to the whole interval the step it bites, so the flash starts at 1
+  // on a bite and fades to 0 over the next few steps.
+  const eaten = new Map<Planted, number>()
   for (const zombie of state.zombies) {
     const food = plantBeingEaten(zombie, state.occupants)
-    if (food !== undefined) eaten.add(food)
+    if (food === undefined) continue
+    const sinceBite = ZOMBIE_BITE_INTERVAL - zombie.stepsUntilBite
+    const flash = Math.max(0, 1 - sinceBite / FLASH_STEPS)
+    eaten.set(food, Math.max(eaten.get(food) ?? 0, flash))
   }
 
-  // Plants and Lawn Mowers
-  for (const occupant of state.occupants) {
-    if (occupant.kind === 'plant') {
-      drawPlantArt(context, occupant, board, lawnColour, state.tick, eaten.has(occupant))
-    } else {
-      drawLawnMowerArt(context, occupant.square, board)
-    }
-  }
-
-  // Projectiles in flight (peas, ice peas, spores)
+  // Projectiles in flight (peas, ice peas, spores), under the plants, so a
+  // new pea is hidden by the head that fired it and comes out of the snout.
   for (const shot of state.shots) {
     const cluster = state.shots.filter(
       (other) => other.row === shot.row && Math.abs(other.x - shot.x) <= PEA_RADIUS,
     )
     drawShotArt(context, shot, board, cluster.length, cluster.findIndex((o) => o.id === shot.id))
+  }
+
+  // Plants and Lawn Mowers
+  for (const occupant of state.occupants) {
+    if (occupant.kind === 'plant') {
+      const flash = eaten.get(occupant)
+      drawPlantArt(context, occupant, board, lawnColour, state.tick, flash !== undefined, flash ?? 0)
+    } else {
+      drawLawnMowerArt(context, occupant.square, board)
+    }
   }
 
   // Zombies walking or eating

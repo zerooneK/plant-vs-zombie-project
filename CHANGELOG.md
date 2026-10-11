@@ -4,6 +4,23 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.38.0] - 2026-10-12
+
+### A Pixel-Art Peashooter, One Size for Pixel Art, and a Red Flash Instead of a Bite
+
+The second character in the Sunflower's style, and the shared code every later one will use. Presentation only: nothing in `src/game/` changed.
+
+- **New `src/draw/art/pixel.ts`**: grids of letters, repainting cells for a face, the red flash, turning a grid into a picture, keeping each picture once built, and placing it on its Square. A character file now holds only its grid, colours, faces and movement.
+- **One size for every pixel-art character**: 42 cells to a Square's width, so a cell, and the one-cell outline, is the same on all of them. The Sunflower was drawn larger than the Peashooter, with pixels about a fifth bigger; it is now a little smaller, about 0.83 of a Square wide, and no longer reaches the Square's edges.
+- **A bite is a red flash, not a hole.** A plant a Zombie bites turns red and fades back over a third of a second, and shudders while it is eaten. Pixel-art plants no longer have bites cut out of them: a Peashooter still fires while it is eaten, and with its snout bitten away its peas came out of nothing. One picture per face, not one per amount of health. Vector plants keep their bite until they are redrawn.
+- **Peas come out of the snout**: peas are drawn under the plants, so a new pea is hidden by the head that fired it, and level with the Peashooter's snout rather than the middle of the Row.
+- **The Sunflower moved onto `pixel.ts`**, checked by drawing both versions across 480 combinations of face, health, tick and Square size before its size and bite changed.
+- **New `src/draw/art/peashooter.ts`**, from the user's 1254 x 1254 picture, shrunk by script to 48 x 48 in 12 colours. It bobs a cell on its own beat like the Sunflower, shudders and flashes when eaten, and sits back a cell for 8 steps after each shot, read from the plant's shot countdown and the Peashooter's fire interval.
+- **Removed** the vector `drawPeashooter` and its colour from `plants.ts`. Snow Pea and Repeater are still vector.
+- **New `sprite-maker` sub-agent** (`.claude/agents/`, on Sonnet): turns one of the user's pictures into a sprite on `pixel.ts`, by script, copying only what the picture shows, and never commits. `CLAUDE.md` describes it with the other two.
+- **ADR 0022** records pixel art as letter grids, the red flash and the one size; ADR 0017 is marked partly superseded.
+- **Verification**: typecheck and build pass and all 178 rule tests pass.
+
 ## [0.37.0] - 2026-10-11
 
 ### Project sub-agents

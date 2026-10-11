@@ -1,6 +1,6 @@
 # 0017: Original vector artwork
 
-**Status:** accepted
+**Status:** accepted, partly superseded by [0022](0022-pixel-art-letter-grids.md)
 
 **Date:** 2026-10-06
 
