@@ -42,12 +42,12 @@ function sunOver(state: ReturnType<typeof initialGameState>, square: { row: numb
   return state.tokens.filter((token) => token.x === centreX(square))
 }
 
-const INTERVAL = 1455
+const INTERVAL = 1080
 
 /** The size of the Sun a plant makes, which is what a falling piece is drawn as. */
 const SUN_RADIUS = 18
 
-test('a Sunflower makes one piece of Sun every 24.25 seconds, and not a step sooner', () => {
+test('a Sunflower makes one piece of Sun every 18 seconds, and not a step sooner', () => {
   const square = { row: 0, column: 1 }
   const planted = withASunflowerIn(square)
 
@@ -152,7 +152,7 @@ test('a Sunflower has no attack, and a Zombie walks straight past it', () => {
     shotsEverFired = Math.max(shotsEverFired, state.shots.length)
     for (const zombie of state.zombies) {
       zombiesSeen += 1
-      if (zombie.health !== 270) {
+      if (zombie.health !== 200) {
         healthEverChanged = true
       }
     }

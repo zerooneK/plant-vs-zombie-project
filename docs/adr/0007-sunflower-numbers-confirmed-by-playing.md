@@ -1,6 +1,6 @@
 # 0007: The Sunflower's numbers stand, and what decides a Sunflower's fate is when a Zombie arrives
 
-**Status:** accepted
+**Status:** accepted, interval superseded by [0023](0023-easier-level-1-1.md)
 
 **Date:** 2026-09-29
 

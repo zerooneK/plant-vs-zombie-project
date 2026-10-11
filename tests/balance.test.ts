@@ -53,8 +53,12 @@ function marginInSeconds(state: GameState): number {
  * nothing a later change to Sun flow, Zombie speed or Wave spacing could be caught
  * by, and every number this pass produced came from playing the level - this one
  * included.
+ *
+ * It was 22.9 until the balance pass that took a Basic Zombie to 200 health and a
+ * Sunflower to eighteen seconds. It is smaller now because the level ends sooner:
+ * Zombies fall faster, so the last of the Flag Wave is down sooner after it walks in.
  */
-const ECONOMY_MARGIN_IN_SECONDS = 22.9
+const ECONOMY_MARGIN_IN_SECONDS = 17.6
 
 /** What a Sunflower costs, written out rather than read from the rules. */
 const SUNFLOWER_COST = 50
@@ -81,7 +85,7 @@ const FIRST_ROW_ATTACKED = ROWS_ATTACKED[0] ?? 0
 const LATEST_ROW_ATTACKED = ROWS_ATTACKED[ROWS_ATTACKED.length - 1] ?? 0
 
 /** How long between one piece of Sun a Sunflower makes and the next. */
-const PRODUCTION_INTERVAL_IN_SECONDS = 24.25
+const PRODUCTION_INTERVAL_IN_SECONDS = 18
 
 /** Two pieces: what it takes a Sunflower to have earned back what it cost. */
 const PAYBACK_IN_SECONDS = 2 * PRODUCTION_INTERVAL_IN_SECONDS
@@ -91,9 +95,11 @@ const PAYBACK_IN_SECONDS = 2 * PRODUCTION_INTERVAL_IN_SECONDS
  * at 4.7 seconds each, worked out here rather than read from the rules so that a
  * check can catch the number being wrong.
  *
- * This is the number the Sunflower's whole economy turns on: payback is longer than
- * a crossing, so a Sunflower can only come out ahead where a Zombie takes longer
- * than that to arrive - which in Level 1-1 means the Rows the schedule reaches late.
+ * This is the number the Sunflower's whole economy turns on. Payback used to be
+ * longer than a crossing, so a Sunflower only came out ahead where a Zombie took its
+ * time arriving. At eighteen seconds it is shorter, chosen by the user to make the
+ * game easier: a Sunflower now pays for itself before a Zombie that walks in on the
+ * step it is planted could reach it.
  */
 const CROSSING_TIME_IN_SECONDS = 9 * 4.7
 
@@ -236,48 +242,30 @@ test('a player who plants nothing loses Level 1-1, at a time the check states', 
   )
 })
 
-test('a Sunflower is eaten before it has paid for itself by a Zombie that arrives early, and one that arrives late pays for itself anyway', () => {
-  // The claim this ticket was written around, and the one that took the most work
-  // to state honestly - because the first version of it was simply false.
+test('a Sunflower pays for itself in every Row of Level 1-1, and one a Zombie reaches late earns more', () => {
+  // The claim this check was first written around was that a Sunflower in the Row the
+  // first Wave walks down is eaten before it has paid for itself. With the original's
+  // twenty-four and a quarter seconds that was a photo-finish: two pieces, exactly the
+  // 50 it cost. The user shortened the interval to eighteen seconds to make the game
+  // easier, and that is no longer true - two pieces now take 36 seconds, a Zombie needs
+  // 42.3 to cross the lawn, so even the first-attacked Row comes out ahead.
   //
-  // The ticket expected a Sunflower in the first Column to be eaten before it had
-  // made back what it cost. Measured, a Sunflower in Row 3 - the Row the first Wave
-  // walks down - breaks even *exactly*: two pieces against a cost of 50. But a
-  // Sunflower in Row 2, which the schedule does not touch until fifty seconds in,
-  // makes 75, and one in Row 4, untouched until eighty, makes 100. **Every attacked
-  // Row in Level 1-1 pays for its Sunflower**, and only because the level is long
-  // enough to let them. A check written from the ticket's sentence alone would have
-  // found the one Row that happens to break even and called it the rule.
+  // What is left of the old claim is that timing still decides *how much* a Sunflower
+  // earns: one in a Row the schedule reaches late makes more than one the first Wave
+  // eats. Both ends are asked, so a change that made every Row the same would fail.
   //
-  // The rule is about *when* a Zombie arrives, not which Row it walks down, and the
-  // arithmetic is the same one throughout. A Sunflower earns its 50 Sun back at two
-  // pieces, 48.5 seconds after it is planted. A Zombie walking the length of the
-  // lawn needs 42.3 seconds to reach the first Column and two more to eat it. So a
-  // Sunflower needs a Zombie to take **more than about fifty seconds to reach it**,
-  // and the twenty-five seconds of empty lawn the level opens with is the whole of
-  // the margin. Against the first Wave, arriving at twenty-five, that is a
-  // photo-finish; against a Wave at fifty, it is comfortable; and the schedule's
-  // later Waves are comfortable enough that the attacked Rows come out ahead.
-  //
-  // Both ends are asked, because the claim is a threshold and a threshold needs a
-  // Row on each side of it. A check showing only the loss would pass if a Sunflower
-  // were worthless in every Row; one showing only the profit would pass if timing
-  // did not matter at all.
-  //
-  // Asked on the shipped schedule, and the Rows are *read* from that schedule
-  // rather than written down - the earliest-attacked Row is the one the level's
-  // first Wave names, and finding it by looking is what stops a future schedule
-  // change from quietly invalidating the comparison.
+  // The Rows are read from the shipped schedule rather than written down, so a future
+  // schedule change cannot quietly invalidate the comparison.
   const attacked = paybackOfASunflowerIn(FIRST_ROW_ATTACKED)
   const late = paybackOfASunflowerIn(LATEST_ROW_ATTACKED)
 
   assert.ok(
-    attacked.sun <= SUNFLOWER_COST,
-    `a Sunflower in the Row the level's first Wave walks down never gets ahead: it makes ${attacked.sun} Sun against a cost of ${SUNFLOWER_COST}, and is eaten at ${attacked.eatenAfter.toFixed(1)} seconds having made ${attacked.sun / SUN_WORTH} piece${attacked.sun === SUN_WORTH ? '' : 's'} - it breaks even to the piece, which is the tightest this level ever makes it`,
+    !attacked.stillStanding && attacked.sun > SUNFLOWER_COST,
+    `a Sunflower in the Row the level's first Wave walks down is eaten, but not before it is ahead: it makes ${attacked.sun} Sun against a cost of ${SUNFLOWER_COST}, and is eaten at ${attacked.eatenAfter.toFixed(1)} seconds having made ${attacked.sun / SUN_WORTH} pieces`,
   )
   assert.ok(
-    late.sun > SUNFLOWER_COST,
-    `while one in a Row the schedule does not reach until much later is comfortably ahead: ${late.sun} Sun for the same ${SUNFLOWER_COST}, and eaten at ${late.eatenAfter.toFixed(1)} seconds - so what decides a Sunflower's fate is when a Zombie arrives, not which Row it walks down, and Level 1-1's schedule is long enough that the late Rows profit`,
+    late.sun > attacked.sun,
+    `while one in a Row the schedule does not reach until much later makes more: ${late.sun} Sun against ${attacked.sun}, eaten at ${late.eatenAfter.toFixed(1)} seconds - so when a Zombie arrives still decides how much a Sunflower is worth`,
   )
 })
 
@@ -294,13 +282,13 @@ test("a Sunflower's cost and production interval are the ones the rules actually
   // Level 1-1 is a Sunflower or a Peashooter and neither is a mistake. It is the
   // only number in the game that decides what the first click of a level is for.
   //
-  // **Interval, 24.25 seconds.** Read by planting one in an empty Row and watching
+  // **Interval, 18 seconds.** Read by planting one in an empty Row and watching
   // when its Sun arrives, which is the only way to see the number: two pieces earn
-  // back the 50, so the investment returns at 48.5 seconds, and a Zombie needs 42.3
-  // to cross the whole lawn. The payback is longer than the lawn is wide, which is
-  // what makes a Sunflower a bet on a Zombie arriving late rather than an early
-  // investment. The number is the original's and is kept for exactly that reason -
-  // shorten it and the plant is safe everywhere and the placement decision goes.
+  // back the 50, so the investment returns at 36 seconds, and a Zombie needs 42.3
+  // to cross the whole lawn. It was the original's twenty-four and a quarter, which
+  // made the payback longer than the lawn is wide and a Sunflower a bet on a Zombie
+  // arriving late. The user shortened it to make the game easier, knowing that it
+  // makes a Sunflower an early investment that pays wherever it stands.
   const packet = initialGameState(DEFAULT_SEED, LEVEL_1_1).seedBank.find(
     (candidate) => candidate.name === 'sunflower',
   )
@@ -315,10 +303,10 @@ test("a Sunflower's cost and production interval are the ones the rules actually
   assert.equal(
     sunOver(firstSun, THE_SUNFLOWER_SQUARE).length,
     0,
-    'a Sunflower makes nothing for the first twenty-four seconds, so the interval is a wait and not a trickle',
+    'a Sunflower makes nothing for the first eighteen seconds, so the interval is a wait and not a trickle',
   )
 
-  const made = untilTick(charged, Math.round(24.25 * STEPS_PER_SECOND), 'the first piece of Sun was due')
+  const made = untilTick(charged, Math.round(18 * STEPS_PER_SECOND), 'the first piece of Sun was due')
   const first = sunOver(made, THE_SUNFLOWER_SQUARE)
   assert.equal(first.length, 1, 'and exactly one piece of Sun arrives on the step the interval is up')
   assert.equal(first[0]?.amount, 25, 'worth 25 Sun, so two of them are what pays the 50 back')
@@ -330,12 +318,12 @@ test("a Sunflower's cost and production interval are the ones the rules actually
   const gaps = stepsBetweenEachPieceOfSunASunflowerMakes(charged)
   assert.deepEqual(
     gaps,
-    [Math.round(24.25 * STEPS_PER_SECOND)],
+    [Math.round(18 * STEPS_PER_SECOND), Math.round(18 * STEPS_PER_SECOND)],
     `and the pieces come ${gaps.join(', ')} steps apart, so the interval is the same on the second piece as on the first - Sun expires off the lawn between them, which is why the gap has to be measured as it is made rather than by looking at what is still there`,
   )
   assert.ok(
-    PAYBACK_IN_SECONDS > CROSSING_TIME_IN_SECONDS,
-    `and two pieces take ${PAYBACK_IN_SECONDS} seconds to earn back what it cost, which is longer than a Zombie needs to cross the whole lawn (${CROSSING_TIME_IN_SECONDS} seconds) - so a Sunflower can only come out ahead where a Zombie takes its time arriving`,
+    PAYBACK_IN_SECONDS < CROSSING_TIME_IN_SECONDS,
+    `and two pieces take ${PAYBACK_IN_SECONDS} seconds to earn back what it cost, which is less than a Zombie needs to cross the whole lawn (${CROSSING_TIME_IN_SECONDS} seconds) - so a Sunflower has paid for itself before even a Zombie that walked in as it was planted can reach it`,
   )
 })
 
@@ -464,7 +452,7 @@ function sunOver(state: GameState, square: Square) {
  *
  * Watched as they are made rather than read off the lawn afterwards, because a piece
  * of Sun does not wait for the next one: it falls, it rests, and it is gone within
- * about thirteen seconds, while the interval is twenty-four. Two pieces are never
+ * about thirteen seconds, while the interval is eighteen. Two pieces are never
  * on the lawn at the same time, so a check that looked for both at once would find
  * neither and conclude the Sunflower had stopped.
  */
@@ -472,7 +460,7 @@ function stepsBetweenEachPieceOfSunASunflowerMakes(planted: GameState): number[]
   const seen = new Set<number>()
   const madeAt: number[] = []
 
-  for (let step = 0; step < 3 * Math.round(24.25 * STEPS_PER_SECOND); step++) {
+  for (let step = 0; step < 3 * Math.round(18 * STEPS_PER_SECOND); step++) {
     const before = planted
     planted = apply(planted, { kind: 'advance' })
 

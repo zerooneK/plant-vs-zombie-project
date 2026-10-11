@@ -30,7 +30,7 @@ test('createPlanted creates a plant whole with correct health and job countdowns
   assert.equal(potato.stepsUntilArmed, 900, 'starts with 15 seconds of arming delay')
 
   const sunflower = createPlanted('sunflower', square)
-  assert.equal(sunflower.stepsUntilSun, 1455, 'starts with 24.25 seconds produce interval')
+  assert.equal(sunflower.stepsUntilSun, 1080, 'starts with 18 seconds produce interval')
 
   const chomper = createPlanted('chomper', square)
   assert.equal(chomper.stepsUntilChewed, 0, 'starts ready to devour')
@@ -80,7 +80,7 @@ test('producePlantSun generates a Sun token when production countdown expires', 
   assert.equal(result.nextId, 11)
   assert.equal(
     (result.occupants[0] as typeof readySunflower).stepsUntilSun,
-    1455,
+    1080,
     'resets production interval',
   )
 })

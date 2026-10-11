@@ -195,7 +195,7 @@ test('a Wall-nut is food for forty bites, and then the Square is bare', () => {
     undefined,
     'and a second later the fortieth takes the last 100, leaving the Square bare',
   )
-  assert.equal(theZombie(lastBite).health, 270, 'the Zombie is still on the lawn, unhurt by any of it')
+  assert.equal(theZombie(lastBite).health, 200, 'the Zombie is still on the lawn, unhurt by any of it')
 })
 
 test('a Tall-nut costs the same as a Wall-nut, and is half eaten by the time the Wall-nut is gone', () => {
@@ -232,13 +232,13 @@ test('neither nut ever fires, and neither ever makes a piece of Sun', () => {
   for (let step = 0; step < watched; step++) {
     state = apply(state, { kind: 'advance' })
     peas = Math.max(peas, state.shots.length)
-    zombieDamageTaken += state.zombies.filter((zombie) => zombie.health !== 270).length
+    zombieDamageTaken += state.zombies.filter((zombie) => zombie.health !== 200).length
 
     // Sun a plant makes is made at the plant, on the step its interval comes
     // round, and is sitting exactly on the middle of its Square for that one step
     // before it starts to fall. Watching for that is watching for a nut growing
-    // into a Sunflower. Twenty-four and a quarter seconds is the Sunflower's
-    // interval, so a minute of play covers two of them whole.
+    // into a Sunflower. Eighteen seconds is the Sunflower's interval, so a
+    // minute of play covers three of them whole.
     for (const square of [wall, tall]) {
       const atItsOwnCentre = state.tokens.some(
         (token) => token.x === centreX(square) && token.y === centreY(square),
