@@ -4,6 +4,17 @@ All notable changes to this project are recorded here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.40.1] - 2026-10-12
+
+### The Peashooter Aims, Fires and Kicks Back
+
+Each shot is now a short animation, from the user's three-frame sheet. It is only drawn; when and how hard a Peashooter shoots is unchanged.
+
+- **Aiming**: for the last 14 steps before a shot, a yellow glint blinks over the snout.
+- **Firing**: for 5 steps after the pea leaves, the head lunges forward a cell and light streaks trail out of the snout.
+- **Kicking back**: the head is then thrown back two cells and up one for 6 steps, comes half way back for 6 more, and orange sparks fly off both sides. This replaces the old one-cell sit-back.
+- The head is drawn apart from the stem and leaves, so only the head moves; the stem reaches up behind it, so no gap shows at the neck. A Peashooter with nothing to shoot at stands still and never aims.
+
 ## [0.40.0] - 2026-10-12
 
 ### The Mower Strip: Ten Columns, Nine to Plant
